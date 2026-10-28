@@ -7,6 +7,8 @@ import { Order, RestaurantSettings } from "@/types";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
 import { subscribeToLiveEvents } from "@/lib/realtime";
+import { LottiePreloader } from "@/components/LottiePreloader";
+
 
 import {
   CheckCircle2,
@@ -118,12 +120,12 @@ function OrderTrackingContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fdfbf9] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-[#780000]" />
-        <p className="text-xs font-bold text-stone-600">جاري جلب تفاصيل الطلب...</p>
+      <div className="min-h-screen bg-[#fdfbf9] flex items-center justify-center">
+        <LottiePreloader text="جاري جلب تفاصيل الطلب..." size={160} />
       </div>
     );
   }
+
 
   if (fetchError || !order || !settings) {
     return (

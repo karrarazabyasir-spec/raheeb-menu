@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { RestaurantSettings } from "@/types";
+import { LottiePreloader } from "@/components/LottiePreloader";
+
 import {
   X,
   Trash2,
@@ -169,7 +171,16 @@ export function CartDrawer({ settings }: CartDrawerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
+    <>
+      {isSubmitting && (
+        <LottiePreloader
+          text="جاري إرسال طلبكم للمطبخ والكاشير..."
+          size={180}
+          fullScreen
+        />
+      )}
+      <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in">
+
       <div
         className="w-full sm:max-w-md bg-white h-full flex flex-col shadow-2xl overflow-hidden animate-slide-left text-stone-900"
         onClick={(e) => e.stopPropagation()}
@@ -515,5 +526,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         )}
       </div>
     </div>
+    </>
   );
 }
+

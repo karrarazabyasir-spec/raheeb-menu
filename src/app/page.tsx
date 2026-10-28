@@ -12,6 +12,8 @@ import { MenuItemCard } from "@/components/MenuItemCard";
 import { ItemCustomizerModal } from "@/components/ItemCustomizerModal";
 import { CartDrawer } from "@/components/CartDrawer";
 import { subscribeToLiveEvents } from "@/lib/realtime";
+import { LottiePreloader } from "@/components/LottiePreloader";
+
 
 import {
   Search,
@@ -118,14 +120,12 @@ function MenuContent() {
 
   if (isLoading || !settings) {
     return (
-      <div className="min-h-screen bg-[#fdfbf9] flex flex-col items-center justify-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-[#780000] flex items-center justify-center text-white shadow-xl animate-pulse">
-          <Loader2 className="w-6 h-6 animate-spin text-amber-300" />
-        </div>
-        <p className="text-xs font-bold text-stone-600">جاري تحميل قائمة مطعم رهيب...</p>
+      <div className="min-h-screen bg-[#fdfbf9] flex items-center justify-center">
+        <LottiePreloader text="أهلاً بكم في مطعم رهيب... جاري تحضير المينيو" size={190} />
       </div>
     );
   }
+
 
   const currency = isRtl ? settings.currency : settings.currencyEn;
 
