@@ -70,28 +70,19 @@ export function Header({ settings }: HeaderProps) {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Staff screen shortcuts */}
-          <Link
-            href="/cashier"
-            className="text-[11px] bg-white/15 hover:bg-white/25 px-2 py-0.5 rounded transition text-white"
-          >
-            {t("cashier")}
-          </Link>
-          <Link
-            href="/kitchen"
-            className="text-[11px] bg-white/15 hover:bg-white/25 px-2 py-0.5 rounded transition text-white"
-          >
-            {t("kitchen")}
-          </Link>
-          <Link
-            href="/admin"
-            className="text-[11px] bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold px-2 py-0.5 rounded transition"
-          >
-            المالك
-          </Link>
+        <div className="flex items-center gap-2 text-white/80">
+          {settings.phone && (
+            <a
+              href={`tel:${settings.phone}`}
+              className="flex items-center gap-1 hover:text-white transition text-[11px]"
+            >
+              <PhoneCall className="w-3 h-3 text-amber-300" />
+              <span>{settings.phone}</span>
+            </a>
+          )}
         </div>
       </div>
+
 
       {/* Main Bar */}
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
