@@ -410,8 +410,9 @@
       "number": 6,
       "label": "طاولة 6",
       "section": "عائلات",
-      "status": "empty",
-      "qrToken": "tbl-token-6"
+      "status": "occupied",
+      "qrToken": "tbl-token-6",
+      "activeOrderId": "ord-1793206223637-rv5b7"
     },
     {
       "id": "tbl-7",
@@ -447,6 +448,112 @@
     }
   ],
   "orders": [
+    {
+      "type": "table",
+      "tableNumber": 6,
+      "items": [
+        {
+          "id": "ord-item-1793206223637-ghj0w",
+          "menuItemId": "item-11",
+          "nameAr": "كنافة نابلسية بالجبنة خشنة",
+          "nameEn": "Crispy Cheese Kunafa",
+          "unitPrice": 22,
+          "quantity": 1,
+          "totalPrice": 22
+        }
+      ],
+      "subtotal": 22,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 22,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793206223637-rv5b7",
+      "orderNumber": 106,
+      "createdAt": "2026-10-28T16:50:23.637Z",
+      "updatedAt": "2026-10-28T16:50:23.637Z"
+    },
+    {
+      "type": "takeaway",
+      "customerName": "عماد",
+      "customerPhone": "07800280836",
+      "pickupTime": "في أسرع وقت",
+      "items": [
+        {
+          "id": "ord-item-1793205679229-8ri8p",
+          "menuItemId": "item-1",
+          "nameAr": "مشكل مشويات رهيب الملكي",
+          "nameEn": "Royal Raheeb Mixed Grill",
+          "variantName": "نصف كيلو (شخصين)",
+          "selectedOptionsText": "خبز شامي حار على الصاج",
+          "unitPrice": 5000,
+          "quantity": 1,
+          "totalPrice": 5000
+        },
+        {
+          "id": "ord-item-1793205679229-vfmbc",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن فردي",
+          "unitPrice": 48,
+          "quantity": 1,
+          "totalPrice": 48
+        },
+        {
+          "id": "ord-item-1793205679229-xhmqb",
+          "menuItemId": "item-3",
+          "nameAr": "صحن شاورما لحم عربي رهيب",
+          "nameEn": "Arabic Beef Shawarma Plate",
+          "selectedOptionsText": "عادي / بدون شطة",
+          "unitPrice": 32,
+          "quantity": 1,
+          "totalPrice": 32
+        }
+      ],
+      "subtotal": 5080,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 5080,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793205679229-8vs88",
+      "orderNumber": 105,
+      "createdAt": "2026-10-28T16:41:19.229Z",
+      "updatedAt": "2026-10-28T16:41:19.229Z"
+    },
+    {
+      "type": "takeaway",
+      "customerName": "علوش",
+      "customerPhone": "07800280836",
+      "pickupTime": "في أسرع وقت",
+      "items": [
+        {
+          "id": "ord-item-1793205581234-18u75",
+          "menuItemId": "item-1",
+          "nameAr": "مشكل مشويات رهيب الملكي",
+          "nameEn": "Royal Raheeb Mixed Grill",
+          "variantName": "نصف كيلو (شخصين)",
+          "selectedOptionsText": "خبز شامي حار على الصاج",
+          "unitPrice": 5000,
+          "quantity": 1,
+          "totalPrice": 5000
+        }
+      ],
+      "subtotal": 5000,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 5000,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793205581234-vkma2",
+      "orderNumber": 104,
+      "createdAt": "2026-10-28T16:39:41.234Z",
+      "updatedAt": "2026-10-28T16:39:41.234Z"
+    },
     {
       "type": "table",
       "tableNumber": 5,
@@ -563,5 +670,5 @@
       "createdAt": "2026-10-28T10:26:27.035Z"
     }
   ],
-  "nextOrderNumber": 104
+  "nextOrderNumber": 107
 }

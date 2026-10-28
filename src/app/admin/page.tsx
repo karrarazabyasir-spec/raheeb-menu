@@ -160,6 +160,23 @@ export default function AdminPage() {
     }
   };
 
+  const fetchLiveOrdersAndTables = async () => {
+    try {
+      const [tblRes, ordRes] = await Promise.all([
+        fetch("/api/tables"),
+        fetch("/api/orders"),
+      ]);
+      const [tblData, ordData] = await Promise.all([
+        tblRes.json(),
+        ordRes.json(),
+      ]);
+      setTables(tblData.tables || []);
+      setOrders(ordData);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
     setMountedTime(Date.now());
     fetchData();
@@ -173,13 +190,13 @@ export default function AdminPage() {
         event === "waiter_called" ||
         event === "waiter_dismissed"
       ) {
-        fetchData();
+        fetchLiveOrdersAndTables();
       }
     });
 
-    // Background poll every 5 seconds as a secondary fallback
+    // Background poll every 5 seconds for orders and tables ONLY (prevents overwriting settings inputs)
     const interval = setInterval(() => {
-      fetchData();
+      fetchLiveOrdersAndTables();
     }, 5000);
 
     return () => {
@@ -1122,7 +1139,7 @@ export default function AdminPage() {
                 <label className="font-bold block mb-1">رقم واتساب المطعم (بدون أصفار أو +):</label>
                 <input
                   type="text"
-                  value={settings.whatsapp}
+                  value={settings.whatsapp || ""}
                   onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
                   placeholder="9647709768760"
                   className="w-full p-2.5 border rounded-xl font-mono text-emerald-800 font-bold"
@@ -1133,8 +1150,9 @@ export default function AdminPage() {
                 <label className="font-bold block mb-1">هاتف المطعم للاتصال:</label>
                 <input
                   type="text"
-                  value={settings.phone}
+                  value={settings.phone || ""}
                   onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                  placeholder="+9647709768760"
                   className="w-full p-2.5 border rounded-xl"
                 />
               </div>
@@ -1143,7 +1161,7 @@ export default function AdminPage() {
                 <label className="font-bold block mb-1">العملة:</label>
                 <input
                   type="text"
-                  value={settings.currency}
+                  value={settings.currency || ""}
                   onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
                   className="w-full p-2.5 border rounded-xl"
                 />
