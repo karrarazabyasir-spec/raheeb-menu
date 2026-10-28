@@ -1,0 +1,317 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { ItemVariant, MenuItem, RestaurantSettings, SelectedOption } from "@/types";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCart } from "@/context/CartContext";
+import { X, Plus, Minus, Check, AlertCircle } from "lucide-react";
+
+interface ItemCustomizerModalProps {
+  item: MenuItem | null;
+  settings: RestaurantSettings;
+  onClose: () => void;
+}
+
+export function ItemCustomizerModal({
+  item,
+  settings,
+  onClose,
+}: ItemCustomizerModalProps) {
+  const { isRtl, t } = useLanguage();
+  const { addToCart, setIsCartOpen } = useCart();
+
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<ItemVariant | undefined>(undefined);
+  const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
+  const [notes, setNotes] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Initialize defaults
+  useEffect(() => {
+    if (!item) return;
+    setQuantity(1);
+    setNotes("");
+    setErrorMsg(null);
+
+    // Default variant to first variant if exists
+    if (item.variants && item.variants.length > 0) {
+      setSelectedVariant(item.variants[0]);
+    } else {
+      setSelectedVariant(undefined);
+    }
+
+    // Default required options to first option of each required group
+    const initialOpts: SelectedOption[] = [];
+    if (item.optionGroups) {
+      item.optionGroups.forEach((group) => {
+        if (group.required && group.options.length > 0) {
+          const first = group.options[0];
+          initialOpts.push({
+            groupId: group.id,
+            groupName: isRtl ? group.nameAr : group.nameEn,
+            optionId: first.id,
+            optionName: isRtl ? first.nameAr : first.nameEn,
+            price: first.price,
+          });
+        }
+      });
+    }
+    setSelectedOptions(initialOpts);
+  }, [item, isRtl]);
+
+  if (!item) return null;
+
+  const currency = isRtl ? settings.currency : settings.currencyEn;
+  const name = isRtl ? item.nameAr : item.nameEn;
+  const description = isRtl ? item.descriptionAr : item.descriptionEn;
+
+  // Toggle or select option
+  const handleOptionToggle = (
+    groupId: string,
+    groupName: string,
+    optId: string,
+    optName: string,
+    optPrice: number,
+    required: boolean
+  ) => {
+    if (required) {
+      // Single selection for required
+      setSelectedOptions((prev) => [
+        ...prev.filter((o) => o.groupId !== groupId),
+        { groupId, groupName, optionId: optId, optionName: optName, price: optPrice },
+      ]);
+    } else {
+      // Multi selection for optional
+      setSelectedOptions((prev) => {
+        const exists = prev.some((o) => o.optionId === optId);
+        if (exists) {
+          return prev.filter((o) => o.optionId !== optId);
+        } else {
+          return [
+            ...prev,
+            { groupId, groupName, optionId: optId, optionName: optName, price: optPrice },
+          ];
+        }
+      });
+    }
+  };
+
+  // Calculate current unit price
+  let unitPrice = selectedVariant ? selectedVariant.price : item.basePrice;
+  selectedOptions.forEach((opt) => {
+    unitPrice += opt.price;
+  });
+  const totalPrice = unitPrice * quantity;
+
+  const handleConfirm = () => {
+    // Validate required option groups
+    if (item.optionGroups) {
+      for (const group of item.optionGroups) {
+        if (group.required) {
+          const selected = selectedOptions.some((o) => o.groupId === group.id);
+          if (!selected) {
+            setErrorMsg(
+              isRtl
+                ? `يرجى اختيار (${group.nameAr}) قبل الإضافة`
+                : `Please select (${group.nameEn}) before adding`
+            );
+            return;
+          }
+        }
+      }
+    }
+
+    addToCart(item, quantity, selectedVariant, selectedOptions, notes);
+    onClose();
+    // Flash open cart or show toast
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div
+        className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Item Header Image */}
+        <div className="relative h-52 sm:h-60 w-full shrink-0 bg-stone-100">
+          <img
+            src={item.imageUrl}
+            alt={name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30" />
+        </div>
+
+        {/* Scrollable details */}
+        <div className="p-5 overflow-y-auto flex-1 space-y-5 text-stone-900">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-stone-900">{name}</h2>
+            <p className="text-xs sm:text-sm text-stone-500 mt-1 leading-relaxed">
+              {description}
+            </p>
+          </div>
+
+          {/* Variants (Sizes) */}
+          {item.variants && item.variants.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-stone-100">
+              <label className="text-xs font-bold text-stone-700 block">
+                {isRtl ? "الحجم المطلوب:" : "Select Size:"}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {item.variants.map((v) => {
+                  const isSelected = selectedVariant?.id === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setSelectedVariant(v)}
+                      className={`p-3 rounded-xl border text-start flex flex-col justify-between transition ${
+                        isSelected
+                          ? "border-[#780000] bg-red-50/50 text-[#780000] font-bold shadow-sm"
+                          : "border-stone-200 bg-white hover:bg-stone-50 text-stone-700"
+                      }`}
+                    >
+                      <span className="text-xs font-bold">{isRtl ? v.nameAr : v.nameEn}</span>
+                      <span className="text-sm font-black mt-1">
+                        {v.price} {currency}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Option Groups */}
+          {item.optionGroups &&
+            item.optionGroups.map((group) => (
+              <div key={group.id} className="space-y-2 pt-3 border-t border-stone-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-stone-800">
+                    {isRtl ? group.nameAr : group.nameEn}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      group.required
+                        ? "bg-red-100 text-[#780000]"
+                        : "bg-stone-100 text-stone-600"
+                    }`}
+                  >
+                    {group.required ? t("required") : t("optional")}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  {group.options.map((opt) => {
+                    const isSelected = selectedOptions.some((o) => o.optionId === opt.id);
+                    return (
+                      <div
+                        key={opt.id}
+                        onClick={() =>
+                          handleOptionToggle(
+                            group.id,
+                            isRtl ? group.nameAr : group.nameEn,
+                            opt.id,
+                            isRtl ? opt.nameAr : opt.nameEn,
+                            opt.price,
+                            group.required
+                          )
+                        }
+                        className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
+                          isSelected
+                            ? "border-[#780000] bg-red-50/50"
+                            : "border-stone-200 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
+                              isSelected
+                                ? "bg-[#780000] border-[#780000] text-white"
+                                : "border-stone-300 bg-white"
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                          <span className="text-xs font-semibold text-stone-800">
+                            {isRtl ? opt.nameAr : opt.nameEn}
+                          </span>
+                        </div>
+                        {opt.price > 0 && (
+                          <span className="text-xs font-bold text-[#780000]">
+                            +{opt.price} {currency}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+          {/* Notes */}
+          <div className="space-y-1.5 pt-3 border-t border-stone-100">
+            <label className="text-xs font-bold text-stone-700 block">
+              {t("addNotes")}
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t("notesPlaceholder")}
+              rows={2}
+              className="w-full text-xs p-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#780000] bg-stone-50"
+            />
+          </div>
+
+          {errorMsg && (
+            <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer with quantity and add button */}
+        <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between gap-3 shrink-0">
+          {/* Quantity Controls */}
+          <div className="flex items-center bg-white border border-stone-200 rounded-xl p-1 shadow-sm">
+            <button
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-100 active:scale-95 transition"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+            <span className="w-8 text-center font-bold text-sm text-stone-900">
+              {quantity}
+            </span>
+            <button
+              onClick={() => setQuantity((q) => q + 1)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-700 hover:bg-stone-100 active:scale-95 transition"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Submit button */}
+          <button
+            onClick={handleConfirm}
+            className="flex-1 py-3 px-4 rounded-xl bg-[#780000] hover:bg-[#5c0000] text-white font-bold text-xs sm:text-sm flex items-center justify-between shadow-lg shadow-red-900/20 active:scale-98 transition"
+          >
+            <span>{t("addToCart")}</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded-md text-xs font-black">
+              {totalPrice} {currency}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
