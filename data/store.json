@@ -16,7 +16,8 @@
     "openingHours": "يومياً من 12:00 ظهراً حتى 01:00 بعد منتصف الليل",
     "bannerMessage": "🔥 خصم خاص 15% على جميع وجبات المشويات العائلية بكود: RAHEEB15",
     "bannerActive": true,
-    "primaryColor": "#0b4f3a"
+    "primaryColor": "#780000",
+    "logoUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793204932373-4hgqdp.jpg"
   },
   "categories": [
     {
@@ -400,8 +401,9 @@
       "number": 5,
       "label": "طاولة 5",
       "section": "عائلات",
-      "status": "empty",
-      "qrToken": "tbl-token-5"
+      "status": "occupied",
+      "qrToken": "tbl-token-5",
+      "activeOrderId": "ord-1793204897601-oir7m"
     },
     {
       "id": "tbl-6",
@@ -445,6 +447,33 @@
     }
   ],
   "orders": [
+    {
+      "type": "table",
+      "tableNumber": 5,
+      "items": [
+        {
+          "id": "ord-item-1793204897600-s04yz",
+          "menuItemId": "item-3",
+          "nameAr": "صحن شاورما لحم عربي رهيب",
+          "nameEn": "Arabic Beef Shawarma Plate",
+          "selectedOptionsText": "عادي / بدون شطة",
+          "unitPrice": 32,
+          "quantity": 1,
+          "totalPrice": 32
+        }
+      ],
+      "subtotal": 32,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 32,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793204897601-oir7m",
+      "orderNumber": 103,
+      "createdAt": "2026-10-28T16:28:17.600Z",
+      "updatedAt": "2026-10-28T16:28:17.600Z"
+    },
     {
       "type": "table",
       "tableNumber": 1,
@@ -534,5 +563,5 @@
       "createdAt": "2026-10-28T10:26:27.035Z"
     }
   ],
-  "nextOrderNumber": 103
+  "nextOrderNumber": 104
 }

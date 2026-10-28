@@ -33,56 +33,92 @@ class OrderEventBus extends EventEmitter {}
 export const eventBus = new OrderEventBus();
 eventBus.setMaxListeners(100);
 
-function readData(): DatabaseSchema {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DATA_FILE)) {
-      const initialDb: DatabaseSchema = {
-        settings: initialSettings,
-        categories: initialCategories,
-        menuItems: initialMenuItems,
-        tables: initialTables,
-        orders: [],
-        coupons: [
-          { code: "RAHEEB15", type: "percent", value: 15, minOrderValue: 50, isActive: true },
-          { code: "WELCOME10", type: "fixed", value: 10, minOrderValue: 40, isActive: true },
-        ],
-        waiterCalls: [],
-        nextOrderNumber: 101,
-      };
-      fs.writeFileSync(DATA_FILE, JSON.stringify(initialDb, null, 2), "utf-8");
-      return initialDb;
-    }
+let memoryCache: DatabaseSchema | null = null;
+let lastCloudFetchTime = 0;
 
-    const content = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(content) as DatabaseSchema;
-  } catch (err) {
-    console.error("Error reading database file, using fallback:", err);
-    return {
-      settings: initialSettings,
-      categories: initialCategories,
-      menuItems: initialMenuItems,
-      tables: initialTables,
-      orders: [],
-      coupons: [],
-      waiterCalls: [],
-      nextOrderNumber: 101,
-    };
+function syncCloudDataInBackground() {
+  const now = Date.now();
+  // Throttle cloud fetch to once every 10 seconds
+  if (now - lastCloudFetchTime < 10000) return;
+  lastCloudFetchTime = now;
+
+  supabaseAdmin.storage
+    .from("menu-images")
+    .download("config/store.json")
+    .then(async ({ data, error }) => {
+      if (data && !error) {
+        const text = await data.text();
+        const parsed = JSON.parse(text) as DatabaseSchema;
+        if (parsed && parsed.settings) {
+          memoryCache = parsed;
+        }
+      }
+    })
+    .catch(() => {});
+}
+
+function readData(): DatabaseSchema {
+  syncCloudDataInBackground();
+
+  if (memoryCache) {
+    return memoryCache;
   }
+
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const content = fs.readFileSync(DATA_FILE, "utf-8");
+      memoryCache = JSON.parse(content) as DatabaseSchema;
+      return memoryCache;
+    }
+  } catch (err) {
+    console.error("Local file read failed, using defaults:", err);
+  }
+
+  memoryCache = {
+    settings: initialSettings,
+    categories: initialCategories,
+    menuItems: initialMenuItems,
+    tables: initialTables,
+    orders: [],
+    coupons: [
+      { code: "RAHEEB15", type: "percent", value: 15, minOrderValue: 50, isActive: true },
+      { code: "WELCOME10", type: "fixed", value: 10, minOrderValue: 40, isActive: true },
+    ],
+    waiterCalls: [],
+    nextOrderNumber: 101,
+  };
+  return memoryCache;
 }
 
 function writeData(data: DatabaseSchema): void {
+  memoryCache = data;
+
+  // 1. Try local filesystem (works on dev / persistent servers)
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
-    console.error("Error writing database file:", err);
+    // Expected on Vercel read-only filesystem
+  }
+
+  // 2. Persist to Supabase Cloud Storage (permanent across all serverless instances)
+  try {
+    supabaseAdmin.storage
+      .from("menu-images")
+      .upload("config/store.json", JSON.stringify(data, null, 2), {
+        upsert: true,
+        contentType: "application/json",
+      })
+      .then(({ error }) => {
+        if (error) console.error("Cloud storage sync error:", error);
+      });
+  } catch (cloudErr) {
+    console.error("Cloud storage upload error:", cloudErr);
   }
 }
+
 
 export const db = {
   // Settings
