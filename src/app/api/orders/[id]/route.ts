@@ -1,13 +1,53 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
-import { OrderStatus } from "@/types";
+import { Order, OrderStatus } from "@/types";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const order = db.getOrderById(id);
+  
+  // 1. First check in-memory store
+  let order = db.getOrderById(id);
+
+  // 2. If not found in local memory, fetch from Supabase Cloud database
+  if (!order) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("orders")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (data && !error) {
+        order = {
+          id: data.id,
+          orderNumber: data.order_number,
+          type: data.type,
+          tableNumber: data.table_number || undefined,
+          customerName: data.customer_name || undefined,
+          customerPhone: data.customer_phone || undefined,
+          pickupTime: data.pickup_time || undefined,
+          items: data.items,
+          subtotal: data.subtotal,
+          discount: data.discount,
+          serviceFee: data.service_fee,
+          tax: data.tax,
+          total: data.total,
+          paymentMethod: data.payment_method,
+          status: data.status,
+          cancelReason: data.cancel_reason || undefined,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        };
+      }
+    } catch (e) {
+      console.error("Supabase order fetch error:", e);
+    }
+  }
+
   if (!order) {
     return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
   }
@@ -24,11 +64,48 @@ export async function PATCH(
     const { status, cancelReason } = body as { status: OrderStatus; cancelReason?: string };
 
     const updated = db.updateOrderStatus(id, status, cancelReason);
-    if (!updated) {
+
+    // Also update directly in Supabase
+    const { data: supaData } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status,
+        cancel_reason: cancelReason || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (!updated && !supaData) {
       return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
     }
-    return NextResponse.json(updated);
+
+    if (updated) return NextResponse.json(updated);
+
+    const mappedOrder: Order = {
+      id: supaData.id,
+      orderNumber: supaData.order_number,
+      type: supaData.type,
+      tableNumber: supaData.table_number || undefined,
+      customerName: supaData.customer_name || undefined,
+      customerPhone: supaData.customer_phone || undefined,
+      pickupTime: supaData.pickup_time || undefined,
+      items: supaData.items,
+      subtotal: supaData.subtotal,
+      discount: supaData.discount,
+      serviceFee: supaData.service_fee,
+      tax: supaData.tax,
+      total: supaData.total,
+      paymentMethod: supaData.payment_method,
+      status: supaData.status,
+      cancelReason: supaData.cancel_reason || undefined,
+      createdAt: supaData.created_at,
+      updatedAt: supaData.updated_at,
+    };
+    return NextResponse.json(mappedOrder);
   } catch (error) {
     return NextResponse.json({ error: "تعذر تحديث حالة الطلب" }, { status: 400 });
   }
 }
+

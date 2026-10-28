@@ -1,15 +1,50 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { CartItem, Order, OrderItem, OrderStatus, OrderType } from "@/types";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = (searchParams.get("status") as OrderStatus) || undefined;
   const type = (searchParams.get("type") as OrderType) || undefined;
 
+  try {
+    let query = supabaseAdmin.from("orders").select("*").order("created_at", { ascending: false });
+    if (status) query = query.eq("status", status);
+    if (type) query = query.eq("type", type);
+
+    const { data: supaOrders, error } = await query;
+    if (supaOrders && !error && supaOrders.length > 0) {
+      const mappedOrders: Order[] = supaOrders.map((o) => ({
+        id: o.id,
+        orderNumber: o.order_number,
+        type: o.type,
+        tableNumber: o.table_number || undefined,
+        customerName: o.customer_name || undefined,
+        customerPhone: o.customer_phone || undefined,
+        pickupTime: o.pickup_time || undefined,
+        items: o.items,
+        subtotal: o.subtotal,
+        discount: o.discount,
+        serviceFee: o.service_fee,
+        tax: o.tax,
+        total: o.total,
+        paymentMethod: o.payment_method,
+        status: o.status,
+        cancelReason: o.cancel_reason || undefined,
+        createdAt: o.created_at,
+        updatedAt: o.updated_at,
+      }));
+      return NextResponse.json(mappedOrders);
+    }
+  } catch (err) {
+    console.error("Supabase orders query error:", err);
+  }
+
   const orders = db.getOrders({ status, type });
   return NextResponse.json(orders);
 }
+
 
 export async function POST(request: Request) {
   try {

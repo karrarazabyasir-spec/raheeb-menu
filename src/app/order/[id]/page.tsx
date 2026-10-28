@@ -31,6 +31,7 @@ function OrderTrackingContent() {
   const [order, setOrder] = useState<Order | null>(null);
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [rating, setRating] = useState<number>(5);
   const [reviewSent, setReviewSent] = useState(false);
   const [callMessage, setCallMessage] = useState<string | null>(null);
@@ -43,12 +44,16 @@ function OrderTrackingContent() {
       ]);
       if (orderRes.ok) {
         setOrder(await orderRes.json());
+        setFetchError(false);
+      } else {
+        setFetchError(true);
       }
       if (settingsRes.ok) {
         setSettings(await settingsRes.json());
       }
     } catch (e) {
       console.error(e);
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -56,6 +61,22 @@ function OrderTrackingContent() {
 
   useEffect(() => {
     fetchOrderAndSettings();
+
+    // Poll every 4 seconds as a reliable backup to SSE
+    const pollInterval = setInterval(() => {
+      fetch(`/api/orders/${orderId}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          return null;
+        })
+        .then((data) => {
+          if (data) {
+            setOrder(data);
+            setFetchError(false);
+          }
+        })
+        .catch(() => {});
+    }, 4000);
 
     // Real-time live status updates via SSE
     let eventSource: EventSource | null = null;
@@ -74,6 +95,7 @@ function OrderTrackingContent() {
     }
 
     return () => {
+      clearInterval(pollInterval);
       if (eventSource) eventSource.close();
     };
   }, [orderId]);
@@ -99,7 +121,7 @@ function OrderTrackingContent() {
     }
   };
 
-  if (loading || !order || !settings) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#fdfbf9] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-[#780000]" />
@@ -107,6 +129,38 @@ function OrderTrackingContent() {
       </div>
     );
   }
+
+  if (fetchError || !order || !settings) {
+    return (
+      <div className="min-h-screen bg-[#fdfbf9] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-[#780000] mb-4">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-black text-stone-900 mb-1">تعذر العثور على تفاصيل الطلب</h2>
+        <p className="text-xs text-stone-600 mb-6 max-w-xs">
+          ربما تم إرسال الطلب بنجاح وهو قيد المزامنة، أو أن رقم الطلب غير متوفر.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setLoading(true);
+              fetchOrderAndSettings();
+            }}
+            className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-bold rounded-xl transition"
+          >
+            إعادة المحاولة
+          </button>
+          <Link
+            href="/"
+            className="px-4 py-2 bg-[#780000] hover:bg-red-950 text-white text-xs font-bold rounded-xl transition shadow"
+          >
+            العودة للمينيو
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
 
   const currency = isRtl ? settings.currency : settings.currencyEn;
   const isTable = order.type === "table";
