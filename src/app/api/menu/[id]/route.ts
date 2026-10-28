@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
+import { broadcastLiveEvent } from "@/lib/realtime";
 
 export async function PATCH(
   request: Request,
@@ -11,6 +12,7 @@ export async function PATCH(
 
     if (body.action === "toggle_availability") {
       const updated = db.toggleItemAvailability(id, body.isAvailable);
+      await broadcastLiveEvent("menu_updated", updated);
       return NextResponse.json(updated);
     }
 
@@ -20,7 +22,9 @@ export async function PATCH(
     }
 
     const updated = db.saveMenuItem({ ...existing, ...body });
+    await broadcastLiveEvent("menu_updated", updated);
     return NextResponse.json(updated);
+
   } catch (error) {
     return NextResponse.json({ error: "فشل تحديث الصنف" }, { status: 400 });
   }

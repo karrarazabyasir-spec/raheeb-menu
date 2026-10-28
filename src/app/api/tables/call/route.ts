@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
+import { broadcastLiveEvent } from "@/lib/realtime";
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +10,9 @@ export async function POST(request: Request) {
     }
 
     const call = db.callWaiter(Number(tableNumber), type as "call" | "bill");
+    await broadcastLiveEvent("waiter_called", { tableNumber: Number(tableNumber), type, call });
     return NextResponse.json({ success: true, call });
+
   } catch (error) {
     return NextResponse.json({ error: "تعذر إرسال الطلب" }, { status: 500 });
   }

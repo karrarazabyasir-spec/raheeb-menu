@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Order, OrderStatus } from "@/types";
 import { playNotificationChime } from "@/lib/audio";
+import { subscribeToLiveEvents } from "@/lib/realtime";
+
 import {
   ChefHat,
   Clock,
@@ -43,45 +45,39 @@ export default function KitchenPage() {
     // Timer heartbeat for elapsed counters
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
 
-    // SSE connection
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource("/api/events");
+    // Supabase Realtime WebSocket subscription (<100ms instant updates)
+    const unsubscribe = subscribeToLiveEvents((event, payload) => {
+      if (event === "new_order" && payload) {
+        setOrders((prev) => {
+          const exists = prev.some((o) => o.id === payload.id);
+          if (exists) return prev;
+          return [...prev, payload].sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        });
+        if (soundEnabled) playNotificationChime("order");
+      } else if (event === "order_status_changed" && payload) {
+        setOrders((prev) => {
+          if (payload.status === "ready" || payload.status === "completed" || payload.status === "cancelled") {
+            return prev.filter((o) => o.id !== payload.id);
+          }
+          return prev.map((o) => (o.id === payload.id ? payload : o));
+        });
+      }
+    });
 
-      eventSource.addEventListener("new_order", (event: MessageEvent) => {
-        try {
-          const newOrder: Order = JSON.parse(event.data);
-          setOrders((prev) => {
-            const exists = prev.some((o) => o.id === newOrder.id);
-            if (exists) return prev;
-            return [...prev, newOrder].sort(
-              (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            );
-          });
-          if (soundEnabled) playNotificationChime("order");
-        } catch {}
-      });
-
-      eventSource.addEventListener("order_status_changed", (event: MessageEvent) => {
-        try {
-          const updated: Order = JSON.parse(event.data);
-          setOrders((prev) => {
-            if (updated.status === "ready" || updated.status === "completed" || updated.status === "cancelled") {
-              return prev.filter((o) => o.id !== updated.id);
-            }
-            return prev.map((o) => (o.id === updated.id ? updated : o));
-          });
-        } catch {}
-      });
-    } catch (e) {
-      console.warn("SSE error", e);
-    }
+    // Periodic fast poll every 4 seconds as a secondary fallback
+    const pollInterval = setInterval(() => {
+      fetchKitchenOrders();
+    }, 4000);
 
     return () => {
       clearInterval(interval);
-      if (eventSource) eventSource.close();
+      clearInterval(pollInterval);
+      unsubscribe();
     };
   }, [soundEnabled]);
+
 
   const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
     try {

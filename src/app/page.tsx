@@ -11,6 +11,8 @@ import { CategoryBar } from "@/components/CategoryBar";
 import { MenuItemCard } from "@/components/MenuItemCard";
 import { ItemCustomizerModal } from "@/components/ItemCustomizerModal";
 import { CartDrawer } from "@/components/CartDrawer";
+import { subscribeToLiveEvents } from "@/lib/realtime";
+
 import {
   Search,
   ShoppingBag,
@@ -75,21 +77,18 @@ function MenuContent() {
   useEffect(() => {
     fetchData();
 
-    // Listen to real-time menu updates (price changes, sold out toggle)
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource("/api/events");
-      eventSource.addEventListener("menu_updated", () => {
+    // Supabase Realtime WebSocket subscription (<100ms instant updates)
+    const unsubscribe = subscribeToLiveEvents((event) => {
+      if (event === "menu_updated" || event === "settings_updated") {
         fetchData();
-      });
-    } catch (e) {
-      console.warn("SSE not available", e);
-    }
+      }
+    });
 
     return () => {
-      if (eventSource) eventSource.close();
+      unsubscribe();
     };
   }, []);
+
 
   // Filter items by category, tag, and search query
   const filteredItems = useMemo(() => {

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { CartItem, Order, OrderItem, OrderStatus, OrderType } from "@/types";
 import { supabaseAdmin } from "@/lib/supabase";
+import { broadcastLiveEvent } from "@/lib/realtime";
+
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -198,9 +200,13 @@ export async function POST(request: Request) {
       status: "received",
     });
 
+    await broadcastLiveEvent("new_order", newOrder);
+
     return NextResponse.json(newOrder, { status: 201 });
+
   } catch (error) {
     console.error("Order creation failed:", error);
     return NextResponse.json({ error: "تعذر إرسال الطلب، يرجى المحاولة ثانية" }, { status: 500 });
   }
 }
+

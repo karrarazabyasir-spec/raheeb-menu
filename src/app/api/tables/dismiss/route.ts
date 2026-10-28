@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
+import { broadcastLiveEvent } from "@/lib/realtime";
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +10,9 @@ export async function POST(request: Request) {
     }
 
     const success = db.dismissWaiterCall(callId);
+    await broadcastLiveEvent("waiter_dismissed", { callId });
     return NextResponse.json({ success });
+
   } catch (error) {
     return NextResponse.json({ error: "تعذر إغلاق الطلب" }, { status: 500 });
   }

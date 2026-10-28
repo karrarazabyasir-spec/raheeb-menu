@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
+import { subscribeToLiveEvents, broadcastLiveEvent } from "@/lib/realtime";
+
 import {
   Category,
   Coupon,
@@ -148,7 +150,31 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchData();
+
+    // Supabase Realtime WebSocket subscription (<100ms instant updates)
+    const unsubscribe = subscribeToLiveEvents((event) => {
+      if (
+        event === "new_order" ||
+        event === "order_status_changed" ||
+        event === "table_updated" ||
+        event === "waiter_called" ||
+        event === "waiter_dismissed"
+      ) {
+        fetchData();
+      }
+    });
+
+    // Background poll every 5 seconds as a secondary fallback
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
+
 
   const flashMessage = (msg: string) => {
     setSaveSuccessMsg(msg);

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { Order, OrderStatus } from "@/types";
 import { supabaseAdmin } from "@/lib/supabase";
+import { broadcastLiveEvent } from "@/lib/realtime";
+
+
 
 export async function GET(
   _request: Request,
@@ -81,9 +84,7 @@ export async function PATCH(
       return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
     }
 
-    if (updated) return NextResponse.json(updated);
-
-    const mappedOrder: Order = {
+    const finalOrder = updated || {
       id: supaData.id,
       orderNumber: supaData.order_number,
       type: supaData.type,
@@ -103,9 +104,13 @@ export async function PATCH(
       createdAt: supaData.created_at,
       updatedAt: supaData.updated_at,
     };
-    return NextResponse.json(mappedOrder);
+
+    await broadcastLiveEvent("order_status_changed", finalOrder);
+
+    return NextResponse.json(finalOrder);
   } catch (error) {
     return NextResponse.json({ error: "تعذر تحديث حالة الطلب" }, { status: 400 });
   }
 }
+
 

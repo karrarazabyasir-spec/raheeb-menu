@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Order, OrderStatus, RestaurantSettings, Table, WaiterCall, MenuItem } from "@/types";
 import { playNotificationChime } from "@/lib/audio";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
+import { subscribeToLiveEvents } from "@/lib/realtime";
+
 import {
   Bell,
   Printer,
@@ -83,44 +85,32 @@ export default function CashierPage() {
   useEffect(() => {
     fetchData();
 
-    // SSE connection for live updates
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource("/api/events");
-
-      eventSource.addEventListener("new_order", (event: MessageEvent) => {
-        try {
-          const newOrder: Order = JSON.parse(event.data);
-          setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== newOrder.id)]);
-          if (soundEnabled) playNotificationChime("order");
-        } catch {}
-      });
-
-      eventSource.addEventListener("order_status_changed", (event: MessageEvent) => {
-        try {
-          const updated: Order = JSON.parse(event.data);
-          setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-        } catch {}
-      });
-
-      eventSource.addEventListener("waiter_called", (event: MessageEvent) => {
-        try {
-          fetchData();
-          if (soundEnabled) playNotificationChime("call");
-        } catch {}
-      });
-
-      eventSource.addEventListener("table_updated", () => {
+    // Supabase Realtime WebSocket subscription (<100ms instant updates)
+    const unsubscribe = subscribeToLiveEvents((event, payload) => {
+      if (event === "new_order" && payload) {
+        setOrders((prev) => [payload, ...prev.filter((o) => o.id !== payload.id)]);
+        if (soundEnabled) playNotificationChime("order");
+      } else if (event === "order_status_changed" && payload) {
+        setOrders((prev) => prev.map((o) => (o.id === payload.id ? payload : o)));
+      } else if (event === "waiter_called") {
         fetchData();
-      });
-    } catch (e) {
-      console.warn("SSE connection error", e);
-    }
+        if (soundEnabled) playNotificationChime("call");
+      } else if (event === "table_updated" || event === "waiter_dismissed" || event === "menu_updated") {
+        fetchData();
+      }
+    });
+
+    // Periodic fast poll every 4 seconds as a secondary fallback
+    const interval = setInterval(() => {
+      fetchData();
+    }, 4000);
 
     return () => {
-      if (eventSource) eventSource.close();
+      unsubscribe();
+      clearInterval(interval);
     };
   }, [soundEnabled]);
+
 
   // Update order status
   const handleUpdateStatus = async (orderId: string, status: OrderStatus, reason?: string) => {

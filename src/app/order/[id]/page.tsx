@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Order, RestaurantSettings } from "@/types";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
+import { subscribeToLiveEvents } from "@/lib/realtime";
+
 import {
   CheckCircle2,
   Clock,
@@ -78,27 +80,20 @@ function OrderTrackingContent() {
         .catch(() => {});
     }, 4000);
 
-    // Real-time live status updates via SSE
-    let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource("/api/events");
-      eventSource.addEventListener("order_status_changed", (event: MessageEvent) => {
-        try {
-          const updatedOrder: Order = JSON.parse(event.data);
-          if (updatedOrder.id === orderId) {
-            setOrder(updatedOrder);
-          }
-        } catch {}
-      });
-    } catch (e) {
-      console.warn("SSE failed", e);
-    }
+    // Supabase Realtime WebSocket subscription (<100ms instant updates)
+    const unsubscribe = subscribeToLiveEvents((event, payload) => {
+      if (event === "order_status_changed" && payload && payload.id === orderId) {
+        setOrder(payload);
+        setFetchError(false);
+      }
+    });
 
     return () => {
       clearInterval(pollInterval);
-      if (eventSource) eventSource.close();
+      unsubscribe();
     };
   }, [orderId]);
+
 
   const handleTableService = async (type: "call" | "bill") => {
     if (!order?.tableNumber) return;
