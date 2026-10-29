@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
   --raheeb-primary: #780000;
   --raheeb-primary-hover: #5c0000;
   --raheeb-primary-light: #fdf2f2;
   --raheeb-gold: #c68a2c;
   --raheeb-surface: #ffffff;
-  --raheeb-bg: #fdfbf9;
+  --raheeb-bg: #ffffff;
 }
 
 @theme {
@@ -17,13 +18,19 @@
   --color-raheeb-primary-light: #fdf2f2;
   --color-raheeb-gold: #c68a2c;
   --color-raheeb-surface: #ffffff;
-  --color-raheeb-bg: #fdfbf9;
+  --color-raheeb-bg: #ffffff;
   --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
+}
+
+html,
+body {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--raheeb-bg);
+  background-color: #ffffff !important;
   -webkit-tap-highlight-color: transparent;
 }
 

@@ -137,7 +137,7 @@ function MenuContent() {
 
   if (isLoading || !settings) {
     return (
-      <div className="min-h-screen bg-[#fdfbf9] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <LottiePreloader text="أهلاً بكم في مطعم رهيب... جاري تحضير المينيو" size={190} />
       </div>
     );
@@ -147,7 +147,7 @@ function MenuContent() {
   const currency = isRtl ? settings.currency : settings.currencyEn;
 
   return (
-    <div className="min-h-screen flex flex-col pb-24">
+    <div className="min-h-screen bg-white flex flex-col pb-24">
       {/* Header */}
       <Header settings={settings} />
 
@@ -182,7 +182,7 @@ function MenuContent() {
             onClick={() => setActiveTag("all")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
               activeTag === "all"
-                ? "bg-stone-900 text-white"
+                ? "bg-[#780000] text-white shadow-xs"
                 : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
             }`}
           >

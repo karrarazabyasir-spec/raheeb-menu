@@ -36,7 +36,7 @@ export function CategoryBar({
   const { isRtl, t } = useLanguage();
 
   return (
-    <div className="sticky top-[95px] z-30 bg-[#fdfbf9]/95 backdrop-blur-md border-b border-stone-200/80 py-2.5 px-3">
+    <div className="sticky top-[95px] z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/80 py-2.5 px-3">
       <div className="max-w-6xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
         {/* All button */}
         <button
