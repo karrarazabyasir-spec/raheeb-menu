@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ItemVariant, MenuItem, RestaurantSettings, SelectedOption } from "@/types";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
-import { X, Plus, Minus, Check, AlertCircle, ChevronDown, CheckCircle2, Sparkles } from "lucide-react";
+import { X, Plus, Minus, Check, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 
 interface ItemCustomizerModalProps {
   item: MenuItem | null;
@@ -26,17 +26,12 @@ export function ItemCustomizerModal({
   const [notes, setNotes] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Scroll depth tracking
+  // Elastic bounce physics tracking
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [hasMoreContent, setHasMoreContent] = useState(false);
-
-  const checkScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const isScrollable = el.scrollHeight > el.clientHeight + 15;
-    const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 25;
-    setHasMoreContent(isScrollable && !isAtBottom);
-  };
+  const touchStartY = useRef<number | null>(null);
+  const bounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [bounceOffset, setBounceOffset] = useState(0);
+  const [isBouncing, setIsBouncing] = useState(false);
 
   // Initialize defaults
   useEffect(() => {
@@ -69,16 +64,16 @@ export function ItemCustomizerModal({
       });
     }
     setSelectedOptions(initialOpts);
-
-    // Check scroll after layout settles
-    setTimeout(checkScroll, 100);
+    setBounceOffset(0);
+    setIsBouncing(false);
   }, [item, isRtl]);
 
+  // Cleanup bounce timeouts
   useEffect(() => {
-    setTimeout(checkScroll, 100);
-    window.addEventListener("resize", checkScroll);
-    return () => window.removeEventListener("resize", checkScroll);
-  }, [selectedVariant]);
+    return () => {
+      if (bounceTimeoutRef.current) clearTimeout(bounceTimeoutRef.current);
+    };
+  }, []);
 
   // Lock background page scroll when modal is open
   useEffect(() => {
@@ -90,6 +85,72 @@ export function ItemCustomizerModal({
       };
     }
   }, [item]);
+
+  // Touch gesture handlers for elastic rubber-band physics
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    setIsBouncing(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    const isAtTop = el.scrollTop <= 2;
+    const isNotScrollable = el.scrollHeight <= el.clientHeight + 5;
+
+    // User pulls finger UP (diff < 0), attempting to scroll down past content
+    if ((isAtBottom || isNotScrollable) && diff < 0) {
+      const pullDistance = Math.abs(diff);
+      // Fluid logarithmic rubber resistance formula (max ~48px)
+      const resistance = Math.min(48, Math.pow(pullDistance, 0.72));
+      setBounceOffset(-resistance);
+    }
+    // User pulls finger DOWN (diff > 0), attempting to scroll up past top
+    else if ((isAtTop || isNotScrollable) && diff > 0) {
+      const pullDistance = diff;
+      const resistance = Math.min(36, Math.pow(pullDistance, 0.72));
+      setBounceOffset(resistance);
+    } else {
+      setBounceOffset(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartY.current = null;
+    setIsBouncing(true);
+    setBounceOffset(0);
+  };
+
+  // Trackpad / mouse wheel elastic bounce
+  const handleWheel = (e: React.WheelEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+    const isAtTop = el.scrollTop <= 2;
+    const isNotScrollable = el.scrollHeight <= el.clientHeight + 5;
+
+    if ((isAtBottom || isNotScrollable) && e.deltaY > 8) {
+      if (bounceTimeoutRef.current) clearTimeout(bounceTimeoutRef.current);
+      setIsBouncing(true);
+      setBounceOffset(-20);
+      bounceTimeoutRef.current = setTimeout(() => {
+        setBounceOffset(0);
+      }, 180);
+    } else if ((isAtTop || isNotScrollable) && e.deltaY < -8) {
+      if (bounceTimeoutRef.current) clearTimeout(bounceTimeoutRef.current);
+      setIsBouncing(true);
+      setBounceOffset(20);
+      bounceTimeoutRef.current = setTimeout(() => {
+        setBounceOffset(0);
+      }, 180);
+    }
+  };
 
   if (!item) return null;
 
@@ -181,181 +242,181 @@ export function ItemCustomizerModal({
         {/* Unified Scrollable Container: holds image + details so touching anywhere scrolls the modal */}
         <div
           ref={scrollRef}
-          onScroll={checkScroll}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          onWheel={handleWheel}
           className="overflow-y-auto flex-1 overscroll-contain min-h-0 touch-pan-y"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {/* Item Header Image */}
-          <div className="relative h-52 sm:h-60 w-full shrink-0 bg-stone-100">
-            <img
-              src={item.imageUrl}
-              alt={name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30" />
-          </div>
-
-          {/* Details */}
-          <div className="p-5 space-y-5 text-stone-900">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-stone-900">{name}</h2>
-            <p className="text-xs sm:text-sm text-stone-500 mt-1 leading-relaxed">
-              {description}
-            </p>
-          </div>
-
-          {/* Variants (Sizes) */}
-          {item.variants && item.variants.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-stone-100">
-              <label className="text-xs font-bold text-stone-700 block">
-                {isRtl ? "الحجم المطلوب:" : "Select Size:"}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {item.variants.map((v) => {
-                  const isSelected = selectedVariant?.id === v.id;
-                  return (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => setSelectedVariant(v)}
-                      className={`p-3 rounded-xl border text-start flex flex-col justify-between transition ${
-                        isSelected
-                          ? "border-[#780000] bg-red-50/50 text-[#780000] font-bold shadow-sm"
-                          : "border-stone-200 bg-white hover:bg-stone-50 text-stone-700"
-                      }`}
-                    >
-                      <span className="text-xs font-bold">{isRtl ? v.nameAr : v.nameEn}</span>
-                      <span className="text-sm font-black mt-1">
-                        {v.price} {currency}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Elastic animated wrapper that springs up and bounces back when scrolling past end */}
+          <div
+            style={{
+              transform: `translate3d(0, ${bounceOffset}px, 0)`,
+              transition: isBouncing
+                ? "transform 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                : "none",
+              willChange: "transform",
+            }}
+          >
+            {/* Item Header Image */}
+            <div className="relative h-52 sm:h-60 w-full shrink-0 bg-stone-100">
+              <img
+                src={item.imageUrl}
+                alt={name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30" />
             </div>
-          )}
 
-          {/* Option Groups */}
-          {item.optionGroups &&
-            item.optionGroups.map((group) => (
-              <div key={group.id} className="space-y-2 pt-3 border-t border-stone-100">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-800">
-                    {isRtl ? group.nameAr : group.nameEn}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      group.required
-                        ? "bg-red-100 text-[#780000]"
-                        : "bg-stone-100 text-stone-600"
-                    }`}
-                  >
-                    {group.required ? t("required") : t("optional")}
-                  </span>
-                </div>
+            {/* Details */}
+            <div className="p-5 space-y-5 text-stone-900">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900">{name}</h2>
+              <p className="text-xs sm:text-sm text-stone-500 mt-1 leading-relaxed">
+                {description}
+              </p>
+            </div>
 
-                <div className="space-y-1.5">
-                  {group.options.map((opt) => {
-                    const isSelected = selectedOptions.some((o) => o.optionId === opt.id);
+            {/* Variants (Sizes) */}
+            {item.variants && item.variants.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-stone-100">
+                <label className="text-xs font-bold text-stone-700 block">
+                  {isRtl ? "الحجم المطلوب:" : "Select Size:"}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {item.variants.map((v) => {
+                    const isSelected = selectedVariant?.id === v.id;
                     return (
-                      <div
-                        key={opt.id}
-                        onClick={() =>
-                          handleOptionToggle(
-                            group.id,
-                            isRtl ? group.nameAr : group.nameEn,
-                            opt.id,
-                            isRtl ? opt.nameAr : opt.nameEn,
-                            opt.price,
-                            group.required
-                          )
-                        }
-                        className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setSelectedVariant(v)}
+                        className={`p-3 rounded-xl border text-start flex flex-col justify-between transition ${
                           isSelected
-                            ? "border-[#780000] bg-red-50/50"
-                            : "border-stone-200 hover:bg-stone-50"
+                            ? "border-[#780000] bg-red-50/50 text-[#780000] font-bold shadow-sm"
+                            : "border-stone-200 bg-white hover:bg-stone-50 text-stone-700"
                         }`}
                       >
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
-                              isSelected
-                                ? "bg-[#780000] border-[#780000] text-white"
-                                : "border-stone-300 bg-white"
-                            }`}
-                          >
-                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                          </div>
-                          <span className="text-xs font-semibold text-stone-800">
-                            {isRtl ? opt.nameAr : opt.nameEn}
-                          </span>
-                        </div>
-                        {opt.price > 0 && (
-                          <span className="text-xs font-bold text-[#780000]">
-                            +{opt.price} {currency}
-                          </span>
-                        )}
-                      </div>
+                        <span className="text-xs font-bold">{isRtl ? v.nameAr : v.nameEn}</span>
+                        <span className="text-sm font-black mt-1">
+                          {v.price} {currency}
+                        </span>
+                      </button>
                     );
                   })}
                 </div>
               </div>
-            ))}
+            )}
 
-          {/* Notes */}
-          <div className="space-y-1.5 pt-3 border-t border-stone-100">
-            <label className="text-xs font-bold text-stone-700 block">
-              {t("addNotes")}
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("notesPlaceholder")}
-              rows={2}
-              className="w-full text-xs p-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#780000] bg-stone-50"
-            />
-          </div>
+            {/* Option Groups */}
+            {item.optionGroups &&
+              item.optionGroups.map((group) => (
+                <div key={group.id} className="space-y-2 pt-3 border-t border-stone-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-stone-800">
+                      {isRtl ? group.nameAr : group.nameEn}
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        group.required
+                          ? "bg-red-100 text-[#780000]"
+                          : "bg-stone-100 text-stone-600"
+                      }`}
+                    >
+                      {group.required ? t("required") : t("optional")}
+                    </span>
+                  </div>
 
-          {errorMsg && (
-            <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{errorMsg}</span>
+                  <div className="space-y-1.5">
+                    {group.options.map((opt) => {
+                      const isSelected = selectedOptions.some((o) => o.optionId === opt.id);
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() =>
+                            handleOptionToggle(
+                              group.id,
+                              isRtl ? group.nameAr : group.nameEn,
+                              opt.id,
+                              isRtl ? opt.nameAr : opt.nameEn,
+                              opt.price,
+                              group.required
+                            )
+                          }
+                          className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
+                            isSelected
+                              ? "border-[#780000] bg-red-50/50"
+                              : "border-stone-200 hover:bg-stone-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
+                                isSelected
+                                  ? "bg-[#780000] border-[#780000] text-white"
+                                  : "border-stone-300 bg-white"
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </div>
+                            <span className="text-xs font-semibold text-stone-800">
+                              {isRtl ? opt.nameAr : opt.nameEn}
+                            </span>
+                          </div>
+                          {opt.price > 0 && (
+                            <span className="text-xs font-bold text-[#780000]">
+                              +{opt.price} {currency}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+            {/* Notes */}
+            <div className="space-y-1.5 pt-3 border-t border-stone-100">
+              <label className="text-xs font-bold text-stone-700 block">
+                {t("addNotes")}
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t("notesPlaceholder")}
+                rows={2}
+                className="w-full text-xs p-2.5 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#780000] bg-stone-50"
+              />
             </div>
-          )}
 
-          {/* End of item options closure badge */}
-          <div className="pt-6 pb-2 flex flex-col items-center justify-center text-center space-y-1.5">
-            <div className="flex items-center gap-2.5 w-full">
-              <div className="h-px bg-stone-200 flex-1" />
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold shadow-2xs">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>
-                  {isRtl ? "اكتملت خيارات هذا الصنف • جاهز للطلب" : "All options selected • Ready to add"}
-                </span>
+            {errorMsg && (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
               </div>
-              <div className="h-px bg-stone-200 flex-1" />
-            </div>
-            <p className="text-[10px] text-stone-400 font-medium">
-              {isRtl ? "اضغط على «إضافة إلى الطلب» بالأسفل لإتمام اختيارك" : "Tap Add to Order below to continue"}
-            </p>
-          </div>
-        </div>
-        </div>
+            )}
 
-        {/* Floating "Scroll down for more options" indicator */}
-        {hasMoreContent && (
-          <div className="absolute bottom-[78px] inset-x-0 flex justify-center pointer-events-none z-20 animate-bounce">
-            <button
-              onClick={() => {
-                scrollRef.current?.scrollBy({ top: 160, behavior: "smooth" });
-              }}
-              className="pointer-events-auto bg-stone-900/90 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-lg backdrop-blur-xs flex items-center gap-1.5 border border-white/20 active:scale-95 transition"
-            >
-              <span>{isRtl ? "مرر للأسفل للمزيد من الخيارات" : "Scroll down for more options"}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-amber-400 stroke-[2.5]" />
-            </button>
+            {/* End of item options closure badge */}
+            <div className="pt-6 pb-2 flex flex-col items-center justify-center text-center space-y-1.5">
+              <div className="flex items-center gap-2.5 w-full">
+                <div className="h-px bg-stone-200 flex-1" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    {isRtl ? "اكتملت خيارات هذا الصنف • جاهز للطلب" : "All options selected • Ready to add"}
+                  </span>
+                </div>
+                <div className="h-px bg-stone-200 flex-1" />
+              </div>
+              <p className="text-[10px] text-stone-400 font-medium">
+                {isRtl ? "اضغط على «إضافة إلى الطلب» بالأسفل لإتمام اختيارك" : "Tap Add to Order below to continue"}
+              </p>
+            </div>
           </div>
-        )}
+          </div>
+        </div>
 
         {/* Footer with quantity and add button */}
         <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between gap-3 shrink-0">

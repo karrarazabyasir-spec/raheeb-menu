@@ -18,11 +18,16 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "مطعم رهيب",
   },
+  other: {
+    "color-scheme": "light only light",
+    "supported-color-schemes": "light",
+    "darkreader-lock": "true",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#780000",
-  colorScheme: "only light",
+  themeColor: "#ffffff",
+  colorScheme: "light",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -39,12 +44,13 @@ export default function RootLayout({
       lang="ar"
       dir="rtl"
       className={`${cairo.variable} h-full antialiased font-sans bg-white`}
-      style={{ colorScheme: "only light", backgroundColor: "#ffffff" }}
+      style={{ colorScheme: "light", backgroundColor: "#ffffff" }}
     >
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta name="color-scheme" content="only light" />
-        <meta name="supported-color-schemes" content="only light" />
+        <meta name="color-scheme" content="light only light" />
+        <meta name="supported-color-schemes" content="light" />
+        <meta name="darkreader-lock" content="true" />
       </head>
       <body
         className="min-h-full bg-white text-[#222222] selection:bg-[#780000] selection:text-white flex flex-col font-sans"
