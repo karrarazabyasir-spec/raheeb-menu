@@ -5,12 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { Category, MenuItem, RestaurantSettings } from "@/types";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { CartProvider, useCart } from "@/context/CartContext";
+import { CustomerProvider } from "@/context/CustomerContext";
 import { Header } from "@/components/Header";
 import { Banner } from "@/components/Banner";
 import { CategoryBar } from "@/components/CategoryBar";
 import { MenuItemCard } from "@/components/MenuItemCard";
 import { ItemCustomizerModal } from "@/components/ItemCustomizerModal";
 import { CartDrawer } from "@/components/CartDrawer";
+import { CustomerProfileDrawer } from "@/components/CustomerProfileDrawer";
 import { Footer } from "@/components/Footer";
 import { subscribeToLiveEvents } from "@/lib/realtime";
 import { LottiePreloader } from "@/components/LottiePreloader";
@@ -277,6 +279,9 @@ function MenuContent() {
       {/* Sliding Cart Drawer */}
       <CartDrawer settings={settings} />
 
+      {/* Customer Profile Drawer (طلباتي السابقة، آرائي، عناويني) */}
+      <CustomerProfileDrawer settings={settings} />
+
       {/* Floating Bottom Cart Bar (matching the sleek pill design in the reference) */}
       {totalItemsCount > 0 && (
         <div className="fixed bottom-4 inset-x-3 sm:inset-x-4 max-w-md mx-auto z-30 animate-fade-in">
@@ -313,9 +318,11 @@ export default function HomePage() {
   return (
     <LanguageProvider>
       <CartProvider>
-        <Suspense fallback={null}>
-          <MenuContent />
-        </Suspense>
+        <CustomerProvider>
+          <Suspense fallback={null}>
+            <MenuContent />
+          </Suspense>
+        </CustomerProvider>
       </CartProvider>
     </LanguageProvider>
   );

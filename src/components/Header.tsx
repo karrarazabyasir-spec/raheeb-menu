@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
 import { RestaurantSettings } from "@/types";
+import { useCustomer } from "@/context/CustomerContext";
 import {
   Bell,
   Receipt,
@@ -15,6 +16,7 @@ import {
   Sparkles,
   PhoneCall,
   CheckCircle2,
+  User,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -24,6 +26,7 @@ interface HeaderProps {
 export function Header({ settings }: HeaderProps) {
   const { isRtl, t } = useLanguage();
   const { totalItemsCount, setIsCartOpen, tableNumber } = useCart();
+  const { setIsProfileOpen } = useCustomer();
   const [isCalling, setIsCalling] = useState(false);
   const [callMessage, setCallMessage] = useState<string | null>(null);
 
@@ -133,6 +136,16 @@ export function Header({ settings }: HeaderProps) {
               </button>
             </div>
           )}
+
+          {/* User Profile Button (طلباتي السابقة، آرائي، عناويني) */}
+          <button
+            onClick={() => setIsProfileOpen(true)}
+            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white border border-white/15 shadow-sm active:scale-95"
+            title="حسابي (طلباتي السابقة، آرائي، عناويني)"
+            aria-label="حسابي"
+          >
+            <User className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
+          </button>
 
           {/* Cart Floating / Header Button */}
           <button

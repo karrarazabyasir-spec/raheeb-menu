@@ -6,6 +6,8 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { RestaurantSettings } from "@/types";
 import { LottiePreloader } from "@/components/LottiePreloader";
+import { useCustomer } from "@/context/CustomerContext";
+import { MapPin } from "lucide-react";
 
 import {
   X,
@@ -41,8 +43,11 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     tableNumber,
   } = useCart();
 
+  const { addSavedOrder, savedAddresses, defaultAddress } = useCustomer();
+
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerPhone, setCustomerPhone] = useState(defaultAddress?.phone || "");
+  const [selectedAddressId, setSelectedAddressId] = useState<string>(defaultAddress?.id || "");
   const [pickupTime, setPickupTime] = useState("في أسرع وقت");
 
   const [couponCode, setCouponCode] = useState("");
@@ -154,6 +159,30 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         return;
       }
 
+      // Save order to customer's local history (no login needed!)
+      addSavedOrder({
+        id: data.id,
+        orderNumber: data.orderNumber,
+        type: finalOrderType,
+        tableNumber: isTableOrder ? tableNumber : undefined,
+        customerName: !isTableOrder ? customerName.trim() : undefined,
+        customerPhone: !isTableOrder ? customerPhone.trim() : undefined,
+        pickupTime: !isTableOrder ? pickupTime : undefined,
+        items: items.map((i) => ({
+          menuItemId: i.menuItemId,
+          nameAr: i.nameAr,
+          nameEn: i.nameEn,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          totalPrice: i.totalPrice,
+          variantName: i.selectedVariant?.nameAr,
+          selectedOptionsText: i.selectedOptions.map((o) => o.optionName).join(", "),
+          imageUrl: i.imageUrl,
+        })),
+        total: data.total || total,
+        createdAt: new Date().toISOString(),
+      });
+
       // Success: clear cart and redirect to live tracking page
       clearCart();
       setIsCartOpen(false);
@@ -248,6 +277,36 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                 </div>
 
                 <div className="space-y-2">
+                  {/* Saved Address Quick Picker */}
+                  {savedAddresses.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-stone-600 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-rose-600" />
+                        <span>اختر عنوان التوصيل المحفوظ:</span>
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {savedAddresses.map((addr) => (
+                          <button
+                            type="button"
+                            key={addr.id}
+                            onClick={() => {
+                              setSelectedAddressId(addr.id);
+                              if (addr.phone && !customerPhone) setCustomerPhone(addr.phone);
+                            }}
+                            className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${
+                              selectedAddressId === addr.id
+                                ? "bg-[#780000] text-white border-[#780000] shadow-xs"
+                                : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"
+                            }`}
+                          >
+                            <span>{addr.title}</span>
+                            <span className="text-[9px] opacity-75 mr-1">({addr.area})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="relative">
                     <User className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
                     <input

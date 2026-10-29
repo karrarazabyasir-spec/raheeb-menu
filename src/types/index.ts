@@ -164,3 +164,44 @@ export interface WaiterCall {
   status: "pending" | "handled";
   createdAt: string;
 }
+
+export interface SavedCustomerOrder {
+  id: string;
+  orderNumber: number;
+  type: OrderType;
+  tableNumber?: number;
+  customerName?: string;
+  customerPhone?: string;
+  pickupTime?: string;
+  items: {
+    menuItemId: string;
+    nameAr: string;
+    nameEn: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantName?: string;
+    selectedOptionsText?: string;
+    imageUrl?: string;
+  }[];
+  total: number;
+  createdAt: string;
+}
+
+export interface CustomerReview {
+  id: string;
+  rating: number; // 1 to 5
+  tags: string[];
+  comment: string;
+  createdAt: string;
+}
+
+export interface SavedAddress {
+  id: string;
+  title: string; // e.g. "المنزل", "العمل"
+  area: string;
+  street: string;
+  phone: string;
+  isDefault?: boolean;
+}
+
