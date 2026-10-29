@@ -28,10 +28,10 @@ export default function KitchenPage() {
     try {
       const res = await fetch("/api/orders");
       const data: Order[] = await res.json();
-      // Only show active kitchen orders (preparing or received), sorted oldest first
+      // Only show active kitchen orders (preparing or received), sorted newest first
       const kitchenOrders = data
         .filter((o) => o.status === "preparing" || o.status === "received")
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setOrders(kitchenOrders);
     } catch (e) {
       console.error(e);
@@ -51,8 +51,8 @@ export default function KitchenPage() {
         setOrders((prev) => {
           const exists = prev.some((o) => o.id === payload.id);
           if (exists) return prev;
-          return [...prev, payload].sort(
-            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          return [payload, ...prev].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         });
         if (soundEnabled) playNotificationChime("order");
@@ -128,7 +128,7 @@ export default function KitchenPage() {
                 {orders.length} طلبات قيد العمل
               </span>
             </h1>
-            <p className="text-[11px] text-stone-400">مرتبة تلقائياً بالأقدم أولاً</p>
+            <p className="text-[11px] text-stone-400">مرتبة تلقائياً بالأحدث أولاً</p>
           </div>
         </div>
 
