@@ -59,6 +59,17 @@ export function ItemCustomizerModal({
     setSelectedOptions(initialOpts);
   }, [item, isRtl]);
 
+  // Lock background page scroll when modal is open
+  useEffect(() => {
+    if (item) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [item]);
+
   if (!item) return null;
 
   const currency = isRtl ? settings.currency : settings.currencyEn;
@@ -127,31 +138,39 @@ export function ItemCustomizerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in touch-none"
+      onClick={onClose}
+    >
       <div
-        className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up"
+        className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition"
+          className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 shadow-md transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Item Header Image */}
-        <div className="relative h-52 sm:h-60 w-full shrink-0 bg-stone-100">
-          <img
-            src={item.imageUrl}
-            alt={name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30" />
-        </div>
+        {/* Unified Scrollable Container: holds image + details so touching anywhere scrolls the modal */}
+        <div
+          className="overflow-y-auto flex-1 overscroll-contain min-h-0 touch-pan-y"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {/* Item Header Image */}
+          <div className="relative h-52 sm:h-60 w-full shrink-0 bg-stone-100">
+            <img
+              src={item.imageUrl}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30" />
+          </div>
 
-        {/* Scrollable details */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-5 text-stone-900">
+          {/* Details */}
+          <div className="p-5 space-y-5 text-stone-900">
           <div>
             <h2 className="text-xl sm:text-2xl font-black text-stone-900">{name}</h2>
             <p className="text-xs sm:text-sm text-stone-500 mt-1 leading-relaxed">
@@ -277,6 +296,7 @@ export function ItemCustomizerModal({
               <span>{errorMsg}</span>
             </div>
           )}
+        </div>
         </div>
 
         {/* Footer with quantity and add button */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCustomer } from "@/context/CustomerContext";
@@ -90,6 +90,17 @@ export function CustomerProfileDrawer({ settings }: CustomerProfileDrawerProps) 
   const [newStreet, setNewStreet] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [addressError, setAddressError] = useState<string | null>(null);
+
+  // Lock background scroll when profile drawer is open
+  useEffect(() => {
+    if (isProfileOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [isProfileOpen]);
 
   if (!isProfileOpen) return null;
 
