@@ -66,6 +66,28 @@ function OrderTrackingContent() {
   useEffect(() => {
     fetchOrderAndSettings();
 
+    const statusRank: Record<string, number> = {
+      received: 0,
+      preparing: 1,
+      ready: 2,
+      completed: 3,
+      cancelled: 4,
+    };
+
+    const applyOrderUpdate = (newOrder: Order) => {
+      setOrder((prev) => {
+        if (!prev) return newOrder;
+        // Prevent state regression: ignore stale packets with older status
+        const prevRank = statusRank[prev.status] ?? 0;
+        const newRank = statusRank[newOrder.status] ?? 0;
+        if (newOrder.status !== "cancelled" && newRank < prevRank) {
+          return prev;
+        }
+        return newOrder;
+      });
+      setFetchError(false);
+    };
+
     // Poll every 4 seconds as a reliable backup to SSE
     const pollInterval = setInterval(() => {
       fetch(`/api/orders/${orderId}`)
@@ -74,9 +96,8 @@ function OrderTrackingContent() {
           return null;
         })
         .then((data) => {
-          if (data) {
-            setOrder(data);
-            setFetchError(false);
+          if (data && data.id === orderId) {
+            applyOrderUpdate(data);
           }
         })
         .catch(() => {});
@@ -85,8 +106,7 @@ function OrderTrackingContent() {
     // Supabase Realtime WebSocket subscription (<100ms instant updates)
     const unsubscribe = subscribeToLiveEvents((event, payload) => {
       if (event === "order_status_changed" && payload && payload.id === orderId) {
-        setOrder(payload);
-        setFetchError(false);
+        applyOrderUpdate(payload);
       }
     });
 

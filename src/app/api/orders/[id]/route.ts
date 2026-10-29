@@ -12,49 +12,53 @@ export async function GET(
 ) {
   const { id } = await params;
   
-  // 1. First check in-memory store
-  let order = db.getOrderById(id);
+  // 1. Always query Supabase Cloud Database first (Single Source of Truth across all Vercel instances)
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  // 2. If not found in local memory, fetch from Supabase Cloud database
-  if (!order) {
-    try {
-      const { data, error } = await supabaseAdmin
-        .from("orders")
-        .select("*")
-        .eq("id", id)
-        .single();
+    if (data && !error) {
+      const order: Order = {
+        id: data.id,
+        orderNumber: data.order_number,
+        type: data.type,
+        tableNumber: data.table_number || undefined,
+        customerName: data.customer_name || undefined,
+        customerPhone: data.customer_phone || undefined,
+        pickupTime: data.pickup_time || undefined,
+        items: data.items,
+        subtotal: data.subtotal,
+        discount: data.discount,
+        serviceFee: data.service_fee,
+        tax: data.tax,
+        total: data.total,
+        paymentMethod: data.payment_method,
+        status: data.status,
+        cancelReason: data.cancel_reason || undefined,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
 
-      if (data && !error) {
-        order = {
-          id: data.id,
-          orderNumber: data.order_number,
-          type: data.type,
-          tableNumber: data.table_number || undefined,
-          customerName: data.customer_name || undefined,
-          customerPhone: data.customer_phone || undefined,
-          pickupTime: data.pickup_time || undefined,
-          items: data.items,
-          subtotal: data.subtotal,
-          discount: data.discount,
-          serviceFee: data.service_fee,
-          tax: data.tax,
-          total: data.total,
-          paymentMethod: data.payment_method,
-          status: data.status,
-          cancelReason: data.cancel_reason || undefined,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        };
-      }
-    } catch (e) {
-      console.error("Supabase order fetch error:", e);
+      // Keep local store in sync with cloud database
+      try {
+        db.updateOrderStatus(order.id, order.status, order.cancelReason);
+      } catch {}
+
+      return NextResponse.json(order);
     }
+  } catch (e) {
+    console.error("Supabase order fetch error, falling back to local store:", e);
   }
 
-  if (!order) {
+  // 2. Fallback to in-memory/file store if cloud fetch fails
+  const localOrder = db.getOrderById(id);
+  if (!localOrder) {
     return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
   }
-  return NextResponse.json(order);
+  return NextResponse.json(localOrder);
 }
 
 export async function PATCH(
