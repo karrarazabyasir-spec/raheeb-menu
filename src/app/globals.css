@@ -2,6 +2,8 @@
 
 :root {
   color-scheme: light;
+  --background: #ffffff;
+  --foreground: #171717;
   --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
   --raheeb-primary: #780000;
   --raheeb-primary-hover: #5c0000;
@@ -25,38 +27,36 @@
 html,
 body,
 main,
-div {
+div,
+input,
+textarea,
+select,
+button,
+dialog {
   forced-color-adjust: none !important;
   -webkit-forced-color-adjust: none !important;
 }
 
-html,
-body {
+html {
   color-scheme: light !important;
-  background-color: #ffffff !important;
-  background: #ffffff !important;
-  color: #222222 !important;
-  forced-color-adjust: none !important;
-  -webkit-forced-color-adjust: none !important;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root,
-  html,
-  body {
-    color-scheme: light !important;
-    background-color: #ffffff !important;
-    background: #ffffff !important;
-    color: #222222 !important;
-    forced-color-adjust: none !important;
-    -webkit-forced-color-adjust: none !important;
-  }
+  background-color: var(--background) !important;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #ffffff !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  color-scheme: light !important;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure native form controls and scrollbars never switch to dark styling */
+input,
+textarea,
+select,
+button,
+dialog {
+  color-scheme: light !important;
 }
 
 /* Custom scrollbars for category bar */
@@ -94,4 +94,3 @@ body {
     margin: 0;
   }
 }
-

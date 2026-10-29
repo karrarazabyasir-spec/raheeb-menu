@@ -19,9 +19,8 @@ export const metadata: Metadata = {
     title: "مطعم رهيب",
   },
   other: {
-    "color-scheme": "light only light",
+    "color-scheme": "light",
     "supported-color-schemes": "light",
-    "darkreader-lock": "true",
   },
 };
 
@@ -43,18 +42,16 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`${cairo.variable} h-full antialiased font-sans bg-white`}
-      style={{ colorScheme: "light", backgroundColor: "#ffffff" }}
+      className={`${cairo.variable} h-full antialiased font-sans`}
+      style={{ colorScheme: "light" }}
     >
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta name="color-scheme" content="light only light" />
+        <meta name="color-scheme" content="light" />
         <meta name="supported-color-schemes" content="light" />
-        <meta name="darkreader-lock" content="true" />
       </head>
       <body
-        className="min-h-full bg-white text-[#222222] selection:bg-[#780000] selection:text-white flex flex-col font-sans"
-        style={{ backgroundColor: "#ffffff" }}
+        className="min-h-full selection:bg-[#780000] selection:text-white flex flex-col font-sans"
       >
         {children}
       </body>
