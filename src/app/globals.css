@@ -23,11 +23,21 @@
 }
 
 html,
+body,
+main,
+div {
+  forced-color-adjust: none !important;
+  -webkit-forced-color-adjust: none !important;
+}
+
+html,
 body {
   color-scheme: only light !important;
   background-color: #ffffff !important;
   background: #ffffff !important;
   color: #222222 !important;
+  forced-color-adjust: none !important;
+  -webkit-forced-color-adjust: none !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +48,8 @@ body {
     background-color: #ffffff !important;
     background: #ffffff !important;
     color: #222222 !important;
+    forced-color-adjust: none !important;
+    -webkit-forced-color-adjust: none !important;
   }
 }
 

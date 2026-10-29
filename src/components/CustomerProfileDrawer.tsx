@@ -37,6 +37,10 @@ export function CustomerProfileDrawer({ settings }: CustomerProfileDrawerProps) 
     setIsProfileOpen,
     activeProfileTab,
     setActiveProfileTab,
+    customerPhone,
+    setCustomerPhone,
+    syncCustomerByPhone,
+    isSyncing,
     savedOrders,
     savedReviews,
     addReview,
@@ -48,6 +52,30 @@ export function CustomerProfileDrawer({ settings }: CustomerProfileDrawerProps) 
   } = useCustomer();
 
   const { addToCart, setIsCartOpen } = useCart();
+
+  // Cloud Sync by Phone State
+  const [showPhoneInput, setShowPhoneInput] = useState(false);
+  const [syncPhoneInput, setSyncPhoneInput] = useState(customerPhone || "");
+  const [syncMessage, setSyncMessage] = useState<{ text: string; isError: boolean } | null>(null);
+
+  const handleDoSync = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!syncPhoneInput.trim()) return;
+    setSyncMessage(null);
+    const result = await syncCustomerByPhone(syncPhoneInput);
+    if (result.success) {
+      setSyncMessage({
+        text: `تم استرجاع سجل طلباتك وعناوينك (${result.count} طلب) بنجاح! 🎉`,
+        isError: false,
+      });
+      setShowPhoneInput(false);
+    } else {
+      setSyncMessage({
+        text: result.error || "لم يتم العثور على طلبات سابقة مسجلة بهذا الرقم",
+        isError: true,
+      });
+    }
+  };
 
   // Review Form State
   const [rating, setRating] = useState(5);
@@ -176,6 +204,67 @@ export function CustomerProfileDrawer({ settings }: CustomerProfileDrawerProps) 
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Quick Phone Sync Bar (Cross-browser / Cross-device recovery) */}
+        <div className="bg-amber-50/90 border-b border-amber-200/80 px-3.5 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-amber-950 font-bold min-w-0">
+              <Phone className="w-3.5 h-3.5 text-[#780000] shrink-0" />
+              <span className="truncate">
+                {customerPhone ? `متزامن برقم: ${customerPhone}` : "استرجاع طلباتك من أي جهاز:"}
+              </span>
+            </div>
+            {!showPhoneInput && (
+              <button
+                onClick={() => {
+                  setShowPhoneInput(true);
+                  setSyncMessage(null);
+                }}
+                className="text-[11px] font-bold text-[#780000] hover:underline shrink-0"
+              >
+                {customerPhone ? "تغيير الرقم" : "أدخل رقم هاتفك"}
+              </button>
+            )}
+          </div>
+
+          {showPhoneInput && (
+            <form onSubmit={handleDoSync} className="mt-2 flex items-center gap-1.5 animate-fade-in">
+              <input
+                type="tel"
+                value={syncPhoneInput}
+                onChange={(e) => setSyncPhoneInput(e.target.value)}
+                placeholder="أدخل رقمك e.g. 0780xxxxxxx"
+                dir="ltr"
+                className="flex-1 text-xs px-2.5 py-1.5 bg-white border border-amber-300 rounded-lg text-stone-900 focus:outline-none focus:ring-1 focus:ring-[#780000]"
+              />
+              <button
+                type="submit"
+                disabled={isSyncing || !syncPhoneInput.trim()}
+                style={{ backgroundColor: brandColor }}
+                className="px-3 py-1.5 rounded-lg text-white text-xs font-bold shrink-0 hover:brightness-105 active:scale-95 disabled:opacity-50 transition flex items-center gap-1"
+              >
+                {isSyncing ? (
+                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span>مزامنة</span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPhoneInput(false)}
+                className="px-2 py-1.5 text-xs text-stone-500 hover:text-stone-800"
+              >
+                إلغاء
+              </button>
+            </form>
+          )}
+
+          {syncMessage && (
+            <p className={`text-[11px] font-bold mt-1.5 ${syncMessage.isError ? "text-red-600" : "text-emerald-700"}`}>
+              {syncMessage.text}
+            </p>
+          )}
         </div>
 
         {/* 3 Tabs Bar */}

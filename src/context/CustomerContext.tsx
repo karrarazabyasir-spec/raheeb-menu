@@ -9,6 +9,11 @@ interface CustomerContextType {
   activeProfileTab: "orders" | "reviews" | "addresses";
   setActiveProfileTab: (tab: "orders" | "reviews" | "addresses") => void;
 
+  customerPhone: string;
+  setCustomerPhone: (phone: string) => void;
+  syncCustomerByPhone: (phone: string) => Promise<{ success: boolean; count: number; error?: string }>;
+  isSyncing: boolean;
+
   savedOrders: SavedCustomerOrder[];
   addSavedOrder: (order: SavedCustomerOrder) => void;
 
@@ -29,6 +34,11 @@ const CustomerContext = createContext<CustomerContextType>({
   activeProfileTab: "orders",
   setActiveProfileTab: () => {},
 
+  customerPhone: "",
+  setCustomerPhone: () => {},
+  syncCustomerByPhone: async () => ({ success: false, count: 0 }),
+  isSyncing: false,
+
   savedOrders: [],
   addSavedOrder: () => {},
 
@@ -46,10 +56,14 @@ const CustomerContext = createContext<CustomerContextType>({
 const ORDERS_KEY = "raheeb_customer_orders_v1";
 const REVIEWS_KEY = "raheeb_customer_reviews_v1";
 const ADDRESSES_KEY = "raheeb_customer_addresses_v1";
+const PHONE_KEY = "raheeb_customer_phone_v1";
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [activeProfileTab, setActiveProfileTab] = useState<"orders" | "reviews" | "addresses">("orders");
+
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [savedOrders, setSavedOrders] = useState<SavedCustomerOrder[]>([]);
   const [savedReviews, setSavedReviews] = useState<CustomerReview[]>([]);
@@ -59,6 +73,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   // Load from LocalStorage
   useEffect(() => {
     try {
+      const savedPhone = localStorage.getItem(PHONE_KEY);
+      if (savedPhone) setCustomerPhone(savedPhone);
+
       const orders = localStorage.getItem(ORDERS_KEY);
       if (orders) setSavedOrders(JSON.parse(orders));
 
@@ -69,14 +86,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       if (addresses) {
         setSavedAddresses(JSON.parse(addresses));
       } else {
-        // Pre-populate with a convenient default template
         const initial = [
           {
             id: "addr-home",
             title: "المنزل",
             area: "المنصور",
             street: "قرب تقاطع الرواد - شارع 14 رمضان",
-            phone: "",
+            phone: savedPhone || "",
             isDefault: true,
           },
         ];
@@ -88,6 +104,16 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     setIsLoaded(true);
   }, []);
 
+  // Save phone
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      if (customerPhone) {
+        localStorage.setItem(PHONE_KEY, customerPhone);
+      }
+    } catch {}
+  }, [customerPhone, isLoaded]);
+
   // Save Orders
   useEffect(() => {
     if (!isLoaded) return;
@@ -96,7 +122,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [savedOrders, isLoaded]);
 
-  // Save Reviews
+  // Save Reviews & auto-sync to cloud if phone is known
   useEffect(() => {
     if (!isLoaded) return;
     try {
@@ -104,13 +130,60 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [savedReviews, isLoaded]);
 
-  // Save Addresses
+  // Save Addresses & auto-sync to cloud if phone is known
   useEffect(() => {
     if (!isLoaded) return;
     try {
       localStorage.setItem(ADDRESSES_KEY, JSON.stringify(savedAddresses));
+      if (customerPhone && customerPhone.length >= 7) {
+        fetch("/api/customer/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: customerPhone,
+            addresses: savedAddresses,
+            reviews: savedReviews,
+          }),
+        }).catch(() => {});
+      }
     } catch {}
-  }, [savedAddresses, isLoaded]);
+  }, [savedAddresses, customerPhone, isLoaded]);
+
+  // Cross-browser sync function using phone number
+  const syncCustomerByPhone = async (phone: string): Promise<{ success: boolean; count: number; error?: string }> => {
+    if (!phone || phone.trim().length < 6) {
+      return { success: false, count: 0, error: "رقم الهاتف غير صالح" };
+    }
+
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`/api/customer/sync?phone=${encodeURIComponent(phone.trim())}`);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setCustomerPhone(data.phone || phone.trim());
+
+        if (Array.isArray(data.orders)) {
+          setSavedOrders(data.orders);
+        }
+        if (Array.isArray(data.addresses) && data.addresses.length > 0) {
+          setSavedAddresses(data.addresses);
+        }
+        if (Array.isArray(data.reviews) && data.reviews.length > 0) {
+          setSavedReviews(data.reviews);
+        }
+
+        return { success: true, count: data.orders?.length || 0 };
+      } else {
+        return { success: false, count: 0, error: data.error || "لم يتم العثور على سجل بهذا الرقم" };
+      }
+    } catch (err) {
+      console.error("Sync error:", err);
+      return { success: false, count: 0, error: "تعذر الاتصال بالسيرفر" };
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const addSavedOrder = (order: SavedCustomerOrder) => {
     setSavedOrders((prev) => {
@@ -176,6 +249,10 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         setIsProfileOpen,
         activeProfileTab,
         setActiveProfileTab,
+        customerPhone,
+        setCustomerPhone,
+        syncCustomerByPhone,
+        isSyncing,
         savedOrders,
         addSavedOrder,
         savedReviews,

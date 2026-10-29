@@ -43,10 +43,16 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     tableNumber,
   } = useCart();
 
-  const { addSavedOrder, savedAddresses, defaultAddress } = useCustomer();
+  const {
+    addSavedOrder,
+    savedAddresses,
+    defaultAddress,
+    customerPhone: contextPhone,
+    setCustomerPhone: setContextPhone,
+  } = useCustomer();
 
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState(defaultAddress?.phone || "");
+  const [customerPhone, setCustomerPhone] = useState(contextPhone || defaultAddress?.phone || "");
   const [selectedAddressId, setSelectedAddressId] = useState<string>(defaultAddress?.id || "");
   const [pickupTime, setPickupTime] = useState("في أسرع وقت");
 
@@ -157,6 +163,10 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         setSubmitError(data.error || "فشل إرسال الطلب");
         setIsSubmitting(false);
         return;
+      }
+
+      if (customerPhone.trim()) {
+        setContextPhone(customerPhone.trim());
       }
 
       // Save order to customer's local history (no login needed!)
