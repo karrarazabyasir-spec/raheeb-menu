@@ -182,7 +182,7 @@ export default function AdminPage() {
     fetchData();
 
     // Supabase Realtime WebSocket subscription (<100ms instant updates)
-    const unsubscribe = subscribeToLiveEvents((event) => {
+    const unsubscribe = subscribeToLiveEvents((event, payload) => {
       if (
         event === "new_order" ||
         event === "order_status_changed" ||
@@ -191,6 +191,10 @@ export default function AdminPage() {
         event === "waiter_dismissed"
       ) {
         fetchLiveOrdersAndTables();
+      } else if (event === "menu_updated" && payload && payload.id) {
+        setMenuItems((prev) =>
+          prev.map((i) => (i.id === payload.id ? { ...i, ...payload } : i))
+        );
       }
     });
 

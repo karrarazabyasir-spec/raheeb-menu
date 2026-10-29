@@ -95,7 +95,15 @@ export default function CashierPage() {
       } else if (event === "waiter_called") {
         fetchData();
         if (soundEnabled) playNotificationChime("call");
-      } else if (event === "table_updated" || event === "waiter_dismissed" || event === "menu_updated") {
+      } else if (event === "menu_updated") {
+        if (payload && payload.id) {
+          setMenuItems((prev) =>
+            prev.map((i) => (i.id === payload.id ? { ...i, ...payload } : i))
+          );
+        } else {
+          fetchData();
+        }
+      } else if (event === "table_updated" || event === "waiter_dismissed") {
         fetchData();
       }
     });
@@ -159,19 +167,43 @@ export default function CashierPage() {
     }
   };
 
+  const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
+
   // Toggle item availability (نفد)
   const handleToggleItem = async (itemId: string, currentAvailable: boolean) => {
+    const newAvailable = !currentAvailable;
+    setTogglingItemId(itemId);
+
+    // 1. Instant optimistic update so the button updates immediately
+    setMenuItems((prev) =>
+      prev.map((i) => (i.id === itemId ? { ...i, isAvailable: newAvailable } : i))
+    );
+
     try {
-      await fetch(`/api/menu/${itemId}`, {
+      const res = await fetch(`/api/menu/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggle_availability", isAvailable: !currentAvailable }),
+        body: JSON.stringify({ action: "toggle_availability", isAvailable: newAvailable }),
       });
-      setMenuItems((prev) =>
-        prev.map((i) => (i.id === itemId ? { ...i, isAvailable: !currentAvailable } : i))
-      );
+      if (res.ok) {
+        const updated = await res.json();
+        setMenuItems((prev) =>
+          prev.map((i) => (i.id === itemId ? { ...i, ...updated } : i))
+        );
+      } else {
+        // Rollback on non-ok response
+        setMenuItems((prev) =>
+          prev.map((i) => (i.id === itemId ? { ...i, isAvailable: currentAvailable } : i))
+        );
+      }
     } catch (e) {
       console.error(e);
+      // Rollback on network error
+      setMenuItems((prev) =>
+        prev.map((i) => (i.id === itemId ? { ...i, isAvailable: currentAvailable } : i))
+      );
+    } finally {
+      setTogglingItemId(null);
     }
   };
 
@@ -762,13 +794,17 @@ export default function CashierPage() {
                   </div>
 
                   <button
+                    disabled={togglingItemId === item.id}
                     onClick={() => handleToggleItem(item.id, item.isAvailable)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                       item.isAvailable
                         ? "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
                         : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
-                    }`}
+                    } ${togglingItemId === item.id ? "opacity-60 cursor-wait" : ""}`}
                   >
+                    {togglingItemId === item.id && (
+                      <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                    )}
                     {item.isAvailable ? "وضع «نفد»" : "إعادة للتوفر"}
                   </button>
                 </div>

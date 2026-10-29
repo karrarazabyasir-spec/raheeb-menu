@@ -181,13 +181,33 @@ export const db = {
     return true;
   },
 
+  setMenuItemsCache(items: MenuItem[]): void {
+    const data = readData();
+    data.menuItems = items;
+    memoryCache = data;
+  },
+
+  async syncToCloud(): Promise<void> {
+    const data = readData();
+    try {
+      await supabaseAdmin.storage
+        .from("menu-images")
+        .upload("config/store.json", JSON.stringify(data, null, 2), {
+          upsert: true,
+          contentType: "application/json",
+        });
+    } catch (cloudErr) {
+      console.error("Cloud storage sync error:", cloudErr);
+    }
+  },
+
   toggleItemAvailability(id: string, isAvailable?: boolean): MenuItem | null {
     const data = readData();
     const item = data.menuItems.find((i) => i.id === id);
     if (!item) return null;
     item.isAvailable = typeof isAvailable === "boolean" ? isAvailable : !item.isAvailable;
     writeData(data);
-    eventBus.emit("menu_updated");
+    eventBus.emit("menu_updated", item);
     return item;
   },
 

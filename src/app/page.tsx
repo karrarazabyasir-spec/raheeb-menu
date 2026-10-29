@@ -89,8 +89,16 @@ function MenuContent() {
     fetchData();
 
     // Supabase Realtime WebSocket subscription (<100ms instant updates)
-    const unsubscribe = subscribeToLiveEvents((event) => {
-      if (event === "menu_updated" || event === "settings_updated") {
+    const unsubscribe = subscribeToLiveEvents((event, payload) => {
+      if (event === "menu_updated") {
+        if (payload && payload.id) {
+          setMenuItems((prev) =>
+            prev.map((i) => (i.id === payload.id ? { ...i, ...payload } : i))
+          );
+        } else {
+          fetchData();
+        }
+      } else if (event === "settings_updated") {
         fetchData();
       }
     });
