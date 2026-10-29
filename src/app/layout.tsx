@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#780000",
-  colorScheme: "light",
+  colorScheme: "only light",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -35,13 +35,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased font-sans bg-white`} style={{ colorScheme: "light" }}>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${cairo.variable} h-full antialiased font-sans bg-white`}
+      style={{ colorScheme: "only light", backgroundColor: "#ffffff" }}
+    >
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <meta name="color-scheme" content="light" />
-        <meta name="supported-color-schemes" content="light" />
+        <meta name="color-scheme" content="only light" />
+        <meta name="supported-color-schemes" content="only light" />
       </head>
-      <body className="min-h-full bg-white text-[#222222] selection:bg-[#780000] selection:text-white flex flex-col font-sans">
+      <body
+        className="min-h-full bg-white text-[#222222] selection:bg-[#780000] selection:text-white flex flex-col font-sans"
+        style={{ backgroundColor: "#ffffff" }}
+      >
         {children}
       </body>
     </html>

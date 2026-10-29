@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
+  color-scheme: only light;
   --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
   --raheeb-primary: #780000;
   --raheeb-primary-hover: #5c0000;
@@ -24,8 +24,21 @@
 
 html,
 body {
-  color-scheme: light !important;
+  color-scheme: only light !important;
   background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #222222 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root,
+  html,
+  body {
+    color-scheme: only light !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #222222 !important;
+  }
 }
 
 body {

@@ -147,7 +147,7 @@ function MenuContent() {
   const currency = isRtl ? settings.currency : settings.currencyEn;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pb-24">
+    <div className="min-h-screen bg-white flex flex-col pb-24" style={{ backgroundColor: "#ffffff" }}>
       {/* Header */}
       <Header settings={settings} />
 

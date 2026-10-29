@@ -4,7 +4,7 @@
   "description": "مينيو وطلب إلكتروني مباشر لمطعم رهيب",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fdfbf9",
+  "background_color": "#ffffff",
   "theme_color": "#780000",
   "icons": [
     {
