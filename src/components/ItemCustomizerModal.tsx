@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ItemVariant, MenuItem, RestaurantSettings, SelectedOption } from "@/types";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
-import { X, Plus, Minus, Check, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
+import { X, Plus, Minus, Check, AlertCircle, Sparkles } from "lucide-react";
 
 interface ItemCustomizerModalProps {
   item: MenuItem | null;
@@ -397,23 +397,6 @@ export function ItemCustomizerModal({
                 <span>{errorMsg}</span>
               </div>
             )}
-
-            {/* End of item options closure badge */}
-            <div className="pt-6 pb-2 flex flex-col items-center justify-center text-center space-y-1.5">
-              <div className="flex items-center gap-2.5 w-full">
-                <div className="h-px bg-stone-200 flex-1" />
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold shadow-2xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>
-                    {isRtl ? "اكتملت خيارات هذا الصنف • جاهز للطلب" : "All options selected • Ready to add"}
-                  </span>
-                </div>
-                <div className="h-px bg-stone-200 flex-1" />
-              </div>
-              <p className="text-[10px] text-stone-400 font-medium">
-                {isRtl ? "اضغط على «إضافة إلى الطلب» بالأسفل لإتمام اختيارك" : "Tap Add to Order below to continue"}
-              </p>
-            </div>
           </div>
           </div>
         </div>
