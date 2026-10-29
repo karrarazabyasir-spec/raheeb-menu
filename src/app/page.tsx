@@ -11,6 +11,7 @@ import { CategoryBar } from "@/components/CategoryBar";
 import { MenuItemCard } from "@/components/MenuItemCard";
 import { ItemCustomizerModal } from "@/components/ItemCustomizerModal";
 import { CartDrawer } from "@/components/CartDrawer";
+import { Footer } from "@/components/Footer";
 import { subscribeToLiveEvents } from "@/lib/realtime";
 import { LottiePreloader } from "@/components/LottiePreloader";
 
@@ -31,7 +32,7 @@ import {
 function MenuContent() {
   const searchParams = useSearchParams();
   const { isRtl, t } = useLanguage();
-  const { setTableNumber, totalItemsCount, subtotal, setIsCartOpen } = useCart();
+  const { setTableNumber, setOrderType, totalItemsCount, subtotal, setIsCartOpen } = useCart();
 
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -42,16 +43,21 @@ function MenuContent() {
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Read table number from URL query ?table=X
+  // Automatically detect table from URL QR query (?table=X), otherwise default to delivery
   useEffect(() => {
     const tbl = searchParams.get("table");
     if (tbl) {
       const num = parseInt(tbl, 10);
       if (!isNaN(num) && num > 0) {
         setTableNumber(num);
+        setOrderType("table");
+        return;
       }
     }
-  }, [searchParams, setTableNumber]);
+    // Direct link -> automatically delivery / takeaway
+    setTableNumber(null);
+    setOrderType("takeaway");
+  }, [searchParams, setTableNumber, setOrderType]);
 
   // Load menu data and settings
   const fetchData = async () => {
@@ -256,6 +262,9 @@ function MenuContent() {
           </div>
         )}
       </main>
+
+      {/* Footer with language switch and restaurant info */}
+      <Footer settings={settings} />
 
       {/* Item Customizer Modal */}
       <ItemCustomizerModal

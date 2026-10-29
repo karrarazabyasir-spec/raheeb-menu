@@ -46,7 +46,7 @@ const CART_STORAGE_KEY = "raheeb_cart_v1";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
-  const [orderType, setOrderType] = useState<"table" | "takeaway">("table");
+  const [orderType, setOrderType] = useState<"table" | "takeaway">("takeaway");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 

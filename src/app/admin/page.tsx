@@ -719,8 +719,8 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setSettings({ ...settings, primaryColor: c.hex })}
                     className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition ${settings.primaryColor === c.hex
-                        ? "border-stone-900 ring-2 ring-stone-900 shadow-sm"
-                        : "border-stone-200 bg-white hover:bg-stone-100"
+                      ? "border-stone-900 ring-2 ring-stone-900 shadow-sm"
+                      : "border-stone-200 bg-white hover:bg-stone-100"
                       }`}
                   >
                     <span className="w-4 h-4 rounded-full shadow-xs" style={{ backgroundColor: c.hex }} />
@@ -1272,8 +1272,8 @@ export default function AdminPage() {
                       key={t.id}
                       onClick={() => setAnalyticsRange(t.id as any)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-black transition ${analyticsRange === t.id
-                          ? "bg-white text-stone-900 shadow-xs"
-                          : "text-stone-500 hover:text-stone-900"
+                        ? "bg-white text-stone-900 shadow-xs"
+                        : "text-stone-500 hover:text-stone-900"
                         }`}
                     >
                       {t.label}
@@ -1440,8 +1440,8 @@ export default function AdminPage() {
                           <div
                             style={{ height: `${heightPercent}%` }}
                             className={`w-full rounded-t-xl transition-all duration-700 ${isToday
-                                ? "bg-gradient-to-t from-amber-600 to-amber-400 shadow-xs"
-                                : "bg-gradient-to-t from-stone-400 to-stone-300 group-hover:from-stone-700 group-hover:to-stone-500"
+                              ? "bg-gradient-to-t from-amber-600 to-amber-400 shadow-xs"
+                              : "bg-gradient-to-t from-stone-400 to-stone-300 group-hover:from-stone-700 group-hover:to-stone-500"
                               }`}
                           />
                         </div>
@@ -1687,8 +1687,8 @@ export default function AdminPage() {
                     <div
                       style={{
                         width: `${filteredOrders.length > 0
-                            ? 100 - Math.round((cancelledOrders.length / filteredOrders.length) * 100)
-                            : 100
+                          ? 100 - Math.round((cancelledOrders.length / filteredOrders.length) * 100)
+                          : 100
                           }%`,
                       }}
                       className="bg-emerald-500 h-full rounded-full transition-all duration-500"
@@ -1971,8 +1971,8 @@ export default function AdminPage() {
                           setEditingItem({ ...editingItem, tags: updated });
                         }}
                         className={`px-3 py-1.5 rounded-xl font-bold border transition ${isChecked
-                            ? "bg-stone-900 text-white border-stone-900"
-                            : "bg-white text-stone-600 border-stone-200"
+                          ? "bg-stone-900 text-white border-stone-900"
+                          : "bg-white text-stone-600 border-stone-200"
                           }`}
                       >
                         {tag.label}

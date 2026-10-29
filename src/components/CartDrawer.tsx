@@ -39,17 +39,11 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     clearCart,
     subtotal,
     tableNumber,
-    setTableNumber,
-    orderType,
-    setOrderType,
   } = useCart();
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [pickupTime, setPickupTime] = useState("في أسرع وقت");
-  const [customTableNumber, setCustomTableNumber] = useState<string>(
-    tableNumber ? String(tableNumber) : ""
-  );
 
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -116,17 +110,18 @@ export function CartDrawer({ settings }: CartDrawerProps) {
       return;
     }
 
-    const currentTbl = tableNumber || (customTableNumber ? Number(customTableNumber) : null);
+    const isTableOrder = !!tableNumber;
+    const finalOrderType = isTableOrder ? "table" : "takeaway";
 
-    if (orderType === "table" && !currentTbl) {
+    if (isTableOrder && !tableNumber) {
       setSubmitError(isRtl ? "يرجى تحديد أو إدخال رقم الطاولة" : "Please specify a table number");
       return;
     }
 
-    if (orderType === "takeaway") {
+    if (!isTableOrder) {
       if (!customerName.trim() || !customerPhone.trim()) {
         setSubmitError(
-          isRtl ? "الاسم ورقم الجوال مطلوبان للطلب المسبق" : "Name and phone are required for takeaway"
+          isRtl ? "الاسم ورقم الجوال مطلوبان لإتمام طلب التوصيل/السفري" : "Name and phone are required for delivery"
         );
         return;
       }
@@ -136,11 +131,11 @@ export function CartDrawer({ settings }: CartDrawerProps) {
 
     try {
       const payload = {
-        type: orderType,
-        tableNumber: orderType === "table" ? currentTbl : undefined,
-        customerName: orderType === "takeaway" ? customerName.trim() : undefined,
-        customerPhone: orderType === "takeaway" ? customerPhone.trim() : undefined,
-        pickupTime: orderType === "takeaway" ? pickupTime : undefined,
+        type: finalOrderType,
+        tableNumber: isTableOrder ? tableNumber : undefined,
+        customerName: !isTableOrder ? customerName.trim() : undefined,
+        customerPhone: !isTableOrder ? customerPhone.trim() : undefined,
+        pickupTime: !isTableOrder ? pickupTime : undefined,
         cartItems: items,
         couponCode: appliedCoupon?.code,
       };
@@ -220,102 +215,72 @@ export function CartDrawer({ settings }: CartDrawerProps) {
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Order Type Selector */}
-            <div className="bg-stone-100 p-1 rounded-xl flex text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setOrderType("table")}
-                className={`flex-1 py-2 rounded-lg transition ${
-                  orderType === "table"
-                    ? "bg-[#780000] text-white shadow-sm"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                {t("tableOrder")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType("takeaway")}
-                className={`flex-1 py-2 rounded-lg transition ${
-                  orderType === "takeaway"
-                    ? "bg-[#780000] text-white shadow-sm"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                {t("takeawayOrder")}
-              </button>
-            </div>
-
-            {/* If Table Order: Show table badge or manual table input */}
-            {orderType === "table" && (
-              <div className="p-3 bg-red-50/60 border border-red-100 rounded-xl space-y-2">
-                <label className="text-xs font-bold text-stone-700 block">
-                  {t("tableNumber")}
-                </label>
-                {tableNumber ? (
-                  <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-red-200">
-                    <span className="text-xs font-bold text-[#780000]">
-                      طاولة رقم {tableNumber} (تحددت تلقائياً من رمز الـ QR)
+            {/* Automatic Order Context */}
+            {tableNumber ? (
+              <div className="p-3.5 bg-amber-50 border border-amber-200/90 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-red-950 font-black flex items-center justify-center text-sm shadow shrink-0">
+                  {tableNumber}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-xs font-bold text-stone-900">
+                      طلب صالة (داخل المطعم)
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setTableNumber(null)}
-                      className="text-[11px] text-stone-400 hover:text-red-700 underline"
-                    >
-                      تغيير
-                    </button>
                   </div>
-                ) : (
-                  <input
-                    type="number"
-                    min={1}
-                    value={customTableNumber}
-                    onChange={(e) => setCustomTableNumber(e.target.value)}
-                    placeholder="أدخل رقم طاولتك (مثال: 5)"
-                    className="w-full text-xs p-2.5 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                  />
-                )}
+                  <span className="text-[11px] text-amber-900 block truncate mt-0.5">
+                    طاولة رقم {tableNumber} (تحددت تلقائياً من رمز الـ QR)
+                  </span>
+                </div>
               </div>
-            )}
+            ) : (
+              <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-[#780000]" />
+                    <span className="text-xs font-bold text-stone-900">
+                      طلب توصيل / سفري (عبر الرابط)
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-[#780000]">
+                    توصيل
+                  </span>
+                </div>
 
-            {/* If Takeaway: Customer info */}
-            {orderType === "takeaway" && (
-              <div className="p-3 bg-amber-50/60 border border-amber-200/60 rounded-xl space-y-2.5">
-                <span className="text-xs font-bold text-stone-800 block">
-                  بيانات الاستلام المسبق:
-                </span>
-                <div className="relative">
-                  <User className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder={t("customerName")}
-                    className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                  />
-                </div>
-                <div className="relative">
-                  <Phone className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder={t("customerPhone")}
-                    className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                  />
-                </div>
-                <div className="relative">
-                  <Clock className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
-                  <select
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                  >
-                    <option value="في أسرع وقت">في أسرع وقت (خلال 20-25 دقيقة)</option>
-                    <option value="بعد 45 دقيقة">بعد 45 دقيقة</option>
-                    <option value="بعد ساعة">بعد ساعة</option>
-                    <option value="بعد ساعة ونصف">بعد ساعة ونصف</option>
-                  </select>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <User className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder={t("customerName") + " (مطلوب)"}
+                      className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Phone className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      placeholder={t("customerPhone") + " (مطلوب)"}
+                      className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Clock className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
+                    <select
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
+                    >
+                      <option value="في أسرع وقت">في أسرع وقت (خلال 20-30 دقيقة)</option>
+                      <option value="بعد 45 دقيقة">بعد 45 دقيقة</option>
+                      <option value="بعد ساعة">بعد ساعة</option>
+                      <option value="بعد ساعة ونصف">بعد ساعة ونصف</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             )}

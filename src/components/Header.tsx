@@ -9,7 +9,6 @@ import {
   Bell,
   Receipt,
   ShoppingBag,
-  Globe,
   UtensilsCrossed,
   MapPin,
   Clock,
@@ -23,8 +22,8 @@ interface HeaderProps {
 }
 
 export function Header({ settings }: HeaderProps) {
-  const { lang, toggleLang, isRtl, t } = useLanguage();
-  const { totalItemsCount, setIsCartOpen, tableNumber, setTableNumber, orderType, setOrderType } = useCart();
+  const { isRtl, t } = useLanguage();
+  const { totalItemsCount, setIsCartOpen, tableNumber } = useCart();
   const [isCalling, setIsCalling] = useState(false);
   const [callMessage, setCallMessage] = useState<string | null>(null);
 
@@ -85,20 +84,20 @@ export function Header({ settings }: HeaderProps) {
 
 
       {/* Main Bar */}
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
         {/* Brand & Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-amber-400 overflow-hidden flex items-center justify-center text-stone-950 font-black shadow-md group-hover:scale-105 transition-transform">
+        <Link href="/" className="flex items-center gap-2.5 group min-w-0">
+          <div className="w-[44px] h-[44px] rounded-full bg-amber-400 overflow-hidden flex items-center justify-center text-stone-950 font-black shadow-md group-hover:scale-105 transition-transform shrink-0 border-2 border-white/20">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover rounded-full" />
             ) : (
               <UtensilsCrossed className="w-5 h-5 text-stone-950" />
             )}
           </div>
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-1.5 text-white">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-1.5 text-white truncate">
               <span>{isRtl ? settings.name : settings.nameEn}</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 inline" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 inline shrink-0" />
             </h1>
             <p className="text-[11px] text-white/80 font-medium line-clamp-1">
               {settings.description || (isRtl ? "مذاق المشويات الأصيل والتجربة الرهيبة" : "Authentic Grills & Shawarma")}
@@ -106,10 +105,10 @@ export function Header({ settings }: HeaderProps) {
           </div>
         </Link>
 
-        {/* Center / Action Buttons */}
-        <div className="flex items-center gap-2">
-          {/* Table Badge or Mode Toggle */}
-          {tableNumber ? (
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Table Service Badge (Only active when opened via QR code with tableNumber) */}
+          {tableNumber && (
             <div className="flex items-center gap-1 bg-white/10 backdrop-blur-sm rounded-lg p-1 border border-white/15">
               <span className="text-xs font-bold px-2 py-1 bg-amber-500 text-red-950 rounded-md">
                 طاولة {tableNumber}
@@ -133,40 +132,7 @@ export function Header({ settings }: HeaderProps) {
                 <span className="hidden sm:inline text-xs">الحساب</span>
               </button>
             </div>
-          ) : (
-            <div className="bg-white/10 rounded-lg p-0.5 flex text-xs font-semibold">
-              <button
-                onClick={() => setOrderType("table")}
-                className={`px-2.5 py-1 rounded-md transition ${
-                  orderType === "table"
-                    ? "bg-amber-500 text-red-950 shadow"
-                    : "text-white/80 hover:text-white"
-                }`}
-              >
-                طاولة
-              </button>
-              <button
-                onClick={() => setOrderType("takeaway")}
-                className={`px-2.5 py-1 rounded-md transition ${
-                  orderType === "takeaway"
-                    ? "bg-amber-500 text-red-950 shadow"
-                    : "text-white/80 hover:text-white"
-                }`}
-              >
-                استلام
-              </button>
-            </div>
           )}
-
-          {/* Language Switch */}
-          <button
-            onClick={toggleLang}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition flex items-center gap-1 text-xs font-bold border border-white/10"
-            title="تغيير اللغة"
-          >
-            <Globe className="w-4 h-4 text-amber-300" />
-            <span>{lang === "ar" ? "EN" : "عربي"}</span>
-          </button>
 
           {/* Cart Floating / Header Button */}
           <button
