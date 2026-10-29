@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ItemVariant, MenuItem, RestaurantSettings, SelectedOption } from "@/types";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
-import { X, Plus, Minus, Check, AlertCircle } from "lucide-react";
+import { X, Plus, Minus, Check, AlertCircle, ChevronDown, CheckCircle2, Sparkles } from "lucide-react";
 
 interface ItemCustomizerModalProps {
   item: MenuItem | null;
@@ -25,6 +25,18 @@ export function ItemCustomizerModal({
   const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
   const [notes, setNotes] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Scroll depth tracking
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [hasMoreContent, setHasMoreContent] = useState(false);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const isScrollable = el.scrollHeight > el.clientHeight + 15;
+    const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 25;
+    setHasMoreContent(isScrollable && !isAtBottom);
+  };
 
   // Initialize defaults
   useEffect(() => {
@@ -57,7 +69,16 @@ export function ItemCustomizerModal({
       });
     }
     setSelectedOptions(initialOpts);
+
+    // Check scroll after layout settles
+    setTimeout(checkScroll, 100);
   }, [item, isRtl]);
+
+  useEffect(() => {
+    setTimeout(checkScroll, 100);
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
+  }, [selectedVariant]);
 
   // Lock background page scroll when modal is open
   useEffect(() => {
@@ -146,6 +167,9 @@ export function ItemCustomizerModal({
         className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden w-12 h-1.5 bg-white/70 backdrop-blur-md rounded-full mx-auto absolute top-2.5 inset-x-0 z-30 pointer-events-none shadow-xs" />
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -156,6 +180,8 @@ export function ItemCustomizerModal({
 
         {/* Unified Scrollable Container: holds image + details so touching anywhere scrolls the modal */}
         <div
+          ref={scrollRef}
+          onScroll={checkScroll}
           className="overflow-y-auto flex-1 overscroll-contain min-h-0 touch-pan-y"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
@@ -296,8 +322,40 @@ export function ItemCustomizerModal({
               <span>{errorMsg}</span>
             </div>
           )}
+
+          {/* End of item options closure badge */}
+          <div className="pt-6 pb-2 flex flex-col items-center justify-center text-center space-y-1.5">
+            <div className="flex items-center gap-2.5 w-full">
+              <div className="h-px bg-stone-200 flex-1" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold shadow-2xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>
+                  {isRtl ? "اكتملت خيارات هذا الصنف • جاهز للطلب" : "All options selected • Ready to add"}
+                </span>
+              </div>
+              <div className="h-px bg-stone-200 flex-1" />
+            </div>
+            <p className="text-[10px] text-stone-400 font-medium">
+              {isRtl ? "اضغط على «إضافة إلى الطلب» بالأسفل لإتمام اختيارك" : "Tap Add to Order below to continue"}
+            </p>
+          </div>
         </div>
         </div>
+
+        {/* Floating "Scroll down for more options" indicator */}
+        {hasMoreContent && (
+          <div className="absolute bottom-[78px] inset-x-0 flex justify-center pointer-events-none z-20 animate-bounce">
+            <button
+              onClick={() => {
+                scrollRef.current?.scrollBy({ top: 160, behavior: "smooth" });
+              }}
+              className="pointer-events-auto bg-stone-900/90 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full shadow-lg backdrop-blur-xs flex items-center gap-1.5 border border-white/20 active:scale-95 transition"
+            >
+              <span>{isRtl ? "مرر للأسفل للمزيد من الخيارات" : "Scroll down for more options"}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-amber-400 stroke-[2.5]" />
+            </button>
+          </div>
+        )}
 
         {/* Footer with quantity and add button */}
         <div className="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between gap-3 shrink-0">
