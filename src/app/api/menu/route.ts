@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { MenuItem } from "@/types";
 import { broadcastLiveEvent } from "@/lib/realtime";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin, deleteStorageImage } from "@/lib/supabase";
 import { initialMenuItems } from "@/lib/initialData";
 
 const initialOrderMap = new Map<string, number>();
@@ -55,6 +55,24 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const item: MenuItem = await request.json();
+
+    // Auto-cleanup: If updating an existing item with a new image, delete the old image from storage
+    if (item.id) {
+      const existing = db.getMenuItemById(item.id);
+      let oldImage = existing?.imageUrl;
+      if (!oldImage) {
+        const { data } = await supabaseAdmin
+          .from("menu_items")
+          .select("image_url")
+          .eq("id", item.id)
+          .single();
+        oldImage = data?.image_url;
+      }
+      if (oldImage && item.imageUrl && oldImage !== item.imageUrl) {
+        await deleteStorageImage(oldImage);
+      }
+    }
+
     if (!item.id) {
       item.id = `item-${Date.now()}`;
     }

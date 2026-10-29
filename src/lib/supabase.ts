@@ -19,3 +19,37 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
+/**
+ * Safely deletes an image file from Supabase storage bucket 'menu-images'
+ * if the provided URL belongs to our Supabase storage.
+ */
+export async function deleteStorageImage(imageUrl?: string | null): Promise<boolean> {
+  if (!imageUrl || typeof imageUrl !== "string") return false;
+  try {
+    // Only target images hosted in our Supabase storage 'menu-images' bucket
+    if (!imageUrl.includes("/menu-images/")) return false;
+
+    const parts = imageUrl.split("/menu-images/");
+    if (parts.length < 2) return false;
+
+    // e.g. "items/1793260449-abc.jpg"
+    const filePath = decodeURIComponent(parts[1].split("?")[0]);
+    if (!filePath) return false;
+
+    const { error } = await supabaseAdmin.storage
+      .from("menu-images")
+      .remove([filePath]);
+
+    if (error) {
+      console.warn(`[Supabase Storage] Failed to remove ${filePath}:`, error.message);
+      return false;
+    }
+
+    console.log(`[Supabase Storage] Successfully deleted unused image: ${filePath}`);
+    return true;
+  } catch (err) {
+    console.error("[Supabase Storage] Error deleting image:", err);
+    return false;
+  }
+}
+

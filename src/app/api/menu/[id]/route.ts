@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { broadcastLiveEvent } from "@/lib/realtime";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin, deleteStorageImage } from "@/lib/supabase";
 import { MenuItem } from "@/types";
 
 export async function PATCH(
@@ -66,6 +66,11 @@ export async function PATCH(
       return NextResponse.json({ error: "الصنف غير موجود" }, { status: 404 });
     }
 
+    // Auto-cleanup: If image was updated, delete old image from storage
+    if (body.imageUrl && existing.imageUrl && body.imageUrl !== existing.imageUrl) {
+      await deleteStorageImage(existing.imageUrl);
+    }
+
     const updatedData: MenuItem = { ...existing, ...body, id };
     const updated = db.saveMenuItem(updatedData);
 
@@ -104,6 +109,22 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+
+    // Auto-cleanup: delete image file from storage bucket
+    const existing = db.getMenuItemById(id);
+    let imageToDelete = existing?.imageUrl;
+    if (!imageToDelete) {
+      const { data } = await supabaseAdmin
+        .from("menu_items")
+        .select("image_url")
+        .eq("id", id)
+        .single();
+      imageToDelete = data?.image_url;
+    }
+    if (imageToDelete) {
+      await deleteStorageImage(imageToDelete);
+    }
+
     db.deleteMenuItem(id);
     try {
       await supabaseAdmin.from("menu_items").delete().eq("id", id);

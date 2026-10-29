@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { broadcastLiveEvent } from "@/lib/realtime";
+import { deleteStorageImage } from "@/lib/supabase";
 
 export async function GET() {
   const settings = db.getSettings();
@@ -10,6 +11,13 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
+    const current = db.getSettings();
+
+    // Auto-cleanup old logo if replaced
+    if (body.logoUrl && current.logoUrl && body.logoUrl !== current.logoUrl) {
+      await deleteStorageImage(current.logoUrl);
+    }
+
     const updated = db.updateSettings(body);
     await broadcastLiveEvent("settings_updated", updated);
     return NextResponse.json(updated);
