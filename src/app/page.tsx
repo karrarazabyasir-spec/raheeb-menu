@@ -27,6 +27,7 @@ import {
   MessageCircle,
   HelpCircle,
   Loader2,
+  ChevronLeft,
 } from "lucide-react";
 
 function MenuContent() {
@@ -250,7 +251,7 @@ function MenuContent() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
             {filteredItems.map((item) => (
               <MenuItemCard
                 key={item.id}
@@ -276,28 +277,30 @@ function MenuContent() {
       {/* Sliding Cart Drawer */}
       <CartDrawer settings={settings} />
 
-      {/* Floating Bottom Cart Bar for mobile & instant checkout */}
+      {/* Floating Bottom Cart Bar (matching the sleek pill design in the reference) */}
       {totalItemsCount > 0 && (
-        <div className="fixed bottom-3 inset-x-4 max-w-lg mx-auto z-30">
+        <div className="fixed bottom-4 inset-x-3 sm:inset-x-4 max-w-md mx-auto z-30 animate-fade-in">
           <button
             onClick={() => setIsCartOpen(true)}
-            className="w-full bg-[#780000] hover:bg-[#5c0000] text-white p-3.5 rounded-2xl shadow-2xl flex items-center justify-between border-2 border-white/20 active:scale-98 transition-all animate-bounce-short"
+            style={{ backgroundColor: settings?.primaryColor || "#780000" }}
+            className="w-full text-white px-4 py-3 sm:py-3.5 rounded-2xl sm:rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] flex items-center justify-between border border-white/20 active:scale-98 transition-all hover:brightness-105"
           >
+            {/* Bag icon + "عرض السلة (X)" */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-400 text-stone-950 font-black flex items-center justify-center text-xs shadow">
-                {totalItemsCount}
+              <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-white shrink-0">
+                <ShoppingBag className="w-4 h-4 text-amber-300" />
               </div>
-              <div className="text-start">
-                <span className="text-xs font-bold block">{t("cart")}</span>
-                <span className="text-[10px] text-red-200">الدفع نقداً</span>
-              </div>
+              <span className="text-xs sm:text-sm font-black tracking-wide">
+                {isRtl ? `عرض السلة (${totalItemsCount})` : `View cart (${totalItemsCount})`}
+              </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-black bg-white/20 px-2.5 py-1 rounded-lg">
-                {subtotal} {currency}
+            {/* Total price + chevron '>' */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-xs sm:text-sm font-black tracking-tight">
+                {subtotal.toLocaleString()} {currency}
               </span>
-              <span className="text-xs font-bold underline">عرض الطلب ←</span>
+              <ChevronLeft className="w-4 h-4 text-white/90 stroke-[2.5] transform ltr:rotate-180" />
             </div>
           </button>
         </div>
