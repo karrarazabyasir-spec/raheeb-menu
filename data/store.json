@@ -7,6 +7,9 @@
     "whatsapp": "9647709768760",
     "currency": "د.ع",
     "currencyEn": "SAR",
+    "primaryColor": "#780000",
+    "secondaryColor": "#c68a2c",
+    "logoUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793204932373-4hgqdp.jpg",
     "isOrderingEnabled": true,
     "serviceFeePercent": 0,
     "taxPercent": 0,
@@ -16,49 +19,10 @@
     "openingHours": "يومياً من 12:00 ظهراً حتى 01:00 بعد منتصف الليل",
     "bannerMessage": "🔥 خصم خاص 15% على جميع وجبات المشويات العائلية بكود: RAHEEB15",
     "bannerActive": true,
-    "primaryColor": "#780000",
-    "logoUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793204932373-4hgqdp.jpg",
     "deliveryEnabled": true,
     "freeDeliveryThreshold": 0,
     "defaultDeliveryTime": "30-45 دقيقة",
-    "deliveryZones": [
-      {
-        "id": "zone-1",
-        "nameAr": "مركز الحسينية / حي الحسين",
-        "nameEn": "Al-Hussainiya Center",
-        "fee": 2000,
-        "minOrder": 10000,
-        "estimatedTime": "25-35 دقيقة",
-        "isActive": true
-      },
-      {
-        "id": "zone-2",
-        "nameAr": "حي المعلمين / الجمعية",
-        "nameEn": "Teachers District",
-        "fee": 2500,
-        "minOrder": 10000,
-        "estimatedTime": "30-40 دقيقة",
-        "isActive": true
-      },
-      {
-        "id": "zone-3",
-        "nameAr": "طريق بغداد / حي العباس",
-        "nameEn": "Baghdad Road / Al-Abbas",
-        "fee": 3000,
-        "minOrder": 15000,
-        "estimatedTime": "35-45 دقيقة",
-        "isActive": true
-      },
-      {
-        "id": "zone-4",
-        "nameAr": "أطراف الحسينية والمزارع",
-        "nameEn": "Suburbs & Farms",
-        "fee": 4000,
-        "minOrder": 20000,
-        "estimatedTime": "40-50 دقيقة",
-        "isActive": true
-      }
-    ]
+    "deliveryZones": []
   },
   "categories": [
     {
@@ -118,24 +82,24 @@
       "nameEn": "Royal Raheeb Mixed Grill",
       "descriptionAr": "تشكيلة من أسياخ كباب اللحم، وشيش طاووق، وكفتة مع البصل المشوي والخبز المحمص وصلصة الثومية",
       "descriptionEn": "Skewers of beef kebab, shish tawook, and kofta with grilled vegetables and garlic paste",
-      "basePrice": 2000,
-      "imageUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793186299738-0edjji.png",
+      "basePrice": 58,
+      "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80",
       "tags": [
         "popular"
       ],
-      "isAvailable": true,
+      "isAvailable": false,
       "variants": [
         {
           "id": "var-1-half",
+          "price": 58,
           "nameAr": "نصف كيلو (شخصين)",
-          "nameEn": "Half Kilo",
-          "price": 5000
+          "nameEn": "Half Kilo"
         },
         {
           "id": "var-1-kilo",
+          "price": 110,
           "nameAr": "كيلو كامل (4-5 أشخاص)",
-          "nameEn": "1 Kilo",
-          "price": 6000
+          "nameEn": "1 Kilo"
         }
       ],
       "optionGroups": [
@@ -143,47 +107,47 @@
           "id": "opt-bread",
           "nameAr": "نوع الخبز المفضل",
           "nameEn": "Bread Type",
-          "required": true,
           "options": [
             {
               "id": "bread-shami",
+              "price": 0,
               "nameAr": "خبز شامي حار على الصاج",
-              "nameEn": "Shami Bread",
-              "price": 0
+              "nameEn": "Shami Bread"
             },
             {
               "id": "bread-tannour",
+              "price": 0,
               "nameAr": "خبز تنور طازج",
-              "nameEn": "Tannour Bread",
-              "price": 0
+              "nameEn": "Tannour Bread"
             }
-          ]
+          ],
+          "required": true
         },
         {
           "id": "opt-mashawi-addons",
           "nameAr": "إضافات حسب الرغبة",
           "nameEn": "Add-ons",
-          "required": false,
           "options": [
             {
               "id": "add-tahini",
+              "price": 4,
               "nameAr": "صحن طحينة إضافي",
-              "nameEn": "Extra Tahini",
-              "price": 4
+              "nameEn": "Extra Tahini"
             },
             {
               "id": "add-garlic",
+              "price": 4,
               "nameAr": "ثومية حارة",
-              "nameEn": "Spicy Garlic Dip",
-              "price": 4
+              "nameEn": "Spicy Garlic Dip"
             },
             {
               "id": "add-pickles",
+              "price": 3,
               "nameAr": "مخلل خيار ولفت بلدي",
-              "nameEn": "Pickles",
-              "price": 3
+              "nameEn": "Pickles"
             }
-          ]
+          ],
+          "required": false
         }
       ]
     },
@@ -204,17 +168,18 @@
       "variants": [
         {
           "id": "var-2-single",
+          "price": 48,
           "nameAr": "صحن فردي",
-          "nameEn": "Single",
-          "price": 48
+          "nameEn": "Single"
         },
         {
           "id": "var-2-double",
+          "price": 89,
           "nameAr": "صحن مضاعف",
-          "nameEn": "Double",
-          "price": 89
+          "nameEn": "Double"
         }
-      ]
+      ],
+      "optionGroups": []
     },
     {
       "id": "item-3",
@@ -228,47 +193,48 @@
       "tags": [
         "popular"
       ],
-      "isAvailable": true,
+      "isAvailable": false,
+      "variants": [],
       "optionGroups": [
         {
           "id": "opt-spice",
           "nameAr": "مستوى الحدة",
           "nameEn": "Spicy Level",
-          "required": true,
           "options": [
             {
               "id": "spice-normal",
+              "price": 0,
               "nameAr": "عادي / بدون شطة",
-              "nameEn": "Regular",
-              "price": 0
+              "nameEn": "Regular"
             },
             {
               "id": "spice-hot",
+              "price": 0,
               "nameAr": "حار مع شطة حلبية",
-              "nameEn": "Spicy",
-              "price": 0
+              "nameEn": "Spicy"
             }
-          ]
+          ],
+          "required": true
         },
         {
           "id": "opt-shawarma-addon",
           "nameAr": "إضافات مميزة",
           "nameEn": "Extras",
-          "required": false,
           "options": [
             {
               "id": "extra-cheese",
+              "price": 5,
               "nameAr": "جبنة موزاريلا ذائبة",
-              "nameEn": "Melted Mozzarella",
-              "price": 5
+              "nameEn": "Melted Mozzarella"
             },
             {
               "id": "extra-pomegranate",
+              "price": 2,
               "nameAr": "دبس رمان إضافي",
-              "nameEn": "Extra Pomegranate",
-              "price": 2
+              "nameEn": "Extra Pomegranate"
             }
-          ]
+          ],
+          "required": false
         }
       ]
     },
@@ -288,17 +254,18 @@
       "variants": [
         {
           "id": "var-4-reg",
+          "price": 18,
           "nameAr": "حجم عادي",
-          "nameEn": "Regular",
-          "price": 18
+          "nameEn": "Regular"
         },
         {
           "id": "var-4-large",
+          "price": 24,
           "nameAr": "حجم صاروخ كبير",
-          "nameEn": "Rocket Large",
-          "price": 24
+          "nameEn": "Rocket Large"
         }
-      ]
+      ],
+      "optionGroups": []
     },
     {
       "id": "item-5",
@@ -312,7 +279,9 @@
       "tags": [
         "popular"
       ],
-      "isAvailable": true
+      "isAvailable": false,
+      "variants": [],
+      "optionGroups": []
     },
     {
       "id": "item-6",
@@ -326,7 +295,9 @@
       "tags": [
         "vegetarian"
       ],
-      "isAvailable": true
+      "isAvailable": true,
+      "variants": [],
+      "optionGroups": []
     },
     {
       "id": "item-7",
@@ -341,7 +312,9 @@
         "spicy",
         "vegetarian"
       ],
-      "isAvailable": true
+      "isAvailable": true,
+      "variants": [],
+      "optionGroups": []
     },
     {
       "id": "item-8",
@@ -356,7 +329,9 @@
         "popular",
         "new"
       ],
-      "isAvailable": true
+      "isAvailable": true,
+      "variants": [],
+      "optionGroups": []
     },
     {
       "id": "item-9",
@@ -370,7 +345,9 @@
       "tags": [
         "popular"
       ],
-      "isAvailable": true
+      "isAvailable": true,
+      "variants": [],
+      "optionGroups": []
     },
     {
       "id": "item-10",
@@ -384,7 +361,9 @@
       "tags": [
         "new"
       ],
-      "isAvailable": true
+      "isAvailable": true,
+      "variants": [],
+      "optionGroups": []
     },
     {
       "id": "item-11",
@@ -398,7 +377,9 @@
       "tags": [
         "popular"
       ],
-      "isAvailable": true
+      "isAvailable": true,
+      "variants": [],
+      "optionGroups": []
     }
   ],
   "tables": [

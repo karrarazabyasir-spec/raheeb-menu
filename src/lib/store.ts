@@ -40,13 +40,44 @@ function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSetting
   return {
     ...initialSettings,
     ...settings,
-    deliveryZones: settings.deliveryZones && settings.deliveryZones.length > 0
+    deliveryZones: Array.isArray(settings.deliveryZones)
       ? settings.deliveryZones
-      : initialSettings.deliveryZones,
+      : [],
     deliveryEnabled: settings.deliveryEnabled ?? initialSettings.deliveryEnabled,
     freeDeliveryThreshold: settings.freeDeliveryThreshold ?? initialSettings.freeDeliveryThreshold,
     defaultDeliveryTime: settings.defaultDeliveryTime || initialSettings.defaultDeliveryTime,
   };
+}
+
+async function readDataAsync(): Promise<DatabaseSchema> {
+  const now = Date.now();
+  if (memoryCache && now - lastCloudFetchTime < 10000) {
+    if (memoryCache.settings) {
+      memoryCache.settings = ensureSettingsDefaults(memoryCache.settings);
+    }
+    return memoryCache;
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin.storage
+      .from("menu-images")
+      .download("config/store.json");
+
+    if (data && !error) {
+      const text = await data.text();
+      const parsed = JSON.parse(text) as DatabaseSchema;
+      if (parsed && parsed.settings) {
+        parsed.settings = ensureSettingsDefaults(parsed.settings);
+        memoryCache = parsed;
+        lastCloudFetchTime = Date.now();
+        return memoryCache;
+      }
+    }
+  } catch (err) {
+    console.error("Async cloud storage download error:", err);
+  }
+
+  return readData();
 }
 
 function syncCloudDataInBackground() {
@@ -144,6 +175,12 @@ export const db = {
   // Settings
   getSettings(): RestaurantSettings {
     const data = readData();
+    data.settings = ensureSettingsDefaults(data.settings);
+    return data.settings;
+  },
+
+  async getSettingsAsync(): Promise<RestaurantSettings> {
+    const data = await readDataAsync();
     data.settings = ensureSettingsDefaults(data.settings);
     return data.settings;
   },
