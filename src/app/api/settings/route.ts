@@ -18,7 +18,7 @@ export async function PATCH(request: Request) {
       await deleteStorageImage(current.logoUrl);
     }
 
-    const updated = db.updateSettings(body);
+    const updated = await db.updateSettings(body);
     await broadcastLiveEvent("settings_updated", updated);
     return NextResponse.json(updated);
 

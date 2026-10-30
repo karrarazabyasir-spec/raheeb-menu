@@ -17,7 +17,48 @@
     "bannerMessage": "🔥 خصم خاص 15% على جميع وجبات المشويات العائلية بكود: RAHEEB15",
     "bannerActive": true,
     "primaryColor": "#780000",
-    "logoUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793204932373-4hgqdp.jpg"
+    "logoUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793204932373-4hgqdp.jpg",
+    "deliveryEnabled": true,
+    "freeDeliveryThreshold": 0,
+    "defaultDeliveryTime": "30-45 دقيقة",
+    "deliveryZones": [
+      {
+        "id": "zone-1",
+        "nameAr": "مركز الحسينية / حي الحسين",
+        "nameEn": "Al-Hussainiya Center",
+        "fee": 2000,
+        "minOrder": 10000,
+        "estimatedTime": "25-35 دقيقة",
+        "isActive": true
+      },
+      {
+        "id": "zone-2",
+        "nameAr": "حي المعلمين / الجمعية",
+        "nameEn": "Teachers District",
+        "fee": 2500,
+        "minOrder": 10000,
+        "estimatedTime": "30-40 دقيقة",
+        "isActive": true
+      },
+      {
+        "id": "zone-3",
+        "nameAr": "طريق بغداد / حي العباس",
+        "nameEn": "Baghdad Road / Al-Abbas",
+        "fee": 3000,
+        "minOrder": 15000,
+        "estimatedTime": "35-45 دقيقة",
+        "isActive": true
+      },
+      {
+        "id": "zone-4",
+        "nameAr": "أطراف الحسينية والمزارع",
+        "nameEn": "Suburbs & Farms",
+        "fee": 4000,
+        "minOrder": 20000,
+        "estimatedTime": "40-50 دقيقة",
+        "isActive": true
+      }
+    ]
   },
   "categories": [
     {

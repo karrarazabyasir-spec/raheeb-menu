@@ -36,6 +36,19 @@ eventBus.setMaxListeners(100);
 let memoryCache: DatabaseSchema | null = null;
 let lastCloudFetchTime = 0;
 
+function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSettings {
+  return {
+    ...initialSettings,
+    ...settings,
+    deliveryZones: settings.deliveryZones && settings.deliveryZones.length > 0
+      ? settings.deliveryZones
+      : initialSettings.deliveryZones,
+    deliveryEnabled: settings.deliveryEnabled ?? initialSettings.deliveryEnabled,
+    freeDeliveryThreshold: settings.freeDeliveryThreshold ?? initialSettings.freeDeliveryThreshold,
+    defaultDeliveryTime: settings.defaultDeliveryTime || initialSettings.defaultDeliveryTime,
+  };
+}
+
 function syncCloudDataInBackground() {
   const now = Date.now();
   // Throttle cloud fetch to once every 10 seconds
@@ -50,6 +63,7 @@ function syncCloudDataInBackground() {
         const text = await data.text();
         const parsed = JSON.parse(text) as DatabaseSchema;
         if (parsed && parsed.settings) {
+          parsed.settings = ensureSettingsDefaults(parsed.settings);
           memoryCache = parsed;
         }
       }
@@ -61,6 +75,9 @@ function readData(): DatabaseSchema {
   syncCloudDataInBackground();
 
   if (memoryCache) {
+    if (memoryCache.settings) {
+      memoryCache.settings = ensureSettingsDefaults(memoryCache.settings);
+    }
     return memoryCache;
   }
 
@@ -68,6 +85,9 @@ function readData(): DatabaseSchema {
     if (fs.existsSync(DATA_FILE)) {
       const content = fs.readFileSync(DATA_FILE, "utf-8");
       memoryCache = JSON.parse(content) as DatabaseSchema;
+      if (memoryCache && memoryCache.settings) {
+        memoryCache.settings = ensureSettingsDefaults(memoryCache.settings);
+      }
       return memoryCache;
     }
   } catch (err) {
@@ -90,7 +110,7 @@ function readData(): DatabaseSchema {
   return memoryCache;
 }
 
-function writeData(data: DatabaseSchema): void {
+async function writeData(data: DatabaseSchema): Promise<void> {
   memoryCache = data;
 
   // 1. Try local filesystem (works on dev / persistent servers)
@@ -105,15 +125,15 @@ function writeData(data: DatabaseSchema): void {
 
   // 2. Persist to Supabase Cloud Storage (permanent across all serverless instances)
   try {
-    supabaseAdmin.storage
+    const { error } = await supabaseAdmin.storage
       .from("menu-images")
       .upload("config/store.json", JSON.stringify(data, null, 2), {
         upsert: true,
         contentType: "application/json",
-      })
-      .then(({ error }) => {
-        if (error) console.error("Cloud storage sync error:", error);
       });
+    if (error) {
+      console.error("Cloud storage sync error:", error);
+    }
   } catch (cloudErr) {
     console.error("Cloud storage upload error:", cloudErr);
   }
@@ -124,13 +144,14 @@ export const db = {
   // Settings
   getSettings(): RestaurantSettings {
     const data = readData();
+    data.settings = ensureSettingsDefaults(data.settings);
     return data.settings;
   },
 
-  updateSettings(partial: Partial<RestaurantSettings>): RestaurantSettings {
+  async updateSettings(partial: Partial<RestaurantSettings>): Promise<RestaurantSettings> {
     const data = readData();
     data.settings = { ...data.settings, ...partial };
-    writeData(data);
+    await writeData(data);
     eventBus.emit("settings_updated", data.settings);
     return data.settings;
   },

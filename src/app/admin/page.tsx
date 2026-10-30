@@ -225,17 +225,20 @@ export default function AdminPage() {
   };
 
   // Save Settings & Branding
-  const handleSaveSettings = async (e?: React.FormEvent) => {
+  const handleSaveSettings = async (e?: React.FormEvent, customSettings?: RestaurantSettings) => {
     if (e) e.preventDefault();
-    if (!settings) return;
+    const target = customSettings || settings;
+    if (!target) return;
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(target),
       });
       if (res.ok) {
-        flashMessage("تم حفظ وتحديث الإعدادات والهوية بنجاح! ✓");
+        const saved = await res.json();
+        setSettings(saved);
+        flashMessage("تم حفظ وتحديث الإعدادات بنجاح! ✓");
       }
     } catch (e) {
       console.error(e);
@@ -243,7 +246,7 @@ export default function AdminPage() {
   };
 
   // Delivery Zone Helpers
-  const handleAddZone = () => {
+  const handleAddZone = async () => {
     if (!settings || !newZoneNameAr.trim()) return;
     const newZone: DeliveryZone = {
       id: "zone-" + Date.now(),
@@ -262,21 +265,26 @@ export default function AdminPage() {
     setNewZoneMinOrder(0);
     setNewZoneTime("30-45 دقيقة");
     setShowAddZoneModal(false);
-    flashMessage("تمت إضافة المنطقة! تذكر النقر على زر 'حفظ التعديلات'");
+    // Immediately persist to backend so refreshing the page preserves the zone!
+    await handleSaveSettings(undefined, updatedSettings);
   };
 
-  const handleDeleteZone = (zoneId: string) => {
+  const handleDeleteZone = async (zoneId: string) => {
     if (!settings) return;
     const updatedZones = (settings.deliveryZones || []).filter((z) => z.id !== zoneId);
-    setSettings({ ...settings, deliveryZones: updatedZones });
+    const updatedSettings = { ...settings, deliveryZones: updatedZones };
+    setSettings(updatedSettings);
+    await handleSaveSettings(undefined, updatedSettings);
   };
 
-  const handleToggleZone = (zoneId: string) => {
+  const handleToggleZone = async (zoneId: string) => {
     if (!settings) return;
     const updatedZones = (settings.deliveryZones || []).map((z) =>
       z.id === zoneId ? { ...z, isActive: !z.isActive } : z
     );
-    setSettings({ ...settings, deliveryZones: updatedZones });
+    const updatedSettings = { ...settings, deliveryZones: updatedZones };
+    setSettings(updatedSettings);
+    await handleSaveSettings(undefined, updatedSettings);
   };
 
   const handleUpdateZone = (zoneId: string, field: keyof DeliveryZone, value: any) => {
@@ -1360,9 +1368,11 @@ export default function AdminPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    setSettings({ ...settings, deliveryEnabled: !settings.deliveryEnabled })
-                  }
+                  onClick={() => {
+                    const updated = { ...settings, deliveryEnabled: !settings.deliveryEnabled };
+                    setSettings(updated);
+                    handleSaveSettings(undefined, updated);
+                  }}
                   className={`px-4 py-2 rounded-xl text-xs font-black transition ${
                     settings.deliveryEnabled
                       ? "bg-emerald-600 text-white shadow"
