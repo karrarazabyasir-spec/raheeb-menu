@@ -76,7 +76,6 @@ export default function AdminPage() {
 
   // Delivery Zones state
   const [newZoneNameAr, setNewZoneNameAr] = useState("");
-  const [newZoneNameEn, setNewZoneNameEn] = useState("");
   const [newZoneFee, setNewZoneFee] = useState<number>(2000);
   const [newZoneMinOrder, setNewZoneMinOrder] = useState<number>(0);
   const [newZoneTime, setNewZoneTime] = useState("30-45 دقيقة");
@@ -249,7 +248,7 @@ export default function AdminPage() {
     const newZone: DeliveryZone = {
       id: "zone-" + Date.now(),
       nameAr: newZoneNameAr.trim(),
-      nameEn: newZoneNameEn.trim() || newZoneNameAr.trim(),
+      nameEn: newZoneNameAr.trim(),
       fee: Number(newZoneFee) || 0,
       minOrder: Number(newZoneMinOrder) || 0,
       estimatedTime: newZoneTime.trim() || "30-45 دقيقة",
@@ -259,7 +258,6 @@ export default function AdminPage() {
     const updatedSettings = { ...settings, deliveryZones: updatedZones };
     setSettings(updatedSettings);
     setNewZoneNameAr("");
-    setNewZoneNameEn("");
     setNewZoneFee(2000);
     setNewZoneMinOrder(0);
     setNewZoneTime("30-45 دقيقة");
@@ -1456,20 +1454,13 @@ export default function AdminPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-xs">
                         {/* Zone Name */}
                         <div className="sm:col-span-4">
-                          <label className="text-[10px] font-bold text-stone-500 block mb-0.5">اسم المنطقة (عربي / إنجليزي):</label>
+                          <label className="text-[10px] font-bold text-stone-500 block mb-0.5">اسم المنطقة:</label>
                           <input
                             type="text"
                             value={zone.nameAr}
                             onChange={(e) => handleUpdateZone(zone.id, "nameAr", e.target.value)}
-                            className="w-full p-2 border rounded-lg font-bold text-stone-900 mb-1"
-                            placeholder="اسم المنطقة بالعربي"
-                          />
-                          <input
-                            type="text"
-                            value={zone.nameEn || ""}
-                            onChange={(e) => handleUpdateZone(zone.id, "nameEn", e.target.value)}
-                            className="w-full p-1.5 border rounded-lg text-stone-600 text-[11px]"
-                            placeholder="Area name in English"
+                            className="w-full p-2 border rounded-lg font-bold text-stone-900"
+                            placeholder="اسم المنطقة (مثال: حي الحسين)"
                           />
                         </div>
 
@@ -1580,24 +1571,13 @@ export default function AdminPage() {
 
                   <div className="space-y-3 text-xs">
                     <div>
-                      <label className="font-bold block mb-1">اسم المنطقة (بالعربية) *:</label>
+                      <label className="font-bold block mb-1">اسم المنطقة *:</label>
                       <input
                         type="text"
                         value={newZoneNameAr}
                         onChange={(e) => setNewZoneNameAr(e.target.value)}
                         placeholder="مثال: حي الحسين / الجمعية"
                         className="w-full p-2.5 border rounded-xl font-bold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-bold block mb-1">اسم المنطقة (بالإنجليزية) - اختياري:</label>
-                      <input
-                        type="text"
-                        value={newZoneNameEn}
-                        onChange={(e) => setNewZoneNameEn(e.target.value)}
-                        placeholder="e.g. Al-Hussein District"
-                        className="w-full p-2.5 border rounded-xl"
                       />
                     </div>
 
