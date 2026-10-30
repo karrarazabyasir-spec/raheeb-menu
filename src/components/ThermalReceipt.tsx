@@ -34,13 +34,31 @@ export function ThermalReceipt({ order, settings, type = "customer" }: ThermalRe
       <div className="py-2 text-[11px] border-b border-dashed border-black space-y-0.5">
         <p>
           <span className="font-bold">نوع الطلب: </span>
-          {order.type === "table" ? `طاولة رقم ${order.tableNumber}` : "استلام مسبق (Takeaway)"}
+          {order.type === "table"
+            ? `طاولة رقم ${order.tableNumber}`
+            : order.type === "delivery"
+            ? `🛵 توصيل للمنازل (${order.deliveryZoneName || "توصيل"})`
+            : "استلام مسبق (Takeaway)"}
         </p>
         {order.type === "takeaway" && (
           <>
             <p>العميل: {order.customerName}</p>
             <p>الجوال: {order.customerPhone}</p>
             <p>الموعد: {order.pickupTime}</p>
+          </>
+        )}
+        {order.type === "delivery" && (
+          <>
+            <p><span className="font-bold">العميل:</span> {order.customerName}</p>
+            <p><span className="font-bold">الجوال:</span> {order.customerPhone}</p>
+            <p><span className="font-bold">العنوان:</span> {order.address}</p>
+            {order.landmark && <p><span className="font-bold">أقرب دالة:</span> {order.landmark}</p>}
+            {order.driverNotes && <p><span className="font-bold">ملاحظة التوصيل:</span> {order.driverNotes}</p>}
+            {order.cashToPay && order.cashToPay > order.total && (
+              <p className="font-black mt-1">
+                ⚠️ الزبون معه: {order.cashToPay} {settings.currency} (رجع له: {order.cashToPay - order.total})
+              </p>
+            )}
           </>
         )}
       </div>
@@ -95,6 +113,14 @@ export function ThermalReceipt({ order, settings, type = "customer" }: ThermalRe
               </span>
             </div>
           )}
+          {order.deliveryFee && order.deliveryFee > 0 && (
+            <div className="flex justify-between font-bold">
+              <span>أجرة التوصيل:</span>
+              <span>
+                +{order.deliveryFee} {settings.currency}
+              </span>
+            </div>
+          )}
           {order.serviceFee > 0 && (
             <div className="flex justify-between">
               <span>رسوم الخدمة:</span>
@@ -118,7 +144,24 @@ export function ThermalReceipt({ order, settings, type = "customer" }: ThermalRe
               {order.total} {settings.currency}
             </span>
           </div>
-          <p className="text-[10px] font-bold text-center mt-1">الدفع نقداً (CASH)</p>
+          <p className="text-[10px] font-bold text-center mt-1">
+            {order.type === "delivery" ? "الدفع نقداً عند التوصيل (CASH)" : "الدفع نقداً (CASH)"}
+          </p>
+        </div>
+      )}
+
+      {/* Maps QR for driver on physical receipt */}
+      {order.type === "delivery" && order.lat && order.lng && (
+        <div className="py-2 text-center border-b border-dashed border-black">
+          <p className="text-[9px] font-bold mb-1">امسح للوصول لموقع الزبون على الخريطة:</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+              `https://maps.google.com/?q=${order.lat},${order.lng}`
+            )}`}
+            alt="Maps QR"
+            className="w-20 h-20 mx-auto"
+          />
         </div>
       )}
 

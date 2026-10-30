@@ -19,8 +19,8 @@ interface CartContextType {
   subtotal: number;
   tableNumber: number | null;
   setTableNumber: (tbl: number | null) => void;
-  orderType: "table" | "takeaway";
-  setOrderType: (type: "table" | "takeaway") => void;
+  orderType: "table" | "takeaway" | "delivery";
+  setOrderType: (type: "table" | "takeaway" | "delivery") => void;
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
 }
@@ -35,7 +35,7 @@ const CartContext = createContext<CartContextType>({
   subtotal: 0,
   tableNumber: null,
   setTableNumber: () => {},
-  orderType: "table",
+  orderType: "takeaway",
   setOrderType: () => {},
   isCartOpen: false,
   setIsCartOpen: () => {},
@@ -46,7 +46,7 @@ const CART_STORAGE_KEY = "raheeb_cart_v1";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [tableNumber, setTableNumber] = useState<number | null>(null);
-  const [orderType, setOrderType] = useState<"table" | "takeaway">("takeaway");
+  const [orderType, setOrderType] = useState<"table" | "takeaway" | "delivery">("takeaway");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 

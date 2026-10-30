@@ -1,10 +1,20 @@
 export type Role = "owner" | "cashier" | "kitchen";
 
-export type OrderType = "table" | "takeaway";
+export type OrderType = "table" | "takeaway" | "delivery";
 
-export type OrderStatus = "received" | "preparing" | "ready" | "completed" | "cancelled";
+export type OrderStatus = "received" | "preparing" | "ready" | "out_for_delivery" | "completed" | "cancelled";
 
 export type TableStatus = "empty" | "occupied" | "calling_waiter" | "requesting_bill";
+
+export interface DeliveryZone {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  fee: number; // in IQD (e.g. 2000, 3000)
+  minOrder?: number; // minimum order subtotal for this zone (e.g. 10000)
+  estimatedTime?: string; // e.g. "30-45 دقيقة"
+  isActive: boolean;
+}
 
 export interface RestaurantSettings {
   name: string;
@@ -26,6 +36,11 @@ export interface RestaurantSettings {
   openingHours: string;
   bannerMessage?: string;
   bannerActive?: boolean;
+  // Delivery settings
+  deliveryEnabled?: boolean;
+  deliveryZones?: DeliveryZone[];
+  freeDeliveryThreshold?: number; // e.g. 50000 -> 0 fee
+  defaultDeliveryTime?: string; // e.g. "35-50 دقيقة"
 }
 
 
@@ -136,6 +151,16 @@ export interface Order {
   customerName?: string;
   customerPhone?: string;
   pickupTime?: string; // "asap" or specified time
+  // Delivery specific fields
+  deliveryZoneId?: string;
+  deliveryZoneName?: string;
+  deliveryFee?: number;
+  address?: string;
+  landmark?: string;
+  lat?: number;
+  lng?: number;
+  driverNotes?: string;
+  cashToPay?: number; // amount customer will pay to prepare change
   items: OrderItem[];
   subtotal: number;
   discount: number;
@@ -173,6 +198,10 @@ export interface SavedCustomerOrder {
   customerName?: string;
   customerPhone?: string;
   pickupTime?: string;
+  deliveryZoneName?: string;
+  deliveryFee?: number;
+  address?: string;
+  landmark?: string;
   items: {
     menuItemId: string;
     nameAr: string;

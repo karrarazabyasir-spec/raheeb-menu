@@ -24,6 +24,7 @@ import {
   Loader2,
   ArrowRight,
   Sparkles,
+  Bike,
 } from "lucide-react";
 
 function OrderTrackingContent() {
@@ -70,8 +71,9 @@ function OrderTrackingContent() {
       received: 0,
       preparing: 1,
       ready: 2,
-      completed: 3,
-      cancelled: 4,
+      out_for_delivery: 3,
+      completed: 4,
+      cancelled: 5,
     };
 
     const applyOrderUpdate = (newOrder: Order) => {
@@ -181,14 +183,23 @@ function OrderTrackingContent() {
 
   const currency = isRtl ? settings.currency : settings.currencyEn;
   const isTable = order.type === "table";
+  const isDelivery = order.type === "delivery";
 
   // Step progression
-  const steps: { key: Order["status"]; label: string; icon: React.ReactNode }[] = [
-    { key: "received", label: "تم الاستلام", icon: <CheckCircle2 className="w-5 h-5" /> },
-    { key: "preparing", label: "قيد التحضير", icon: <ChefHat className="w-5 h-5" /> },
-    { key: "ready", label: "جاهز للتقديم/الاستلام", icon: <Sparkles className="w-5 h-5" /> },
-    { key: "completed", label: "تم التسليم", icon: <CheckCircle2 className="w-5 h-5" /> },
-  ];
+  const steps: { key: Order["status"]; label: string; icon: React.ReactNode }[] = isDelivery
+    ? [
+        { key: "received", label: "تم الاستلام", icon: <CheckCircle2 className="w-5 h-5" /> },
+        { key: "preparing", label: "قيد التحضير", icon: <ChefHat className="w-5 h-5" /> },
+        { key: "ready", label: "تم التجهيز", icon: <Sparkles className="w-5 h-5" /> },
+        { key: "out_for_delivery", label: "مع السائق 🛵", icon: <Bike className="w-5 h-5" /> },
+        { key: "completed", label: "تم التسليم", icon: <CheckCircle2 className="w-5 h-5" /> },
+      ]
+    : [
+        { key: "received", label: "تم الاستلام", icon: <CheckCircle2 className="w-5 h-5" /> },
+        { key: "preparing", label: "قيد التحضير", icon: <ChefHat className="w-5 h-5" /> },
+        { key: "ready", label: "جاهز للتقديم/الاستلام", icon: <Sparkles className="w-5 h-5" /> },
+        { key: "completed", label: "تم التسليم", icon: <CheckCircle2 className="w-5 h-5" /> },
+      ];
 
   const getStepStatus = (stepKey: Order["status"]) => {
     const orderIndex = steps.findIndex((s) => s.key === order.status);
@@ -238,7 +249,11 @@ function OrderTrackingContent() {
             <h2 className="text-xl font-black text-[#780000]">
               {order.status === "received" && "تم استلام طلبك بنجاح وفي انتظار التحضير"}
               {order.status === "preparing" && "الشيف يحضّر طلبك الآن بكل حب 🔥"}
-              {order.status === "ready" && "طلبك جاهز ولذيذ! في طريقه إليك 🍽️"}
+              {order.status === "ready" &&
+                (isDelivery
+                  ? "طلبك جاهز بالمطعم وبانتظار السائق 📦"
+                  : "طلبك جاهز ولذيذ! في طريقه إليك 🍽️")}
+              {order.status === "out_for_delivery" && "طلبك خرج للتوصيل مع السائق الآن 🛵💨"}
               {order.status === "completed" && "تم تسليم الطلب، بالهناء والشفاء ❤️"}
               {order.status === "cancelled" && "تم إلغاء الطلب"}
             </h2>
@@ -250,13 +265,13 @@ function OrderTrackingContent() {
           {/* Stepper */}
           {order.status !== "cancelled" && (
             <div className="relative py-4">
-              <div className="grid grid-cols-4 gap-2">
+              <div className={`grid ${isDelivery ? "grid-cols-5" : "grid-cols-4"} gap-1.5`}>
                 {steps.map((s) => {
                   const status = getStepStatus(s.key);
                   return (
                     <div key={s.key} className="flex flex-col items-center text-center gap-1.5">
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${
                           status === "completed"
                             ? "bg-emerald-600 text-white"
                             : status === "active"
@@ -267,7 +282,7 @@ function OrderTrackingContent() {
                         {s.icon}
                       </div>
                       <span
-                        className={`text-[10px] font-bold leading-tight ${
+                        className={`text-[9px] sm:text-[10px] font-bold leading-tight ${
                           status === "active"
                             ? "text-[#780000] font-black"
                             : status === "completed"
@@ -285,19 +300,25 @@ function OrderTrackingContent() {
           )}
 
           {/* Delivery/Table Info Badge */}
-          <div className="bg-stone-50 border border-stone-200/80 rounded-xl p-3 flex items-center justify-around text-xs">
-            <div className="flex items-center gap-1.5 text-stone-700 font-bold">
-              <MapPin className="w-4 h-4 text-[#780000]" />
+          <div className="bg-stone-50 border border-stone-200/80 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-around gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-stone-700 font-bold text-center">
+              <MapPin className="w-4 h-4 text-[#780000] shrink-0" />
               <span>
-                {isTable ? `طاولة رقم ${order.tableNumber}` : `استلام مسبق (${order.customerName})`}
+                {isTable
+                  ? `طاولة رقم ${order.tableNumber}`
+                  : isDelivery
+                  ? `توصيل: ${order.deliveryZoneName || "منازل"} - ${order.address}`
+                  : `استلام مسبق (${order.customerName})`}
               </span>
             </div>
-            <div className="h-4 w-px bg-stone-200" />
+            <div className="hidden sm:block h-4 w-px bg-stone-200" />
             <div className="flex items-center gap-1.5 text-stone-700 font-bold">
-              <Clock className="w-4 h-4 text-amber-600" />
+              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
                 {isTable
                   ? `التحضير: ~${settings.estimatedPreparationTimeMinutes} دقيقة`
+                  : isDelivery
+                  ? `الوقت المقدر: ~${settings.defaultDeliveryTime || "30-45"} دقيقة`
                   : `الموعد: ${order.pickupTime}`}
               </span>
             </div>
@@ -386,6 +407,12 @@ function OrderTrackingContent() {
               <div className="flex justify-between text-emerald-700 font-bold">
                 <span>خصم الكوبون</span>
                 <span>-{order.discount} {currency}</span>
+              </div>
+            )}
+            {order.deliveryFee && order.deliveryFee > 0 && (
+              <div className="flex justify-between text-stone-700 font-bold">
+                <span>أجرة التوصيل ({order.deliveryZoneName || "توصيل"})</span>
+                <span>+{order.deliveryFee} {currency}</span>
               </div>
             )}
             {order.serviceFee > 0 && (

@@ -28,7 +28,12 @@ import {
   ChefHat,
   Volume2,
   VolumeX,
+  Bike,
+  Share2,
+  Navigation,
+  Phone,
 } from "lucide-react";
+import { getDriverWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function CashierPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -268,10 +273,10 @@ export default function CashierPage() {
     return d.toDateString() === today.toDateString();
   });
   const todayRevenue = todayOrders
-    .filter((o) => o.status === "completed" || o.status === "ready" || o.status === "preparing")
+    .filter((o) => o.status === "completed" || o.status === "ready" || o.status === "preparing" || o.status === "out_for_delivery")
     .reduce((sum, o) => sum + o.total, 0);
   const activeOrdersCount = orders.filter(
-    (o) => o.status === "received" || o.status === "preparing" || o.status === "ready"
+    (o) => o.status === "received" || o.status === "preparing" || o.status === "ready" || o.status === "out_for_delivery"
   ).length;
 
   const filteredOrders = orders.filter((o) => {
@@ -441,6 +446,7 @@ export default function CashierPage() {
                   { key: "received", label: "جديد / انتظار" },
                   { key: "preparing", label: "قيد التحضير" },
                   { key: "ready", label: "جاهز للتقديم" },
+                  { key: "out_for_delivery", label: "مع السائق 🛵" },
                   { key: "completed", label: "مكتمل" },
                   { key: "cancelled", label: "ملغي" },
                 ].map((f) => (
@@ -483,6 +489,14 @@ export default function CashierPage() {
                 >
                   استلام خارجي
                 </button>
+                <button
+                  onClick={() => setTypeFilter("delivery")}
+                  className={`px-2.5 py-1 rounded-lg font-bold ${
+                    typeFilter === "delivery" ? "bg-stone-800 text-white" : "bg-white text-stone-600"
+                  }`}
+                >
+                  توصيل 🛵
+                </button>
               </div>
             </div>
 
@@ -516,11 +530,15 @@ export default function CashierPage() {
                                 className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                                   order.type === "table"
                                     ? "bg-amber-100 text-amber-900"
+                                    : order.type === "delivery"
+                                    ? "bg-purple-100 text-purple-900"
                                     : "bg-blue-100 text-blue-900"
                                 }`}
                               >
                                 {order.type === "table"
                                   ? `طاولة ${order.tableNumber}`
+                                  : order.type === "delivery"
+                                  ? `🛵 توصيل (${order.deliveryZoneName || "منازل"})`
                                   : "استلام (Takeaway)"}
                               </span>
                             </div>
@@ -541,6 +559,8 @@ export default function CashierPage() {
                                 ? "bg-amber-100 text-amber-800"
                                 : order.status === "ready"
                                 ? "bg-emerald-100 text-emerald-800"
+                                : order.status === "out_for_delivery"
+                                ? "bg-purple-100 text-purple-900 animate-pulse"
                                 : order.status === "completed"
                                 ? "bg-stone-100 text-stone-700"
                                 : "bg-red-50 text-red-500"
@@ -549,6 +569,7 @@ export default function CashierPage() {
                             {order.status === "received" && "جديد / انتظار"}
                             {order.status === "preparing" && "قيد التحضير"}
                             {order.status === "ready" && "جاهز"}
+                            {order.status === "out_for_delivery" && "مع السائق 🛵"}
                             {order.status === "completed" && "مكتمل ومقفل"}
                             {order.status === "cancelled" && "ملغي"}
                           </span>
@@ -562,6 +583,68 @@ export default function CashierPage() {
                             <span className="block text-[10px] text-amber-800 font-semibold mt-0.5">
                               وقت الاستلام: {order.pickupTime}
                             </span>
+                          </div>
+                        )}
+
+                        {/* Customer Info & Dispatch if delivery */}
+                        {order.type === "delivery" && (
+                          <div className="py-2.5 px-3 text-xs text-stone-700 bg-purple-50/70 border border-purple-100 rounded-xl mt-2 space-y-1.5">
+                            <div className="flex items-center justify-between font-bold">
+                              <span className="text-purple-950 font-black">{order.customerName}</span>
+                              <a
+                                href={`tel:${order.customerPhone}`}
+                                className="text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-purple-200"
+                              >
+                                <Phone className="w-3 h-3" />
+                                <span dir="ltr">{order.customerPhone}</span>
+                              </a>
+                            </div>
+
+                            <div className="text-[11px] text-stone-600">
+                              <p><span className="font-bold text-stone-800">العنوان:</span> {order.address}</p>
+                              {order.landmark && (
+                                <p><span className="font-bold text-stone-800">أقرب دالة:</span> {order.landmark}</p>
+                              )}
+                              {order.driverNotes && (
+                                <p className="text-amber-800 font-semibold bg-amber-50 p-1 rounded mt-1">
+                                  📝 {order.driverNotes}
+                                </p>
+                              )}
+                              {order.cashToPay && order.cashToPay > order.total && (
+                                <p className="text-emerald-800 font-bold bg-emerald-50 p-1 rounded mt-1">
+                                  💵 الزبون معه: {order.cashToPay} {settings?.currency} (الباقي: {order.cashToPay - order.total})
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Driver Dispatch & Maps Actions */}
+                            <div className="pt-1 flex gap-1.5">
+                              {settings && (
+                                <a
+                                  href={getDriverWhatsAppUrl(order, settings)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition shadow-xs"
+                                  title="إرسال تفاصيل الطلب للسائق عبر واتساب"
+                                >
+                                  <Share2 className="w-3 h-3" />
+                                  <span>إرسال للسائق (واتساب)</span>
+                                </a>
+                              )}
+
+                              {order.lat && order.lng && (
+                                <a
+                                  href={`https://maps.google.com/?q=${order.lat},${order.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="py-1.5 px-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition shadow-xs"
+                                  title="فتح موقع الزبون في خرائط Google"
+                                >
+                                  <Navigation className="w-3 h-3" />
+                                  <span>الخريطة</span>
+                                </a>
+                              )}
+                            </div>
                           </div>
                         )}
 
@@ -602,7 +685,9 @@ export default function CashierPage() {
                       <div className="pt-3 border-t border-stone-100 space-y-2">
                         {/* Financial line */}
                         <div className="flex items-center justify-between text-xs font-bold text-stone-700">
-                          <span>المجموع (نقداً):</span>
+                          <span>
+                            المجموع {order.deliveryFee ? `(شامل توصيل +${order.deliveryFee})` : "(نقداً)"}:
+                          </span>
                           <span className="text-sm font-black text-[#780000]">
                             {order.total} {settings?.currency}
                           </span>
@@ -640,12 +725,32 @@ export default function CashierPage() {
                           )}
 
                           {order.status === "ready" && (
+                            order.type === "delivery" ? (
+                              <button
+                                onClick={() => handleUpdateStatus(order.id, "out_for_delivery")}
+                                className="col-span-2 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs"
+                              >
+                                <Bike className="w-3.5 h-3.5" />
+                                <span>تسليم للسائق (خرج للتوصيل 🛵)</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleUpdateStatus(order.id, "completed")}
+                                className="col-span-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                <span>تسجيل استلام النقد وإتمام الطلب</span>
+                              </button>
+                            )
+                          )}
+
+                          {order.status === "out_for_delivery" && (
                             <button
                               onClick={() => handleUpdateStatus(order.id, "completed")}
-                              className="col-span-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1"
+                              className="col-span-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-xs"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
-                              <span>تسجيل استلام النقد وإتمام الطلب</span>
+                              <span>تم التسليم واستلام النقد من السائق ✓</span>
                             </button>
                           )}
 

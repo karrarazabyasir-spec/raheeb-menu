@@ -323,6 +323,14 @@ export const db = {
         cancel_reason: newOrder.cancelReason || null,
         created_at: newOrder.createdAt,
         updated_at: newOrder.updatedAt,
+        delivery_zone_name: newOrder.deliveryZoneName || null,
+        delivery_fee: newOrder.deliveryFee || 0,
+        address: newOrder.address || null,
+        landmark: newOrder.landmark || null,
+        driver_notes: newOrder.driverNotes || null,
+        cash_to_pay: newOrder.cashToPay || null,
+        lat: newOrder.lat || null,
+        lng: newOrder.lng || null,
       })
       .then(({ error }) => {
         if (error) console.error("Supabase order sync error:", error);

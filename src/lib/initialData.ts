@@ -20,6 +20,47 @@ export const initialSettings: RestaurantSettings = {
   openingHours: "يومياً من 12:00 ظهراً حتى 01:00 بعد منتصف الليل",
   bannerMessage: "🔥 خصم خاص 15% على جميع وجبات المشويات العائلية بكود: RAHEEB15",
   bannerActive: true,
+  deliveryEnabled: true,
+  freeDeliveryThreshold: 50000,
+  defaultDeliveryTime: "30-45 دقيقة",
+  deliveryZones: [
+    {
+      id: "zone-1",
+      nameAr: "الحسينية (المركز)",
+      nameEn: "Al-Hussainiya Center",
+      fee: 2000,
+      minOrder: 10000,
+      estimatedTime: "25-35 دقيقة",
+      isActive: true,
+    },
+    {
+      id: "zone-2",
+      nameAr: "حي المعلمين والضباط",
+      nameEn: "Al-Muallimeen & Dubat",
+      fee: 2500,
+      minOrder: 10000,
+      estimatedTime: "30-40 دقيقة",
+      isActive: true,
+    },
+    {
+      id: "zone-3",
+      nameAr: "حي العباس والأحياء المجاورة",
+      nameEn: "Al-Abbas & Nearby",
+      fee: 3000,
+      minOrder: 15000,
+      estimatedTime: "35-45 دقيقة",
+      isActive: true,
+    },
+    {
+      id: "zone-4",
+      nameAr: "أطراف الحسينية والمزارع",
+      nameEn: "Suburbs & Farms",
+      fee: 4000,
+      minOrder: 20000,
+      estimatedTime: "40-50 دقيقة",
+      isActive: true,
+    },
+  ],
 };
 
 export const initialCategories: Category[] = [

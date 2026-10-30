@@ -25,6 +25,15 @@ export async function GET(request: Request) {
         customerName: o.customer_name || undefined,
         customerPhone: o.customer_phone || undefined,
         pickupTime: o.pickup_time || undefined,
+        deliveryZoneId: o.delivery_zone_id || undefined,
+        deliveryZoneName: o.delivery_zone_name || undefined,
+        deliveryFee: o.delivery_fee || 0,
+        address: o.address || undefined,
+        landmark: o.landmark || undefined,
+        driverNotes: o.driver_notes || undefined,
+        cashToPay: o.cash_to_pay || undefined,
+        lat: o.lat || undefined,
+        lng: o.lng || undefined,
         items: o.items,
         subtotal: o.subtotal,
         discount: o.discount,
@@ -57,6 +66,13 @@ export async function POST(request: Request) {
       customerName,
       customerPhone,
       pickupTime,
+      deliveryZoneId,
+      address,
+      landmark,
+      driverNotes,
+      cashToPay,
+      lat,
+      lng,
       cartItems,
       couponCode,
     }: {
@@ -65,6 +81,13 @@ export async function POST(request: Request) {
       customerName?: string;
       customerPhone?: string;
       pickupTime?: string;
+      deliveryZoneId?: string;
+      address?: string;
+      landmark?: string;
+      driverNotes?: string;
+      cashToPay?: number;
+      lat?: number;
+      lng?: number;
       cartItems: CartItem[];
       couponCode?: string;
     } = body;
@@ -91,6 +114,27 @@ export async function POST(request: Request) {
         { error: "الاسم ورقم الهاتف مطلوبان للطلب المسبق" },
         { status: 400 }
       );
+    }
+
+    if (type === "delivery") {
+      if (settings.deliveryEnabled === false) {
+        return NextResponse.json(
+          { error: "نأسف، خدمة التوصيل للمنازل متوقفة حالياً" },
+          { status: 403 }
+        );
+      }
+      if (!customerName || !customerPhone) {
+        return NextResponse.json(
+          { error: "الاسم ورقم الهاتف مطلوبان لطلب التوصيل" },
+          { status: 400 }
+        );
+      }
+      if (!address) {
+        return NextResponse.json(
+          { error: "يرجى كتابة العنوان بالتفصيل للتوصيل" },
+          { status: 400 }
+        );
+      }
     }
 
     // SERVER-SIDE VERIFICATION OF ITEMS AND PRICES
@@ -182,14 +226,62 @@ export async function POST(request: Request) {
         ? Math.round((((afterDiscount + serviceFee) * settings.taxPercent) / 100) * 100) / 100
         : 0;
 
-    const total = Math.round((afterDiscount + serviceFee + tax) * 100) / 100;
+    // Delivery Fee calculation (SERVER-SIDE ONLY)
+    let deliveryFee = 0;
+    let selectedZoneName: string | undefined = undefined;
+
+    if (type === "delivery") {
+      const zones = settings.deliveryZones || [];
+      const matchedZone = zones.find((z) => z.id === deliveryZoneId && z.isActive);
+
+      if (matchedZone) {
+        selectedZoneName = matchedZone.nameAr;
+        // Check zone min order
+        if (matchedZone.minOrder && calculatedSubtotal < matchedZone.minOrder) {
+          const diff = matchedZone.minOrder - calculatedSubtotal;
+          return NextResponse.json(
+            {
+              error: `الحد الأدنى لطلب التوصيل لمنطقة (${matchedZone.nameAr}) هو ${matchedZone.minOrder} ${settings.currency}. يرجى إضافة أصناف بقيمة ${diff} ${settings.currency} إضافية.`,
+            },
+            { status: 400 }
+          );
+        }
+        deliveryFee = matchedZone.fee;
+      } else if (zones.length > 0) {
+        // Zone not found or inactive
+        return NextResponse.json(
+          { error: "يرجى اختيار منطقة توصيل صحيحة ومتاحة من القائمة" },
+          { status: 400 }
+        );
+      }
+
+      // Check Free Delivery Threshold
+      if (
+        settings.freeDeliveryThreshold &&
+        settings.freeDeliveryThreshold > 0 &&
+        calculatedSubtotal >= settings.freeDeliveryThreshold
+      ) {
+        deliveryFee = 0;
+      }
+    }
+
+    const total = Math.round((afterDiscount + serviceFee + tax + deliveryFee) * 100) / 100;
 
     const newOrder = db.createOrder({
       type,
       tableNumber: type === "table" ? Number(tableNumber) : undefined,
-      customerName: type === "takeaway" ? customerName?.trim() : undefined,
-      customerPhone: type === "takeaway" ? customerPhone?.trim() : undefined,
+      customerName: type !== "table" ? customerName?.trim() : undefined,
+      customerPhone: type !== "table" ? customerPhone?.trim() : undefined,
       pickupTime: type === "takeaway" ? (pickupTime || "في أسرع وقت") : undefined,
+      deliveryZoneId: type === "delivery" ? deliveryZoneId : undefined,
+      deliveryZoneName: type === "delivery" ? selectedZoneName : undefined,
+      deliveryFee: type === "delivery" ? deliveryFee : 0,
+      address: type === "delivery" ? address?.trim() : undefined,
+      landmark: type === "delivery" ? landmark?.trim() : undefined,
+      driverNotes: type === "delivery" ? driverNotes?.trim() : undefined,
+      cashToPay: type === "delivery" && cashToPay ? Number(cashToPay) : undefined,
+      lat: type === "delivery" && typeof lat === "number" ? lat : undefined,
+      lng: type === "delivery" && typeof lng === "number" ? lng : undefined,
       items: verifiedOrderItems,
       subtotal: calculatedSubtotal,
       discount,
