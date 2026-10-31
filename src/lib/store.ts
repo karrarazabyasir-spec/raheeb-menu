@@ -604,6 +604,17 @@ export const db = {
     return coupon;
   },
 
+  deleteCoupon(code: string): boolean {
+    const data = readData();
+    const prevLength = data.coupons.length;
+    data.coupons = data.coupons.filter((c) => c.code.toUpperCase() !== code.toUpperCase());
+    if (data.coupons.length !== prevLength) {
+      writeData(data);
+      return true;
+    }
+    return false;
+  },
+
   // Reviews
   getReviews(): CustomerReview[] {
     const data = readData();

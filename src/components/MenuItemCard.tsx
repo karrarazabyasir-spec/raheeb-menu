@@ -58,8 +58,14 @@ export function MenuItemCard({ item, settings, onSelectItem }: MenuItemCardProps
           loading="lazy"
         />
 
-        {/* Subtle top tag badge */}
+        {/* Subtle top tag badge & Discount badge */}
         <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 z-10 max-w-[85%]">
+          {item.originalPrice && item.originalPrice > displayPrice && (
+            <span className="bg-red-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm animate-pulse">
+              <span>🔥</span>
+              <span>خصم {Math.round(((item.originalPrice - displayPrice) / item.originalPrice) * 100)}%</span>
+            </span>
+          )}
           {item.tags?.map((tagId) => {
             const foundTag = settings?.customTags?.find((t) => t.id === tagId);
             const label =
@@ -138,6 +144,11 @@ export function MenuItemCard({ item, settings, onSelectItem }: MenuItemCardProps
             {hasVariants && item.variants!.length > 1 && (
               <span className="text-[10px] text-stone-400 font-bold shrink-0">
                 {isRtl ? "من" : "from"}
+              </span>
+            )}
+            {item.originalPrice && item.originalPrice > displayPrice && (
+              <span className="text-[10px] font-bold text-stone-400 line-through shrink-0">
+                {item.originalPrice.toLocaleString()}
               </span>
             )}
             <span

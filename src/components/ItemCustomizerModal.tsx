@@ -273,7 +273,25 @@ export function ItemCustomizerModal({
             {/* Details */}
             <div className="p-5 space-y-5 text-stone-900">
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-stone-900">{name}</h2>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-xl sm:text-2xl font-black text-stone-900">{name}</h2>
+                {item.originalPrice && item.originalPrice > item.basePrice && (
+                  <span className="bg-red-600 text-white font-black text-xs px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 animate-pulse">
+                    <span>🔥</span>
+                    <span>خصم {Math.round(((item.originalPrice - item.basePrice) / item.originalPrice) * 100)}%</span>
+                  </span>
+                )}
+              </div>
+              {item.originalPrice && item.originalPrice > item.basePrice && (
+                <div className="flex items-center gap-2 mt-1.5 text-xs font-bold">
+                  <span className="text-stone-400 line-through">
+                    السعر السابق: {item.originalPrice.toLocaleString()} {currency}
+                  </span>
+                  <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                    وفرت {(item.originalPrice - item.basePrice).toLocaleString()} {currency}!
+                  </span>
+                </div>
+              )}
               <p className="text-xs sm:text-sm text-stone-500 mt-1 leading-relaxed">
                 {description}
               </p>

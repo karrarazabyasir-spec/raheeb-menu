@@ -110,6 +110,7 @@ export interface MenuItem {
   descriptionAr: string;
   descriptionEn: string;
   basePrice: number;
+  originalPrice?: number; // Price before discount (e.g. 15000) for strikethrough display
   imageUrl: string;
   tags: string[];
   isAvailable: boolean; // available or sold out (نفد)
@@ -203,6 +204,7 @@ export interface Coupon {
   value: number;
   minOrderValue?: number;
   isActive: boolean;
+  description?: string;
 }
 
 export interface WaiterCall {
