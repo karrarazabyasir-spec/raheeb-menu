@@ -29,6 +29,15 @@ export async function GET(
         customerName: data.customer_name || undefined,
         customerPhone: data.customer_phone || undefined,
         pickupTime: data.pickup_time || undefined,
+        deliveryZoneId: data.delivery_zone_id || undefined,
+        deliveryZoneName: data.delivery_zone_name || undefined,
+        deliveryFee: data.delivery_fee || 0,
+        address: data.address || undefined,
+        landmark: data.landmark || undefined,
+        driverNotes: data.driver_notes || undefined,
+        cashToPay: data.cash_to_pay || undefined,
+        lat: data.lat || undefined,
+        lng: data.lng || undefined,
         items: data.items,
         subtotal: data.subtotal,
         discount: data.discount,
@@ -53,8 +62,12 @@ export async function GET(
     console.error("Supabase order fetch error, falling back to local store:", e);
   }
 
-  // 2. Fallback to in-memory/file store if cloud fetch fails
-  const localOrder = db.getOrderById(id);
+  // 2. Fallback to storage/in-memory store if cloud database fetch fails
+  let localOrder = db.getOrderById(id);
+  if (!localOrder) {
+    localOrder = await db.getOrderByIdAsync(id);
+  }
+
   if (!localOrder) {
     return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
   }

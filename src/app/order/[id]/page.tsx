@@ -41,25 +41,40 @@ function OrderTrackingContent() {
   const [reviewSent, setReviewSent] = useState(false);
   const [callMessage, setCallMessage] = useState<string | null>(null);
 
-  const fetchOrderAndSettings = async () => {
+  const fetchOrderAndSettings = async (attempt = 1) => {
     try {
       const [orderRes, settingsRes] = await Promise.all([
         fetch(`/api/orders/${orderId}`),
         fetch("/api/settings"),
       ]);
       if (orderRes.ok) {
-        setOrder(await orderRes.json());
+        const orderData = await orderRes.json();
+        setOrder(orderData);
         setFetchError(false);
+        setLoading(false);
       } else {
+        // If order is still synchronizing across serverless instances, retry smoothly
+        if (attempt <= 4) {
+          setTimeout(() => {
+            fetchOrderAndSettings(attempt + 1);
+          }, 700 * attempt);
+          return;
+        }
         setFetchError(true);
+        setLoading(false);
       }
       if (settingsRes.ok) {
         setSettings(await settingsRes.json());
       }
     } catch (e) {
       console.error(e);
+      if (attempt <= 4) {
+        setTimeout(() => {
+          fetchOrderAndSettings(attempt + 1);
+        }, 700 * attempt);
+        return;
+      }
       setFetchError(true);
-    } finally {
       setLoading(false);
     }
   };

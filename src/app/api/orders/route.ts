@@ -267,7 +267,7 @@ export async function POST(request: Request) {
 
     const total = Math.round((afterDiscount + serviceFee + tax + deliveryFee) * 100) / 100;
 
-    const newOrder = db.createOrder({
+    const newOrder = await db.createOrder({
       type,
       tableNumber: type === "table" ? Number(tableNumber) : undefined,
       customerName: type !== "table" ? customerName?.trim() : undefined,

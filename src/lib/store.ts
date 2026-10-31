@@ -332,8 +332,13 @@ export const db = {
     return data.orders.find((o) => o.id === id);
   },
 
-  createOrder(orderData: Omit<Order, "id" | "orderNumber" | "createdAt" | "updatedAt">): Order {
-    const data = readData();
+  async getOrderByIdAsync(id: string): Promise<Order | undefined> {
+    const data = await readDataAsync();
+    return data.orders.find((o) => o.id === id);
+  },
+
+  async createOrder(orderData: Omit<Order, "id" | "orderNumber" | "createdAt" | "updatedAt">): Promise<Order> {
+    const data = await readDataAsync();
     const orderNumber = data.nextOrderNumber++;
     const now = new Date().toISOString();
 
@@ -356,43 +361,73 @@ export const db = {
       }
     }
 
-    writeData(data);
+    // Persist to storage immediately
+    await writeData(data);
     eventBus.emit("new_order", newOrder);
 
     // Sync to Supabase Cloud database
-    supabaseAdmin
-      .from("orders")
-      .insert({
-        id: newOrder.id,
-        order_number: newOrder.orderNumber,
-        type: newOrder.type,
-        table_number: newOrder.tableNumber || null,
-        customer_name: newOrder.customerName || null,
-        customer_phone: newOrder.customerPhone || null,
-        pickup_time: newOrder.pickupTime || null,
-        items: newOrder.items,
-        subtotal: newOrder.subtotal,
-        discount: newOrder.discount,
-        service_fee: newOrder.serviceFee,
-        tax: newOrder.tax,
-        total: newOrder.total,
-        payment_method: newOrder.paymentMethod,
-        status: newOrder.status,
-        cancel_reason: newOrder.cancelReason || null,
-        created_at: newOrder.createdAt,
-        updated_at: newOrder.updatedAt,
-        delivery_zone_name: newOrder.deliveryZoneName || null,
-        delivery_fee: newOrder.deliveryFee || 0,
-        address: newOrder.address || null,
-        landmark: newOrder.landmark || null,
-        driver_notes: newOrder.driverNotes || null,
-        cash_to_pay: newOrder.cashToPay || null,
-        lat: newOrder.lat || null,
-        lng: newOrder.lng || null,
-      })
-      .then(({ error }) => {
-        if (error) console.error("Supabase order sync error:", error);
-      });
+    const fullRow = {
+      id: newOrder.id,
+      order_number: newOrder.orderNumber,
+      type: newOrder.type,
+      table_number: newOrder.tableNumber || null,
+      customer_name: newOrder.customerName || null,
+      customer_phone: newOrder.customerPhone || null,
+      pickup_time: newOrder.pickupTime || null,
+      items: newOrder.items,
+      subtotal: newOrder.subtotal,
+      discount: newOrder.discount,
+      service_fee: newOrder.serviceFee,
+      tax: newOrder.tax,
+      total: newOrder.total,
+      payment_method: newOrder.paymentMethod,
+      status: newOrder.status,
+      cancel_reason: newOrder.cancelReason || null,
+      created_at: newOrder.createdAt,
+      updated_at: newOrder.updatedAt,
+      delivery_zone_name: newOrder.deliveryZoneName || null,
+      delivery_fee: newOrder.deliveryFee || 0,
+      address: newOrder.address || null,
+      landmark: newOrder.landmark || null,
+      driver_notes: newOrder.driverNotes || null,
+      cash_to_pay: newOrder.cashToPay || null,
+      lat: newOrder.lat || null,
+      lng: newOrder.lng || null,
+    };
+
+    try {
+      const { error } = await supabaseAdmin.from("orders").insert(fullRow);
+      if (error) {
+        // If Supabase table 'orders' does not have delivery columns yet, fallback to base columns
+        console.warn("Supabase insert with delivery columns failed, falling back to base columns:", error.message);
+        const baseRow = {
+          id: newOrder.id,
+          order_number: newOrder.orderNumber,
+          type: newOrder.type,
+          table_number: newOrder.tableNumber || null,
+          customer_name: newOrder.customerName || null,
+          customer_phone: newOrder.customerPhone || null,
+          pickup_time: newOrder.pickupTime || null,
+          items: newOrder.items,
+          subtotal: newOrder.subtotal,
+          discount: newOrder.discount,
+          service_fee: newOrder.serviceFee,
+          tax: newOrder.tax,
+          total: newOrder.total,
+          payment_method: newOrder.paymentMethod,
+          status: newOrder.status,
+          cancel_reason: newOrder.cancelReason || null,
+          created_at: newOrder.createdAt,
+          updated_at: newOrder.updatedAt,
+        };
+        const { error: fallbackErr } = await supabaseAdmin.from("orders").insert(baseRow);
+        if (fallbackErr) {
+          console.error("Supabase base order fallback insert failed:", fallbackErr.message);
+        }
+      }
+    } catch (dbErr) {
+      console.error("Supabase insert network exception:", dbErr);
+    }
 
     return newOrder;
   },
