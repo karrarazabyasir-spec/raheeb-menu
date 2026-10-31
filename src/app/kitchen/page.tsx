@@ -28,9 +28,9 @@ export default function KitchenPage() {
     try {
       const res = await fetch("/api/orders");
       const data: Order[] = await res.json();
-      // Only show active kitchen orders (preparing or received), sorted newest first
+      // Only show active kitchen orders that were approved by cashier ("preparing")
       const kitchenOrders = data
-        .filter((o) => o.status === "preparing" || o.status === "received")
+        .filter((o) => o.status === "preparing")
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setOrders(kitchenOrders);
     } catch (e) {
@@ -47,22 +47,37 @@ export default function KitchenPage() {
 
     // Supabase Realtime WebSocket subscription (<100ms instant updates)
     const unsubscribe = subscribeToLiveEvents((event, payload) => {
-      if (event === "new_order" && payload) {
-        setOrders((prev) => {
-          const exists = prev.some((o) => o.id === payload.id);
-          if (exists) return prev;
-          return [payload, ...prev].sort(
-            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        });
-        if (soundEnabled) playNotificationChime("order");
-      } else if (event === "order_status_changed" && payload) {
-        setOrders((prev) => {
-          if (payload.status === "ready" || payload.status === "completed" || payload.status === "cancelled") {
-            return prev.filter((o) => o.id !== payload.id);
-          }
-          return prev.map((o) => (o.id === payload.id ? payload : o));
-        });
+      if (event === "order_status_changed" && payload) {
+        if (payload.status === "preparing") {
+          // Cashier approved order -> send ticket to kitchen & ring chime
+          setOrders((prev) => {
+            const exists = prev.some((o) => o.id === payload.id);
+            if (exists) return prev.map((o) => (o.id === payload.id ? payload : o));
+            return [payload, ...prev].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          });
+          if (soundEnabled) playNotificationChime("order");
+        } else if (
+          payload.status === "ready" ||
+          payload.status === "completed" ||
+          payload.status === "cancelled"
+        ) {
+          // Finished or cancelled -> remove ticket from kitchen
+          setOrders((prev) => prev.filter((o) => o.id !== payload.id));
+        }
+      } else if (event === "new_order" && payload) {
+        // Only if created directly as preparing (e.g. internal direct kitchen dispatch)
+        if (payload.status === "preparing") {
+          setOrders((prev) => {
+            const exists = prev.some((o) => o.id === payload.id);
+            if (exists) return prev;
+            return [payload, ...prev].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          });
+          if (soundEnabled) playNotificationChime("order");
+        }
       }
     });
 
@@ -212,7 +227,11 @@ export default function KitchenPage() {
                           #{order.orderNumber}
                         </span>
                         <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-stone-900/80 text-amber-300">
-                          {order.type === "table" ? `طاولة ${order.tableNumber}` : "سفري / استلام"}
+                          {order.type === "table"
+                            ? `طاولة ${order.tableNumber}`
+                            : order.type === "delivery"
+                            ? "توصيل للمنازل 🛵"
+                            : "سفري / استلام 🥡"}
                         </span>
                       </div>
                       <span className="text-[11px] text-stone-400">
