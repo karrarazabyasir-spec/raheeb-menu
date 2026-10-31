@@ -2300,7 +2300,7 @@ export default function AdminPage() {
 
         {/* TAB 6: ANALYTICS */}
         {activeTab === "analytics" && (
-          <div className="space-y-5">
+          <div className="space-y-5" dir="rtl">
             {/* Control Bar: Time-Range Filters & Export CSV */}
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs">
               <div className="flex flex-wrap items-center gap-2">
@@ -2310,18 +2310,19 @@ export default function AdminPage() {
                 </span>
                 <div className="inline-flex p-1 bg-stone-100 rounded-xl gap-1">
                   {[
-                    { id: "all", label: "كل الوقت" },
-                    { id: "month", label: "آخر 30 يوم" },
-                    { id: "week", label: "آخر 7 أيام" },
                     { id: "today", label: "اليوم" },
+                    { id: "week", label: "آخر 7 أيام" },
+                    { id: "month", label: "آخر 30 يوم" },
+                    { id: "all", label: "كل الوقت" },
                   ].map((t) => (
                     <button
                       key={t.id}
                       onClick={() => setAnalyticsRange(t.id as any)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition ${analyticsRange === t.id
-                        ? "bg-white text-stone-900 shadow-xs"
-                        : "text-stone-500 hover:text-stone-900"
-                        }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition ${
+                        analyticsRange === t.id
+                          ? "bg-white text-stone-900 shadow-xs"
+                          : "text-stone-500 hover:text-stone-900"
+                      }`}
                     >
                       {t.label}
                     </button>
@@ -2341,107 +2342,104 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* 4 Executive KPI Cards */}
+            {/* 4 Executive KPI Cards (Optimized RTL Layout) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: Total Sales */}
-              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-500">إجمالي المبيعات المحققة</span>
-                  <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <DollarSign className="w-4 h-4" />
-                  </span>
+              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <DollarSign className="w-6 h-6" />
                 </div>
-                <div className="mt-2">
-                  <span className="text-2xl font-black text-stone-900 tracking-tight">
-                    {totalSales.toLocaleString()}
-                  </span>
-                  <span className="text-xs font-extrabold text-stone-500 mr-1.5">
-                    {settings?.currency || "د.ع"}
-                  </span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
-                  <span className="text-stone-400 font-medium">صافي الطلبات غير الملغاة</span>
-                  <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                    نقداً بالكامل
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-bold text-stone-500 block truncate">إجمالي المبيعات المحققة</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-2xl font-black text-stone-900 tracking-tight">
+                      {totalSales.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-extrabold text-stone-500">
+                      {settings?.currency || "د.ع"}
+                    </span>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px]">
+                    <span className="text-stone-400 font-medium">صافي الطلبات</span>
+                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      نقداً بالكامل
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Card 2: Orders Count */}
-              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-500">عدد الطلبات الصافية</span>
-                  <span className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <ShoppingBag className="w-4 h-4" />
-                  </span>
+              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <ShoppingBag className="w-6 h-6" />
                 </div>
-                <div className="mt-2">
-                  <span className="text-2xl font-black text-stone-900 tracking-tight">
-                    {nonCancelledOrders.length}
-                  </span>
-                  <span className="text-xs font-extrabold text-stone-500 mr-1.5">طلب نشط ومكتمل</span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
-                  <span className="text-stone-400 font-medium">
-                    {cancelledOrders.length} ملغي ({filteredOrders.length > 0 ? Math.round((cancelledOrders.length / filteredOrders.length) * 100) : 0}%)
-                  </span>
-                  <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
-                    {completedOrders.length} مكتمل
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-bold text-stone-500 block truncate">عدد الطلبات الصافية</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-2xl font-black text-stone-900 tracking-tight">
+                      {nonCancelledOrders.length}
+                    </span>
+                    <span className="text-xs font-extrabold text-stone-500">طلب نشط</span>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px]">
+                    <span className="text-stone-400 font-medium">
+                      {cancelledOrders.length} ملغي
+                    </span>
+                    <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                      {completedOrders.length} مكتمل
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Card 3: Avg Order Value */}
-              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-500">متوسط قيمة الفاتورة</span>
-                  <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <Award className="w-4 h-4" />
-                  </span>
+              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <Award className="w-6 h-6" />
                 </div>
-                <div className="mt-2">
-                  <span className="text-2xl font-black text-amber-600 tracking-tight">
-                    {avgOrderValue.toLocaleString()}
-                  </span>
-                  <span className="text-xs font-extrabold text-stone-500 mr-1.5">
-                    {settings?.currency || "د.ع"}
-                  </span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
-                  <span className="text-stone-400 font-medium">معدل سلة الزبون الواحد</span>
-                  <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md flex items-center gap-0.5">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
-                    AOV
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-bold text-stone-500 block truncate">متوسط قيمة الفاتورة</span>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-2xl font-black text-amber-600 tracking-tight">
+                      {avgOrderValue.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-extrabold text-stone-500">
+                      {settings?.currency || "د.ع"}
+                    </span>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between text-[10px]">
+                    <span className="text-stone-400 font-medium">معدل سلة الزبون</span>
+                    <span className="font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md">
+                      متوسط الطلب
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Card 4: Dine-In vs Takeaway */}
-              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-stone-500">نوع الخدمة والطلب</span>
-                  <span className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <Users className="w-4 h-4" />
-                  </span>
+              {/* Card 4: Service Type */}
+              <div className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                  <Users className="w-6 h-6" />
                 </div>
-                <div className="mt-2 flex items-baseline justify-between">
-                  <div>
-                    <span className="text-lg font-black text-stone-900">{dineInPercent}%</span>
-                    <span className="text-[11px] font-bold text-stone-500 mr-1">صالة ({dineInCount})</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] font-bold text-stone-500 block truncate">نوع الخدمة والطلب</span>
+                  <div className="mt-1 flex items-baseline justify-between text-xs font-black">
+                    <span className="text-stone-800">
+                      صالة: <span dir="ltr">{dineInPercent}%</span> ({dineInCount})
+                    </span>
+                    <span className="text-purple-700">
+                      سفري: <span dir="ltr">{takeawayPercent}%</span> ({takeawayCount})
+                    </span>
                   </div>
-                  <div className="text-left">
-                    <span className="text-lg font-black text-purple-600">{takeawayPercent}%</span>
-                    <span className="text-[11px] font-bold text-stone-500 mr-1">سفري ({takeawayCount})</span>
+                  {/* Visual Progress Bar (Filling Right to Left) */}
+                  <div className="mt-2 w-full bg-purple-100 h-2 rounded-full overflow-hidden flex flex-row justify-start" dir="rtl">
+                    <div style={{ width: `${dineInPercent}%` }} className="bg-stone-800 h-full transition-all duration-500 shrink-0" />
+                    <div style={{ width: `${takeawayPercent}%` }} className="bg-purple-600 h-full transition-all duration-500 shrink-0" />
                   </div>
-                </div>
-                {/* Visual Progress Bar */}
-                <div className="mt-2.5 w-full bg-purple-100 h-2 rounded-full overflow-hidden flex">
-                  <div style={{ width: `${dineInPercent}%` }} className="bg-stone-800 h-full transition-all duration-500" />
-                  <div style={{ width: `${takeawayPercent}%` }} className="bg-purple-600 h-full transition-all duration-500" />
-                </div>
-                <div className="mt-2 flex items-center justify-between text-[10px] text-stone-400 font-bold">
-                  <span>صالة: {dineInSales.toLocaleString()} {settings?.currency}</span>
-                  <span>سفري: {takeawaySales.toLocaleString()} {settings?.currency}</span>
+                  <div className="mt-2 pt-1 border-t border-stone-100 flex items-center justify-between text-[10px] text-stone-400 font-bold">
+                    <span>صالة: {dineInSales.toLocaleString()} {settings?.currency}</span>
+                    <span>سفري: {takeawaySales.toLocaleString()} {settings?.currency}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2466,7 +2464,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Bar Chart Container */}
-                <div className="h-48 flex items-end justify-between gap-2 pt-6 pb-2 px-1 border-b border-stone-100">
+                <div className="h-48 flex items-end justify-between gap-2 pt-6 pb-2 px-1 border-b border-stone-100" dir="rtl">
                   {last7DaysTrend.map((day, i) => {
                     const heightPercent = Math.max(12, Math.round((day.total / peakSales) * 100));
                     const isToday = i === 6;
@@ -2486,10 +2484,11 @@ export default function AdminPage() {
                         <div className="w-full max-w-[38px] bg-stone-100 rounded-t-xl overflow-hidden flex flex-col justify-end h-full">
                           <div
                             style={{ height: `${heightPercent}%` }}
-                            className={`w-full rounded-t-xl transition-all duration-700 ${isToday
-                              ? "bg-gradient-to-t from-amber-600 to-amber-400 shadow-xs"
-                              : "bg-gradient-to-t from-stone-400 to-stone-300 group-hover:from-stone-700 group-hover:to-stone-500"
-                              }`}
+                            className={`w-full rounded-t-xl transition-all duration-700 ${
+                              isToday
+                                ? "bg-gradient-to-t from-amber-600 to-amber-400 shadow-xs"
+                                : "bg-gradient-to-t from-stone-400 to-stone-300 group-hover:from-stone-700 group-hover:to-stone-500"
+                            }`}
                           />
                         </div>
 
@@ -2552,15 +2551,16 @@ export default function AdminPage() {
                                 ({cat.count} قطعة)
                               </span>
                             </span>
-                            <div className="text-left font-black">
+                            <div className="flex items-center gap-1.5 font-black">
                               <span className="text-stone-900">{cat.revenue.toLocaleString()} {settings?.currency}</span>
-                              <span className="text-[10px] text-purple-600 font-extrabold mr-1.5">({share}%)</span>
+                              <span dir="ltr" className="text-[10px] text-purple-600 font-extrabold">({share}%)</span>
                             </div>
                           </div>
-                          <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden">
+                          {/* Progress bar starting strictly from right in RTL */}
+                          <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden flex flex-row justify-start" dir="rtl">
                             <div
                               style={{ width: `${Math.max(4, share)}%` }}
-                              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500"
+                              className="bg-gradient-to-l from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500 shrink-0"
                             />
                           </div>
                         </div>
@@ -2583,7 +2583,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-black text-stone-900 flex items-center gap-2">
                     <Flame className="w-4 h-4 text-rose-500" />
-                    الأطباق الأكثر طلباً ومبيعاً (Top 5 Leaderboard)
+                    الأطباق الأكثر طلباً ومبيعاً (الأعلى إقبالاً ⭐)
                   </h3>
                   <span className="text-xs font-bold text-stone-400">
                     ترتيب حسب الشعبية
@@ -2669,7 +2669,7 @@ export default function AdminPage() {
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       كفاءة العمليات وحالات الطلبات
                     </h3>
-                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                       {filteredOrders.length > 0
                         ? `${Math.round((completedOrders.length / filteredOrders.length) * 100)}% معدل الإنجاز`
                         : "100% جاهزية"}
@@ -2724,21 +2724,23 @@ export default function AdminPage() {
                 <div className="mt-4 pt-3 border-t border-stone-100">
                   <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                     <span className="text-stone-600">نسبة نجاح التسليم دون إلغاء</span>
-                    <span className="text-emerald-600 font-black">
+                    <span className="text-emerald-600 font-black" dir="ltr">
                       {filteredOrders.length > 0
                         ? `${100 - Math.round((cancelledOrders.length / filteredOrders.length) * 100)}%`
                         : "100%"}
                     </span>
                   </div>
-                  <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden flex">
+                  {/* Progress bar strictly starts from right */}
+                  <div className="w-full bg-stone-100 h-2 rounded-full overflow-hidden flex flex-row justify-start" dir="rtl">
                     <div
                       style={{
-                        width: `${filteredOrders.length > 0
-                          ? 100 - Math.round((cancelledOrders.length / filteredOrders.length) * 100)
-                          : 100
-                          }%`,
+                        width: `${
+                          filteredOrders.length > 0
+                            ? 100 - Math.round((cancelledOrders.length / filteredOrders.length) * 100)
+                            : 100
+                        }%`,
                       }}
-                      className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                      className="bg-emerald-500 h-full rounded-full transition-all duration-500 shrink-0"
                     />
                   </div>
                 </div>
