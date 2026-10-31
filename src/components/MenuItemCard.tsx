@@ -26,6 +26,9 @@ export function MenuItemCard({ item, settings, onSelectItem }: MenuItemCardProps
     (item.variants && item.variants.length > 0) ||
     (item.optionGroups && item.optionGroups.length > 0);
 
+  const hasVariants = Boolean(item.variants && item.variants.length > 0);
+  const displayPrice = hasVariants ? item.variants![0].price : item.basePrice;
+
   const handleAddClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!item.isAvailable) return;
@@ -100,12 +103,17 @@ export function MenuItemCard({ item, settings, onSelectItem }: MenuItemCardProps
 
         {/* Price & Circular Add Button */}
         <div className="pt-2 mt-1 flex items-center justify-between gap-1">
-          <div className="flex items-baseline gap-0.5 min-w-0">
+          <div className="flex items-baseline gap-1 min-w-0">
+            {hasVariants && item.variants!.length > 1 && (
+              <span className="text-[10px] text-stone-400 font-bold shrink-0">
+                {isRtl ? "من" : "from"}
+              </span>
+            )}
             <span
               style={{ color: brandColor }}
               className="text-xs sm:text-sm font-black truncate"
             >
-              {item.basePrice}
+              {displayPrice.toLocaleString()}
             </span>
             <span className="text-[9px] sm:text-[10px] font-bold text-stone-400">
               {currency}

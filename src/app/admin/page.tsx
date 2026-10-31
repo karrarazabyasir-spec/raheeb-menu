@@ -398,10 +398,14 @@ export default function AdminPage() {
   const handleSaveMenuItem = async () => {
     if (!editingItem) return;
     try {
+      const itemToSave = { ...editingItem };
+      if (itemToSave.variants && itemToSave.variants.length > 0) {
+        itemToSave.basePrice = itemToSave.variants[0].price;
+      }
       const res = await fetch("/api/menu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingItem),
+        body: JSON.stringify(itemToSave),
       });
       if (res.ok) {
         const saved = await res.json();
@@ -1007,7 +1011,7 @@ export default function AdminPage() {
                           </h3>
                           <div className="flex items-baseline gap-1 mt-1">
                             <span className="text-base font-black text-stone-900">
-                              {item.basePrice}
+                              {item.variants && item.variants.length > 0 ? item.variants[0].price : item.basePrice}
                             </span>
                             <span className="text-xs text-stone-500">{settings?.currency}</span>
                           </div>
@@ -2395,13 +2399,30 @@ export default function AdminPage() {
               {/* Price & Image */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold block mb-1">السعر الأساسي:</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold block">السعر الأساسي ({settings?.currency}):</label>
+                    {editingItem.variants && editingItem.variants.length > 0 && (
+                      <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-bold">
+                        مرتبط بسعر الحجم الأول
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="number"
                     value={editingItem.basePrice}
-                    onChange={(e) =>
-                      setEditingItem({ ...editingItem, basePrice: Number(e.target.value) || 0 })
-                    }
+                    onChange={(e) => {
+                      const newPrice = Number(e.target.value) || 0;
+                      let updatedVariants = editingItem.variants;
+                      if (updatedVariants && updatedVariants.length > 0) {
+                        updatedVariants = [...updatedVariants];
+                        updatedVariants[0] = { ...updatedVariants[0], price: newPrice };
+                      }
+                      setEditingItem({
+                        ...editingItem,
+                        basePrice: newPrice,
+                        variants: updatedVariants,
+                      });
+                    }}
                     className="w-full p-2.5 border rounded-xl font-black text-sm"
                   />
                 </div>
@@ -2525,9 +2546,14 @@ export default function AdminPage() {
                           type="number"
                           value={v.price}
                           onChange={(e) => {
+                            const newPrice = Number(e.target.value) || 0;
                             const copy = [...(editingItem.variants || [])];
-                            copy[vIdx].price = Number(e.target.value) || 0;
-                            setEditingItem({ ...editingItem, variants: copy });
+                            copy[vIdx].price = newPrice;
+                            setEditingItem({
+                              ...editingItem,
+                              variants: copy,
+                              basePrice: vIdx === 0 ? newPrice : editingItem.basePrice,
+                            });
                           }}
                           placeholder="السعر"
                           className="w-20 p-1.5 border rounded-lg text-xs font-bold"
