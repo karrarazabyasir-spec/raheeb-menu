@@ -426,11 +426,34 @@ export default function AdminPage() {
   // Save / Update Menu Item
   const handleSaveMenuItem = async () => {
     if (!editingItem) return;
+    if (!editingItem.nameAr?.trim()) {
+      flashMessage("يرجى كتابة اسم الطبق أولاً ⚠️");
+      return;
+    }
     try {
       const itemToSave = { ...editingItem };
+      // Auto-sync English fields from Arabic in background (100% Arabic UI)
+      itemToSave.nameEn = itemToSave.nameAr;
+      itemToSave.descriptionEn = itemToSave.descriptionAr || "";
+      
       if (itemToSave.variants && itemToSave.variants.length > 0) {
         itemToSave.basePrice = itemToSave.variants[0].price;
+        itemToSave.variants = itemToSave.variants.map((v) => ({
+          ...v,
+          nameEn: v.nameAr,
+        }));
       }
+      if (itemToSave.optionGroups && itemToSave.optionGroups.length > 0) {
+        itemToSave.optionGroups = itemToSave.optionGroups.map((g) => ({
+          ...g,
+          nameEn: g.nameAr,
+          options: (g.options || []).map((o) => ({
+            ...o,
+            nameEn: o.nameAr,
+          })),
+        }));
+      }
+
       const res = await fetch("/api/menu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -470,9 +493,11 @@ export default function AdminPage() {
   // Save / Update Category
   const handleSaveCategory = async () => {
     if (!editingCategory) return;
+    const catToSave = { ...editingCategory };
+    catToSave.nameEn = catToSave.nameAr;
     const updatedCats = isNewCategory
-      ? [...categories, editingCategory]
-      : categories.map((c) => (c.id === editingCategory.id ? editingCategory : c));
+      ? [...categories, catToSave]
+      : categories.map((c) => (c.id === catToSave.id ? catToSave : c));
 
     try {
       const res = await fetch("/api/categories", {
@@ -2844,222 +2869,267 @@ export default function AdminPage() {
 
       {/* COMPREHENSIVE ITEM EDIT / ADD MODAL */}
       {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[92vh] flex flex-col">
-            <div className="flex justify-between items-center pb-2 border-b">
-              <h3 className="text-sm font-black text-stone-900">
-                {isNewItem ? "إضافة صنف جديد بالكامل" : `تعديل صنف: ${editingItem.nameAr}`}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl max-h-[92vh] flex flex-col border border-stone-200 overflow-hidden">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-stone-100 bg-linear-to-r from-stone-50 via-white to-stone-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#780000]/10 text-[#780000] flex items-center justify-center">
+                  <ChefHat className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-stone-900">
+                    {isNewItem ? "إضافة طبق جديد للمنيو 🍽️" : `تعديل طبق: ${editingItem.nameAr || "طبق بدون اسم"}`}
+                  </h3>
+                  <p className="text-[11px] text-stone-500 font-medium">
+                    حدد اسم الطبق، القسم، السعر، الأحجام والإضافات الخاصة به
+                  </p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={() => setEditingItem(null)}
-                className="text-stone-400 hover:text-stone-700"
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-400 hover:text-stone-700 flex items-center justify-center transition"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 space-y-4 text-xs pr-1">
-              {/* Category & Status */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold block mb-1">القسم:</label>
-                  <select
-                    value={editingItem.categoryId}
-                    onChange={(e) => setEditingItem({ ...editingItem, categoryId: e.target.value })}
-                    className="w-full p-2 border rounded-xl"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nameAr}
-                      </option>
-                    ))}
-                  </select>
+            {/* Scrollable Form Content */}
+            <div className="overflow-y-auto flex-1 p-5 sm:p-6 space-y-5 text-xs">
+              
+              {/* SECTION 1: الأساسيات */}
+              <div className="bg-stone-50/80 border border-stone-200/90 rounded-2xl p-4 sm:p-5 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-stone-200/60 text-stone-900 font-black text-xs">
+                  <UtensilsCrossed className="w-4 h-4 text-[#780000]" />
+                  <span>البيانات الأساسية للطبق</span>
                 </div>
 
+                {/* Dish Name */}
                 <div>
-                  <label className="font-bold block mb-1">حالة التوفر:</label>
-                  <select
-                    value={editingItem.isAvailable ? "available" : "soldout"}
-                    onChange={(e) =>
-                      setEditingItem({
-                        ...editingItem,
-                        isAvailable: e.target.value === "available",
-                      })
-                    }
-                    className="w-full p-2 border rounded-xl"
-                  >
-                    <option value="available">متوفر حالياً</option>
-                    <option value="soldout">نفد مؤقتاً</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Names */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold block mb-1">الاسم بالعربي:</label>
+                  <label className="font-bold text-stone-800 block mb-1.5">
+                    اسم الطبق <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={editingItem.nameAr}
                     onChange={(e) => setEditingItem({ ...editingItem, nameAr: e.target.value })}
-                    className="w-full p-2.5 border rounded-xl font-bold"
+                    placeholder="مثال: مشويات مشكل رهيب فاخر"
+                    className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] placeholder:text-stone-400 shadow-2xs transition"
                   />
                 </div>
-                <div>
-                  <label className="font-bold block mb-1">الاسم بالإنجليزي:</label>
-                  <input
-                    type="text"
-                    value={editingItem.nameEn}
-                    onChange={(e) => setEditingItem({ ...editingItem, nameEn: e.target.value })}
-                    className="w-full p-2.5 border rounded-xl font-bold"
-                  />
-                </div>
-              </div>
 
-              {/* Descriptions */}
-              <div className="grid grid-cols-2 gap-3">
+                {/* Category & Availability */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1.5">قسم الطبق في المنيو:</label>
+                    <select
+                      value={editingItem.categoryId}
+                      onChange={(e) => setEditingItem({ ...editingItem, categoryId: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] shadow-2xs transition"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nameAr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1.5">حالة التوفر للطلب:</label>
+                    <div className="grid grid-cols-2 gap-2 bg-stone-200/60 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem({ ...editingItem, isAvailable: true })}
+                        className={`py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
+                          editingItem.isAvailable
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "text-stone-600 hover:text-stone-900"
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>متوفر للطلب</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingItem({ ...editingItem, isAvailable: false })}
+                        className={`py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition ${
+                          !editingItem.isAvailable
+                            ? "bg-red-600 text-white shadow-xs"
+                            : "text-stone-600 hover:text-stone-900"
+                        }`}
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>نفد مؤقتاً</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dish Description */}
                 <div>
-                  <label className="font-bold block mb-1">الوصف بالعربي:</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-bold text-stone-800 block">وصف ومكونات الطبق:</label>
+                    <span className="text-[10px] text-stone-400 font-normal">اختياري</span>
+                  </div>
                   <textarea
                     value={editingItem.descriptionAr}
                     onChange={(e) =>
                       setEditingItem({ ...editingItem, descriptionAr: e.target.value })
                     }
                     rows={2}
-                    className="w-full p-2 border rounded-xl"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold block mb-1">الوصف بالإنجليزي:</label>
-                  <textarea
-                    value={editingItem.descriptionEn}
-                    onChange={(e) =>
-                      setEditingItem({ ...editingItem, descriptionEn: e.target.value })
-                    }
-                    rows={2}
-                    className="w-full p-2 border rounded-xl"
+                    placeholder="اكتب نبذة شهية عن مكونات الطبق وطريقة تحضيره ومحتوياته..."
+                    className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] placeholder:text-stone-400 shadow-2xs transition leading-relaxed"
                   />
                 </div>
               </div>
 
-              {/* Price & Image */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold block">السعر الأساسي ({settings?.currency}):</label>
-                    {editingItem.variants && editingItem.variants.length > 0 && (
-                      <span className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-bold">
-                        مرتبط بسعر الحجم الأول
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="number"
-                    value={editingItem.basePrice}
-                    onChange={(e) => {
-                      const newPrice = Number(e.target.value) || 0;
-                      let updatedVariants = editingItem.variants;
-                      if (updatedVariants && updatedVariants.length > 0) {
-                        updatedVariants = [...updatedVariants];
-                        updatedVariants[0] = { ...updatedVariants[0], price: newPrice };
-                      }
-                      setEditingItem({
-                        ...editingItem,
-                        basePrice: newPrice,
-                        variants: updatedVariants,
-                      });
-                    }}
-                    className="w-full p-2.5 border rounded-xl font-black text-sm"
-                  />
+              {/* SECTION 2: التسعير والصورة والوسوم */}
+              <div className="bg-stone-50/80 border border-stone-200/90 rounded-2xl p-4 sm:p-5 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-stone-200/60 text-stone-900 font-black text-xs">
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <span>السعر والصورة الترويجية</span>
                 </div>
-                <div className="space-y-2">
-                  <label className="font-bold block mb-1">صورة الصنف (Supabase Storage):</label>
-                  <div className="flex items-center gap-3">
-                    {editingItem.imageUrl ? (
-                      <img
-                        src={editingItem.imageUrl}
-                        alt="Preview"
-                        className="w-14 h-14 rounded-2xl object-cover border-2 border-stone-200 shrink-0 shadow-xs"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-2xl bg-stone-100 border-2 border-dashed border-stone-300 flex items-center justify-center text-stone-400 shrink-0">
-                        <ImageIcon className="w-6 h-6" />
-                      </div>
-                    )}
 
-                    <div className="flex-1 space-y-1.5">
-                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition">
-                        {isUploading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <UploadCloud className="w-3.5 h-3.5" />
-                        )}
-                        <span>{isUploading ? "جاري الرفع لسوبابيس..." : "رفع صورة من جهازك ☁️"}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploading}
-                          onChange={(e) => handleUploadImage(e, "item")}
-                          className="hidden"
-                        />
-                      </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Price */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="font-bold text-stone-800 block">السعر الأساسي:</label>
+                      {editingItem.variants && editingItem.variants.length > 0 && (
+                        <span className="text-[10px] text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md font-bold">
+                          مرتبط بأول حجم
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
                       <input
-                        type="text"
-                        value={editingItem.imageUrl}
-                        onChange={(e) => setEditingItem({ ...editingItem, imageUrl: e.target.value })}
-                        placeholder="أو رابط الصورة المباشر"
-                        className="w-full p-2 border rounded-xl text-[11px]"
+                        type="number"
+                        value={editingItem.basePrice}
+                        onChange={(e) => {
+                          const newPrice = Number(e.target.value) || 0;
+                          let updatedVariants = editingItem.variants;
+                          if (updatedVariants && updatedVariants.length > 0) {
+                            updatedVariants = [...updatedVariants];
+                            updatedVariants[0] = { ...updatedVariants[0], price: newPrice };
+                          }
+                          setEditingItem({
+                            ...editingItem,
+                            basePrice: newPrice,
+                            variants: updatedVariants,
+                          });
+                        }}
+                        className="w-full pl-12 pr-3.5 py-2.5 bg-white border border-stone-300 rounded-xl font-black text-base text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] shadow-2xs transition"
                       />
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-500 font-bold text-xs pointer-events-none">
+                        {settings?.currency || "د.ع"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1.5">صورة الطبق:</label>
+                    <div className="flex items-center gap-3">
+                      {editingItem.imageUrl ? (
+                        <div className="relative group shrink-0">
+                          <img
+                            src={editingItem.imageUrl}
+                            alt="Preview"
+                            className="w-14 h-14 rounded-2xl object-cover border-2 border-white ring-1 ring-stone-200 shadow-xs"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 rounded-2xl bg-stone-100 border border-dashed border-stone-300 flex items-center justify-center text-stone-400 shrink-0">
+                          <ImageIcon className="w-6 h-6" />
+                        </div>
+                      )}
+
+                      <div className="flex-1 space-y-1.5">
+                        <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#780000] hover:bg-[#600000] text-white rounded-xl text-xs font-bold transition shadow-xs">
+                          {isUploading ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <UploadCloud className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isUploading ? "جاري الرفع..." : "رفع صورة من جهازك"}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploading}
+                            onChange={(e) => handleUploadImage(e, "item")}
+                            className="hidden"
+                          />
+                        </label>
+                        <input
+                          type="text"
+                          value={editingItem.imageUrl}
+                          onChange={(e) => setEditingItem({ ...editingItem, imageUrl: e.target.value })}
+                          placeholder="أو ضع رابط صورة مباشر..."
+                          className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-[11px] text-stone-700 focus:outline-none focus:border-[#780000]"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="font-bold block mb-1">وسوم الصنف المميزة:</label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: "popular", label: "الأكثر طلباً" },
-                    { id: "spicy", label: "حار" },
-                    { id: "vegetarian", label: "نباتي" },
-                    { id: "new", label: "جديد" },
-                  ].map((tag) => {
-                    const isChecked = editingItem.tags.includes(tag.id as any);
-                    return (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => {
-                          const updated = isChecked
-                            ? editingItem.tags.filter((t) => t !== tag.id)
-                            : [...editingItem.tags, tag.id as any];
-                          setEditingItem({ ...editingItem, tags: updated });
-                        }}
-                        className={`px-3 py-1.5 rounded-xl font-bold border transition ${isChecked
-                          ? "bg-stone-900 text-white border-stone-900"
-                          : "bg-white text-stone-600 border-stone-200"
+                {/* Tags */}
+                <div className="pt-2">
+                  <label className="font-bold text-stone-800 block mb-2">شارات التميز على الطبق:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "popular", label: "الأكثر طلباً", emoji: "🔥" },
+                      { id: "spicy", label: "حار", emoji: "🌶️" },
+                      { id: "vegetarian", label: "نباتي", emoji: "🥗" },
+                      { id: "new", label: "جديد", emoji: "✨" },
+                    ].map((tag) => {
+                      const isChecked = editingItem.tags.includes(tag.id as any);
+                      return (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => {
+                            const updated = isChecked
+                              ? editingItem.tags.filter((t) => t !== tag.id)
+                              : [...editingItem.tags, tag.id as any];
+                            setEditingItem({ ...editingItem, tags: updated });
+                          }}
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition flex items-center gap-1.5 ${
+                            isChecked
+                              ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                              : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
                           }`}
-                      >
-                        {tag.label}
-                      </button>
-                    );
-                  })}
+                        >
+                          <span>{tag.emoji}</span>
+                          <span>{tag.label}</span>
+                          {isChecked && <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* VARIANTS (SIZES) BUILDER */}
-              <div className="p-3 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-stone-900">الأحجام المتعددة (Variants):</span>
+              {/* SECTION 3: الأحجام المتعددة */}
+              <div className="bg-stone-50/80 border border-stone-200/90 rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-amber-600" />
+                    <div>
+                      <span className="font-black text-stone-900 text-xs">الأحجام المتعددة</span>
+                      <span className="text-[10px] text-stone-400 font-normal mr-2">
+                        (اختياري - مثل: نصف كيلو، كيلو، نفر، عائلي)
+                      </span>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
                       const newVar: ItemVariant = {
                         id: `var-${Date.now()}`,
                         nameAr: "حجم جديد",
-                        nameEn: "New Size",
+                        nameEn: "حجم جديد",
                         price: editingItem.basePrice,
                       };
                       setEditingItem({
@@ -3067,75 +3137,104 @@ export default function AdminPage() {
                         variants: [...(editingItem.variants || []), newVar],
                       });
                     }}
-                    className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-lg text-[11px] font-bold"
+                    className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs"
                   >
-                    + إضافة حجم
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة حجم</span>
                   </button>
                 </div>
 
                 {editingItem.variants && editingItem.variants.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-1">
                     {editingItem.variants.map((v, vIdx) => (
-                      <div key={v.id} className="flex items-center gap-2 bg-white p-2 rounded-xl border">
+                      <div
+                        key={v.id}
+                        className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-stone-200 shadow-2xs"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-stone-100 text-stone-600 text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {vIdx + 1}
+                        </div>
                         <input
                           type="text"
                           value={v.nameAr}
                           onChange={(e) => {
                             const copy = [...(editingItem.variants || [])];
                             copy[vIdx].nameAr = e.target.value;
+                            copy[vIdx].nameEn = e.target.value;
                             setEditingItem({ ...editingItem, variants: copy });
                           }}
-                          placeholder="اسم الحجم بالعربي (مثلاً: كبير)"
-                          className="flex-1 p-1.5 border rounded-lg text-xs"
+                          placeholder="اسم الحجم (مثال: نصف كيلو، كبير، عائلي)"
+                          className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs font-bold text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
                         />
-                        <input
-                          type="number"
-                          value={v.price}
-                          onChange={(e) => {
-                            const newPrice = Number(e.target.value) || 0;
-                            const copy = [...(editingItem.variants || [])];
-                            copy[vIdx].price = newPrice;
-                            setEditingItem({
-                              ...editingItem,
-                              variants: copy,
-                              basePrice: vIdx === 0 ? newPrice : editingItem.basePrice,
-                            });
-                          }}
-                          placeholder="السعر"
-                          className="w-20 p-1.5 border rounded-lg text-xs font-bold"
-                        />
+                        <div className="relative w-28 shrink-0">
+                          <input
+                            type="number"
+                            value={v.price}
+                            onChange={(e) => {
+                              const newPrice = Number(e.target.value) || 0;
+                              const copy = [...(editingItem.variants || [])];
+                              copy[vIdx].price = newPrice;
+                              setEditingItem({
+                                ...editingItem,
+                                variants: copy,
+                                basePrice: vIdx === 0 ? newPrice : editingItem.basePrice,
+                              });
+                            }}
+                            placeholder="السعر"
+                            className="w-full pl-8 pr-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs font-black text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                          />
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-stone-400 font-bold pointer-events-none">
+                            {settings?.currency || "د.ع"}
+                          </span>
+                        </div>
+                        {vIdx === 0 && (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 font-bold px-2 py-1 rounded-md shrink-0">
+                            الأساسي
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
                             const copy = editingItem.variants?.filter((_, i) => i !== vIdx);
                             setEditingItem({ ...editingItem, variants: copy });
                           }}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                          className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
+                          title="حذف الحجم"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-stone-400">لا توجد أحجام مخصصة (سيعتمد السعر الأساسي فقط)</p>
+                  <p className="text-xs text-stone-500 bg-white/70 border border-dashed border-stone-200 rounded-xl p-3 text-center">
+                    لا توجد أحجام مخصصة، سيتم اعتماد السعر الأساسي للطبق
+                  </p>
                 )}
               </div>
 
-              {/* OPTION GROUPS (ADDONS) BUILDER */}
-              <div className="p-3 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-black text-stone-900">مجموعات الخيارات والإضافات:</span>
+              {/* SECTION 4: مجموعات الإضافات والخيارات */}
+              <div className="bg-stone-50/80 border border-stone-200/90 rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    <div>
+                      <span className="font-black text-stone-900 text-xs">مجموعات الخيارات والإضافات</span>
+                      <span className="text-[10px] text-stone-400 font-normal mr-2">
+                        (مثل: نوع الصوص، إكسترا جبن، مقبلات)
+                      </span>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
                       const newGroup: OptionGroup = {
                         id: `grp-${Date.now()}`,
                         nameAr: "مجموعة خيارات جديدة",
-                        nameEn: "New Option Group",
+                        nameEn: "مجموعة خيارات جديدة",
                         required: false,
                         options: [
-                          { id: `opt-${Date.now()}-1`, nameAr: "خيار 1", nameEn: "Option 1", price: 0 },
+                          { id: `opt-${Date.now()}-1`, nameAr: "خيار 1", nameEn: "خيار 1", price: 0 },
                         ],
                       };
                       setEditingItem({
@@ -3143,28 +3242,35 @@ export default function AdminPage() {
                         optionGroups: [...(editingItem.optionGroups || []), newGroup],
                       });
                     }}
-                    className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-lg text-[11px] font-bold"
+                    className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs"
                   >
-                    + إضافة مجموعة إضافات
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة مجموعة إضافات</span>
                   </button>
                 </div>
 
                 {editingItem.optionGroups && editingItem.optionGroups.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-1">
                     {editingItem.optionGroups.map((group, gIdx) => (
-                      <div key={group.id} className="bg-white p-3 rounded-xl border space-y-2">
-                        <div className="flex items-center gap-2">
+                      <div
+                        key={group.id}
+                        className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 shadow-2xs space-y-3"
+                      >
+                        {/* Group Header */}
+                        <div className="flex items-center gap-2 pb-2 border-b border-stone-100">
                           <input
                             type="text"
                             value={group.nameAr}
                             onChange={(e) => {
                               const copy = [...(editingItem.optionGroups || [])];
                               copy[gIdx].nameAr = e.target.value;
+                              copy[gIdx].nameEn = e.target.value;
                               setEditingItem({ ...editingItem, optionGroups: copy });
                             }}
-                            className="flex-1 p-1.5 border rounded-lg font-bold text-xs"
+                            placeholder="اسم المجموعة (مثال: اختر الصلصة، إضافات الجبن)"
+                            className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg font-bold text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
                           />
-                          <label className="flex items-center gap-1 text-[11px] font-bold text-stone-600">
+                          <label className="flex items-center gap-1.5 px-2.5 py-1.5 bg-stone-100 rounded-lg text-xs font-bold text-stone-700 cursor-pointer hover:bg-stone-200 transition shrink-0">
                             <input
                               type="checkbox"
                               checked={group.required}
@@ -3173,8 +3279,9 @@ export default function AdminPage() {
                                 copy[gIdx].required = e.target.checked;
                                 setEditingItem({ ...editingItem, optionGroups: copy });
                               }}
+                              className="rounded border-stone-300 text-[#780000] focus:ring-[#780000]"
                             />
-                            <span>إلزامي</span>
+                            <span>اختيار إلزامي</span>
                           </label>
                           <button
                             type="button"
@@ -3182,14 +3289,15 @@ export default function AdminPage() {
                               const copy = editingItem.optionGroups?.filter((_, i) => i !== gIdx);
                               setEditingItem({ ...editingItem, optionGroups: copy });
                             }}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition shrink-0"
+                            title="حذف المجموعة"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
 
-                        {/* Options inside group */}
-                        <div className="space-y-1.5 pl-2">
+                        {/* Options Inside Group */}
+                        <div className="space-y-2 pr-2 border-r-2 border-stone-200">
                           {group.options.map((opt, oIdx) => (
                             <div key={opt.id} className="flex items-center gap-2">
                               <input
@@ -3198,22 +3306,28 @@ export default function AdminPage() {
                                 onChange={(e) => {
                                   const copy = [...(editingItem.optionGroups || [])];
                                   copy[gIdx].options[oIdx].nameAr = e.target.value;
+                                  copy[gIdx].options[oIdx].nameEn = e.target.value;
                                   setEditingItem({ ...editingItem, optionGroups: copy });
                                 }}
-                                placeholder="اسم الإضافة (مثال: جبنة موزاريلا)"
-                                className="flex-1 p-1 border rounded-lg text-xs"
+                                placeholder="اسم الإضافة (مثال: جبن شيدر، صوص ثومية)"
+                                className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs font-medium text-stone-800 focus:outline-none focus:bg-white focus:border-[#780000]"
                               />
-                              <input
-                                type="number"
-                                value={opt.price}
-                                onChange={(e) => {
-                                  const copy = [...(editingItem.optionGroups || [])];
-                                  copy[gIdx].options[oIdx].price = Number(e.target.value) || 0;
-                                  setEditingItem({ ...editingItem, optionGroups: copy });
-                                }}
-                                placeholder="السعر الإضافي"
-                                className="w-16 p-1 border rounded-lg text-xs font-bold"
-                              />
+                              <div className="relative w-28 shrink-0">
+                                <input
+                                  type="number"
+                                  value={opt.price}
+                                  onChange={(e) => {
+                                    const copy = [...(editingItem.optionGroups || [])];
+                                    copy[gIdx].options[oIdx].price = Number(e.target.value) || 0;
+                                    setEditingItem({ ...editingItem, optionGroups: copy });
+                                  }}
+                                  placeholder="0 = مجاني"
+                                  className="w-full pl-8 pr-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs font-bold text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                                />
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-stone-400 font-bold pointer-events-none">
+                                  {settings?.currency || "د.ع"}
+                                </span>
+                              </div>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -3221,12 +3335,14 @@ export default function AdminPage() {
                                   copy[gIdx].options = copy[gIdx].options.filter((_, i) => i !== oIdx);
                                   setEditingItem({ ...editingItem, optionGroups: copy });
                                 }}
-                                className="text-red-500 p-1"
+                                className="p-1 text-stone-400 hover:text-red-500 rounded transition shrink-0"
+                                title="إزالة الخيار"
                               >
-                                ×
+                                <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ))}
+
                           <button
                             type="button"
                             onClick={() => {
@@ -3234,39 +3350,44 @@ export default function AdminPage() {
                               copy[gIdx].options.push({
                                 id: `opt-${Date.now()}-${Math.random()}`,
                                 nameAr: "إضافة جديدة",
-                                nameEn: "New option",
+                                nameEn: "إضافة جديدة",
                                 price: 0,
                               });
                               setEditingItem({ ...editingItem, optionGroups: copy });
                             }}
-                            className="text-[10px] text-stone-600 hover:text-stone-900 font-bold underline block pt-1"
+                            className="text-[11px] text-[#780000] hover:text-[#500000] font-bold flex items-center gap-1 pt-1 transition"
                           >
-                            + خيار إضافي في هذه المجموعة
+                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                            <span>إضافة خيار آخر في هذه المجموعة</span>
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-stone-400">لا توجد إضافات مخصصة لهذا الصنف</p>
+                  <p className="text-xs text-stone-500 bg-white/70 border border-dashed border-stone-200 rounded-xl p-3 text-center">
+                    لا توجد إضافات مخصصة لهذا الطبق
+                  </p>
                 )}
               </div>
             </div>
 
-            <div className="pt-2 border-t flex justify-end gap-2">
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-white border-t border-stone-100 flex items-center justify-between gap-3 shadow-inner">
               <button
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100"
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition"
               >
-                إلغاء
+                إلغاء التعديل
               </button>
               <button
                 type="button"
                 onClick={handleSaveMenuItem}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-stone-900 text-white hover:bg-stone-800 shadow-md"
+                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-[#780000] hover:bg-[#600000] text-white shadow-md hover:shadow-lg transition flex items-center gap-2"
               >
-                حفظ كافة تعديلات الصنف
+                <Save className="w-4 h-4" />
+                <span>حفظ ونشر الطبق في المنيو</span>
               </button>
             </div>
           </div>
@@ -3275,39 +3396,41 @@ export default function AdminPage() {
 
       {/* CATEGORY EDIT / ADD MODAL */}
       {editingCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-3xl p-5 max-w-sm w-full space-y-3 shadow-2xl">
-            <h3 className="text-sm font-black text-stone-900">
-              {isNewCategory ? "إضافة قسم جديد" : `تعديل قسم: ${editingCategory.nameAr}`}
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-stone-200">
+            <div className="flex justify-between items-center pb-2 border-b border-stone-100">
+              <h3 className="text-sm font-black text-stone-900">
+                {isNewCategory ? "إضافة قسم جديد للمنيو" : `تعديل قسم: ${editingCategory.nameAr}`}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingCategory(null)}
+                className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-400 hover:text-stone-700 flex items-center justify-center transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-            <div className="space-y-2 text-xs">
+            <div className="space-y-3 text-xs">
               <div>
-                <label className="font-bold block mb-1">الاسم بالعربي:</label>
+                <label className="font-bold text-stone-800 block mb-1.5">اسم القسم في المنيو:</label>
                 <input
                   type="text"
                   value={editingCategory.nameAr}
                   onChange={(e) =>
-                    setEditingCategory({ ...editingCategory, nameAr: e.target.value })
+                    setEditingCategory({
+                      ...editingCategory,
+                      nameAr: e.target.value,
+                      nameEn: e.target.value,
+                    })
                   }
-                  className="w-full p-2 border rounded-xl"
+                  placeholder="مثال: مقبلات ساخنة، مشويات، مشروبات"
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
                 />
               </div>
 
               <div>
-                <label className="font-bold block mb-1">الاسم بالإنجليزي:</label>
-                <input
-                  type="text"
-                  value={editingCategory.nameEn}
-                  onChange={(e) =>
-                    setEditingCategory({ ...editingCategory, nameEn: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">الترتيب:</label>
+                <label className="font-bold text-stone-800 block mb-1.5">ترتيب ظهور القسم:</label>
                 <input
                   type="number"
                   value={editingCategory.sortOrder}
@@ -3317,23 +3440,25 @@ export default function AdminPage() {
                       sortOrder: Number(e.target.value) || 1,
                     })
                   }
-                  className="w-full p-2 border rounded-xl"
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
                 />
               </div>
             </div>
 
-            <div className="pt-2 border-t flex justify-end gap-2">
+            <div className="pt-3 border-t border-stone-100 flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setEditingCategory(null)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition"
               >
                 إلغاء
               </button>
               <button
+                type="button"
                 onClick={handleSaveCategory}
-                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-stone-900 text-white hover:bg-stone-800"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-[#780000] hover:bg-[#600000] text-white shadow-xs transition"
               >
-                حفظ
+                حفظ القسم
               </button>
             </div>
           </div>
