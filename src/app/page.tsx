@@ -16,6 +16,7 @@ import { CustomerProfileDrawer } from "@/components/CustomerProfileDrawer";
 import { Footer } from "@/components/Footer";
 import { subscribeToLiveEvents } from "@/lib/realtime";
 import { LottiePreloader } from "@/components/LottiePreloader";
+import { PromoDishBanner } from "@/components/PromoDishBanner";
 
 
 import {
@@ -154,6 +155,14 @@ function MenuContent() {
       {/* Promotional Banner */}
       <Banner message={settings.bannerMessage} active={settings.bannerActive} />
 
+      {/* Hero Promotional Banner for New Dish */}
+      <PromoDishBanner
+        banner={settings.promoBanner}
+        menuItems={menuItems}
+        currency={settings.currency}
+        onSelectDish={setActiveItem}
+      />
+
       {/* Search & Tag Filter Bar */}
       <div className="max-w-6xl mx-auto w-full px-4 pt-4 pb-2 space-y-3">
         {/* Search Input */}
@@ -188,50 +197,28 @@ function MenuContent() {
           >
             الكل
           </button>
-          <button
-            onClick={() => setActiveTag("popular")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-              activeTag === "popular"
-                ? "bg-amber-500 text-stone-950"
-                : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-            }`}
-          >
-            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            <span>الأكثر طلباً</span>
-          </button>
-          <button
-            onClick={() => setActiveTag("spicy")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-              activeTag === "spicy"
-                ? "bg-red-600 text-white"
-                : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-            <span>حار</span>
-          </button>
-          <button
-            onClick={() => setActiveTag("vegetarian")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-              activeTag === "vegetarian"
-                ? "bg-emerald-600 text-white"
-                : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-            }`}
-          >
-            <Leaf className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" />
-            <span>نباتي</span>
-          </button>
-          <button
-            onClick={() => setActiveTag("new")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-              activeTag === "new"
-                ? "bg-blue-600 text-white"
-                : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-            <span>جديد</span>
-          </button>
+          {(settings.customTags && settings.customTags.length > 0
+            ? settings.customTags
+            : [
+                { id: "popular", label: "الأكثر طلباً", emoji: "🔥" },
+                { id: "spicy", label: "حار", emoji: "🌶️" },
+                { id: "vegetarian", label: "نباتي", emoji: "🥗" },
+                { id: "new", label: "جديد", emoji: "✨" },
+              ]
+          ).map((tag) => (
+            <button
+              key={tag.id}
+              onClick={() => setActiveTag(tag.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 ${
+                activeTag === tag.id
+                  ? "bg-stone-900 text-white shadow-xs"
+                  : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+              }`}
+            >
+              <span>{tag.emoji}</span>
+              <span>{tag.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 

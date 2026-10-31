@@ -36,11 +36,33 @@ export interface RestaurantSettings {
   openingHours: string;
   bannerMessage?: string;
   bannerActive?: boolean;
+  // Promotional Banner for New Dish
+  promoBanner?: PromoBanner;
+  // Distinction Badges / Custom Tags
+  customTags?: CustomTag[];
   // Delivery settings
   deliveryEnabled?: boolean;
   deliveryZones?: DeliveryZone[];
   freeDeliveryThreshold?: number; // e.g. 50000 -> 0 fee
   defaultDeliveryTime?: string; // e.g. "35-50 دقيقة"
+}
+
+export interface CustomTag {
+  id: string;
+  label: string;
+  emoji?: string;
+  color?: string; // e.g. "amber" | "red" | "emerald" | "purple" | "blue" | "rose"
+}
+
+export interface PromoBanner {
+  id: string;
+  isActive: boolean;
+  title: string;
+  subtitle?: string;
+  itemId?: string;
+  imageUrl?: string;
+  badgeText?: string;
+  buttonText?: string;
 }
 
 
@@ -89,7 +111,7 @@ export interface MenuItem {
   descriptionEn: string;
   basePrice: number;
   imageUrl: string;
-  tags: ("spicy" | "popular" | "vegetarian" | "new")[];
+  tags: string[];
   isAvailable: boolean; // available or sold out (نفد)
   variants?: ItemVariant[];
   optionGroups?: OptionGroup[];

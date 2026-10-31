@@ -9,15 +9,18 @@ import {
   Category,
   Coupon,
   CustomerReview,
+  CustomTag,
   DeliveryZone,
   ItemVariant,
   MenuItem,
   OptionGroup,
   OptionItem,
   Order,
+  PromoBanner,
   RestaurantSettings,
   Table,
 } from "@/types";
+import { PromoDishBanner } from "@/components/PromoDishBanner";
 import {
   BarChart3,
   UtensilsCrossed,
@@ -65,11 +68,22 @@ import {
   MessageSquare,
   ThumbsUp,
   Menu,
+  Megaphone,
 } from "lucide-react";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
-    "analytics" | "menu" | "categories" | "tables" | "coupons" | "branding" | "settings" | "delivery" | "reviews"
+    | "analytics"
+    | "menu"
+    | "categories"
+    | "tables"
+    | "coupons"
+    | "branding"
+    | "settings"
+    | "delivery"
+    | "reviews"
+    | "banners"
+    | "tags"
   >("analytics");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -85,6 +99,10 @@ export default function AdminPage() {
   const [analyticsRange, setAnalyticsRange] = useState<"today" | "week" | "month" | "all">("all");
   const [mountedTime, setMountedTime] = useState<number | null>(null);
 
+  // Tags state
+  const [editingTag, setEditingTag] = useState<CustomTag | null>(null);
+  const [isNewTag, setIsNewTag] = useState(false);
+
   // Delivery Zones state
   const [newZoneNameAr, setNewZoneNameAr] = useState("");
   const [newZoneFee, setNewZoneFee] = useState<number>(2000);
@@ -98,7 +116,7 @@ export default function AdminPage() {
 
   const handleUploadImage = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    target: "item" | "logo"
+    target: "item" | "logo" | "banner"
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -119,6 +137,19 @@ export default function AdminPage() {
           setEditingItem({ ...editingItem, imageUrl: data.url });
         } else if (target === "logo" && settings) {
           setSettings({ ...settings, logoUrl: data.url });
+        } else if (target === "banner" && settings) {
+          const currentBanner = settings.promoBanner || {
+            id: "promo-dish-1",
+            isActive: true,
+            title: "طبق جديد مميز في قائمتنا! ✨",
+          };
+          setSettings({
+            ...settings,
+            promoBanner: {
+              ...currentBanner,
+              imageUrl: data.url,
+            },
+          });
         }
         flashMessage("تم رفع الصورة إلى Supabase Storage بنجاح! ✓");
       } else {
@@ -490,6 +521,34 @@ export default function AdminPage() {
     }
   };
 
+  // Save / Update Custom Tag
+  const handleSaveTag = async (tagToSave: CustomTag) => {
+    if (!settings) return;
+    const currentTags = settings.customTags || [];
+    let updatedTags: CustomTag[];
+    if (isNewTag) {
+      updatedTags = [...currentTags, tagToSave];
+    } else {
+      updatedTags = currentTags.map((t) => (t.id === tagToSave.id ? tagToSave : t));
+    }
+    const updatedSettings = { ...settings, customTags: updatedTags };
+    setSettings(updatedSettings);
+    await handleSaveSettings(undefined, updatedSettings);
+    setEditingTag(null);
+    flashMessage("تم حفظ وتحديث الشارة بنجاح ✓");
+  };
+
+  // Delete Custom Tag
+  const handleDeleteTag = async (tagId: string) => {
+    if (!settings) return;
+    if (!confirm("هل أنت متأكد من حذف هذه الشارة؟")) return;
+    const updatedTags = (settings.customTags || []).filter((t) => t.id !== tagId);
+    const updatedSettings = { ...settings, customTags: updatedTags };
+    setSettings(updatedSettings);
+    await handleSaveSettings(undefined, updatedSettings);
+    flashMessage("تم حذف الشارة بنجاح ✓");
+  };
+
   // Save / Update Category
   const handleSaveCategory = async () => {
     if (!editingCategory) return;
@@ -737,6 +796,16 @@ export default function AdminPage() {
       subtitle: "ترتيب وتنسيق أقسام قائمة الطعام",
       icon: <Layers className="w-5 h-5 text-blue-600" />,
     },
+    tags: {
+      title: "شارات التمييز على الأطباق",
+      subtitle: "إضافة وتعديل وحذف شارات التمييز (الأكثر طلباً، حار، توصية الشيف، إلخ)",
+      icon: <Tag className="w-5 h-5 text-rose-500" />,
+    },
+    banners: {
+      title: "بنرات الإعلانات والترويج",
+      subtitle: "إدارة بنر الإعلان عن طبق جديد والعروض الخاصة في المنيو",
+      icon: <Megaphone className="w-5 h-5 text-amber-500" />,
+    },
     delivery: {
       title: "مناطق ورسوم التوصيل",
       subtitle: "تحديد مناطق التوصيل، الرسوم، والحد الأدنى للطلب",
@@ -795,6 +864,20 @@ export default function AdminPage() {
           icon: <Layers className="w-4 h-4 text-blue-600" />,
           badge: categories.length,
           badgeColor: "bg-stone-100 text-stone-700",
+        },
+        {
+          id: "tags" as const,
+          label: "شارات التمييز",
+          icon: <Tag className="w-4 h-4 text-rose-500" />,
+          badge: settings?.customTags?.length || 4,
+          badgeColor: "bg-rose-100 text-rose-800",
+        },
+        {
+          id: "banners" as const,
+          label: "بنرات الإعلانات",
+          icon: <Megaphone className="w-4 h-4 text-amber-500" />,
+          badge: settings?.promoBanner?.isActive ? "نشط" : "معطل",
+          badgeColor: settings?.promoBanner?.isActive ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-stone-600",
         },
         {
           id: "delivery" as const,
@@ -2864,6 +2947,402 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* TAB: BANNERS & NEW DISH PROMO */}
+        {activeTab === "banners" && settings && (
+          <div className="space-y-6">
+            {/* Header / Intro Card */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-xs space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center">
+                  <Megaphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-stone-900">
+                    بنرات الإعلانات والترويج للأطباق الجديدة
+                  </h2>
+                  <p className="text-xs text-stone-500 font-medium">
+                    أعلن لزبائنك عن أحدث الأطباق أو العروض الحصرية ببنر تفاعلي ملفت في أعلى قائمة الطعام
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Banner Configuration Card */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-xs space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-sm font-black text-stone-900">
+                    إعدادات بنر الطبق الجديد
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-stone-600">حالة ظهور البنر:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const current = settings.promoBanner || {
+                        id: "promo-dish-1",
+                        isActive: false,
+                        title: "طبق جديد مميز في قائمتنا! ✨",
+                      };
+                      setSettings({
+                        ...settings,
+                        promoBanner: {
+                          ...current,
+                          isActive: !current.isActive,
+                        },
+                      });
+                    }}
+                    className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
+                      settings.promoBanner?.isActive
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "bg-stone-200 text-stone-600 hover:bg-stone-300"
+                    }`}
+                  >
+                    {settings.promoBanner?.isActive ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>نشط ومعروض للزبائن</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>معطّل ومخفي</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Linked Dish */}
+                <div>
+                  <label className="font-bold text-xs text-stone-800 block mb-1.5">
+                    ربط البنر بطبق من القائمة:
+                  </label>
+                  <select
+                    value={settings.promoBanner?.itemId || ""}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const linked = menuItems.find((i) => i.id === selectedId);
+                      const current = settings.promoBanner || {
+                        id: "promo-dish-1",
+                        isActive: true,
+                        title: "",
+                      };
+                      setSettings({
+                        ...settings,
+                        promoBanner: {
+                          ...current,
+                          itemId: selectedId,
+                          title: current.title || (linked ? `طبق جديد: ${linked.nameAr}` : ""),
+                          subtitle: current.subtitle || linked?.descriptionAr || "",
+                        },
+                      });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                  >
+                    <option value="">-- بدون ربط بطبق محدد (إعلان عام) --</option>
+                    {menuItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.nameAr} ({item.basePrice} {settings.currency})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    عند اختيار طبق، سيتمكن الزبون من الضغط على زر "اطلب الآن" لفتح نافذة الطبق وطلبه فوراً!
+                  </p>
+                </div>
+
+                {/* Badge text */}
+                <div>
+                  <label className="font-bold text-xs text-stone-800 block mb-1.5">
+                    شارة البنر الترويجية:
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.promoBanner?.badgeText || ""}
+                    onChange={(e) => {
+                      const current = settings.promoBanner || {
+                        id: "promo-dish-1",
+                        isActive: true,
+                        title: "",
+                      };
+                      setSettings({
+                        ...settings,
+                        promoBanner: { ...current, badgeText: e.target.value },
+                      });
+                    }}
+                    placeholder="مثال: جديد وحصري 🔥 أو لفترة محدودة"
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                  />
+                </div>
+              </div>
+
+              {/* Title & Subtitle */}
+              <div className="space-y-4">
+                <div>
+                  <label className="font-bold text-xs text-stone-800 block mb-1.5">
+                    عنوان البنر الترويجي:
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.promoBanner?.title || ""}
+                    onChange={(e) => {
+                      const current = settings.promoBanner || {
+                        id: "promo-dish-1",
+                        isActive: true,
+                        title: "",
+                      };
+                      setSettings({
+                        ...settings,
+                        promoBanner: { ...current, title: e.target.value },
+                      });
+                    }}
+                    placeholder="مثال: طبق جديد مميز في قائمتنا! ✨"
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-xs text-stone-800 block mb-1.5">
+                    الوصف الترويجي:
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={settings.promoBanner?.subtitle || ""}
+                    onChange={(e) => {
+                      const current = settings.promoBanner || {
+                        id: "promo-dish-1",
+                        isActive: true,
+                        title: "",
+                      };
+                      setSettings({
+                        ...settings,
+                        promoBanner: { ...current, subtitle: e.target.value },
+                      });
+                    }}
+                    placeholder="اكتب نبذة شهية ومحفزة للزبائن لتجربة هذا الطبق..."
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-medium text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000] leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              {/* Button text & Image */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="font-bold text-xs text-stone-800 block mb-1.5">
+                    نص زر الدعوة للطلب:
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.promoBanner?.buttonText || ""}
+                    onChange={(e) => {
+                      const current = settings.promoBanner || {
+                        id: "promo-dish-1",
+                        isActive: true,
+                        title: "",
+                      };
+                      setSettings({
+                        ...settings,
+                        promoBanner: { ...current, buttonText: e.target.value },
+                      });
+                    }}
+                    placeholder="مثال: اطلب الآن وجربه"
+                    className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-xs text-stone-800 block mb-1.5">
+                    صورة البنر (اختياري - يفضل تركها لتستخدم صورة الطبق تلقائياً):
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {settings.promoBanner?.imageUrl ? (
+                      <div className="relative group shrink-0">
+                        <img
+                          src={settings.promoBanner.imageUrl}
+                          alt="Banner Preview"
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-stone-200 shadow-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (settings.promoBanner) {
+                              setSettings({
+                                ...settings,
+                                promoBanner: {
+                                  ...settings.promoBanner,
+                                  imageUrl: "",
+                                },
+                              });
+                            }
+                          }}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-xs"
+                          title="إزالة الصورة المخصصة"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : null}
+
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition shadow-xs">
+                      {isUploading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <UploadCloud className="w-3.5 h-3.5" />
+                      )}
+                      <span>رفع صورة بنر مخصصة</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploading}
+                        onChange={(e) => handleUploadImage(e, "banner")}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Preview Container */}
+              <div className="pt-4 border-t border-stone-100 space-y-2">
+                <span className="font-bold text-xs text-stone-700 block">
+                  معاينة مباشرة لشكل البنر كما يظهر للزبون في المنيو:
+                </span>
+                <div className="p-2 sm:p-4 bg-stone-100 rounded-3xl border border-stone-200">
+                  <PromoDishBanner
+                    banner={settings.promoBanner}
+                    menuItems={menuItems}
+                    currency={settings.currency}
+                    onSelectDish={() => {}}
+                  />
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="pt-4 border-t border-stone-100 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => handleSaveSettings()}
+                  className="px-6 py-3 bg-[#780000] hover:bg-[#600000] text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>حفظ وتطبيق إعدادات البنر الإعلاني</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: DISTINCTION BADGES / CUSTOM TAGS */}
+        {activeTab === "tags" && settings && (
+          <div className="space-y-6">
+            {/* Header Card */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-stone-900">
+                    إدارة شارات التمييز على الأطباق
+                  </h2>
+                  <p className="text-xs text-stone-500 font-medium">
+                    أضف شاراتك الخاصة (مثل: توصية الشيف، طبق اليوم، خالي من الجلوتين، دايت) لتمييز الأطباق وجذب الزبائن
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewTag(true);
+                  setEditingTag({
+                    id: `tag-${Date.now()}`,
+                    label: "",
+                    emoji: "✨",
+                    color: "amber",
+                  });
+                }}
+                className="px-4 py-2.5 bg-[#780000] hover:bg-[#600000] text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-xs transition"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>إضافة شارة تمييز جديدة</span>
+              </button>
+            </div>
+
+            {/* Badges Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(settings.customTags || []).map((tag) => {
+                const taggedCount = menuItems.filter((i) => i.tags?.includes(tag.id)).length;
+                const colorConfig: Record<string, { bg: string; text: string; border: string }> = {
+                  amber: { bg: "bg-amber-100", text: "text-amber-900", border: "border-amber-300" },
+                  red: { bg: "bg-red-100", text: "text-red-900", border: "border-red-300" },
+                  emerald: { bg: "bg-emerald-100", text: "text-emerald-900", border: "border-emerald-300" },
+                  purple: { bg: "bg-purple-100", text: "text-purple-900", border: "border-purple-300" },
+                  blue: { bg: "bg-blue-100", text: "text-blue-900", border: "border-blue-300" },
+                  rose: { bg: "bg-rose-100", text: "text-rose-900", border: "border-rose-300" },
+                };
+                const colorStyle = colorConfig[tag.color || "amber"] || colorConfig.amber;
+
+                return (
+                  <div
+                    key={tag.id}
+                    className="bg-white rounded-2xl p-5 border border-stone-200/90 shadow-2xs flex flex-col justify-between gap-4 hover:border-stone-300 transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl p-2 bg-stone-50 rounded-2xl border border-stone-100">
+                          {tag.emoji || "🏷️"}
+                        </span>
+                        <div>
+                          <h3 className="font-black text-sm text-stone-900">{tag.label}</h3>
+                          <span
+                            className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border ${colorStyle.bg} ${colorStyle.text} ${colorStyle.border}`}
+                          >
+                            معاينة الشارة
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNewTag(false);
+                            setEditingTag({ ...tag });
+                          }}
+                          className="p-1.5 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition"
+                          title="تعديل الشارة"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTag(tag.id)}
+                          className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="حذف الشارة"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500 font-medium">
+                      <span>الأطباق الحاملة للشارة:</span>
+                      <span className="font-black text-stone-900 px-2 py-0.5 bg-stone-100 rounded-lg">
+                        {taggedCount} طبق
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </main>
     </div>
 
@@ -3086,15 +3565,31 @@ export default function AdminPage() {
 
                 {/* Tags */}
                 <div className="pt-2">
-                  <label className="font-bold text-stone-800 block mb-2">شارات التميز على الطبق:</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-bold text-stone-800 block">شارات التميز على الطبق:</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingItem(null);
+                        setActiveTab("tags");
+                      }}
+                      className="text-[11px] text-[#780000] hover:text-[#500000] font-bold flex items-center gap-1 transition"
+                    >
+                      <Tag className="w-3 h-3" />
+                      <span>إدارة وتعديل الشارات ⚙️</span>
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: "popular", label: "الأكثر طلباً", emoji: "🔥" },
-                      { id: "spicy", label: "حار", emoji: "🌶️" },
-                      { id: "vegetarian", label: "نباتي", emoji: "🥗" },
-                      { id: "new", label: "جديد", emoji: "✨" },
-                    ].map((tag) => {
-                      const isChecked = editingItem.tags.includes(tag.id as any);
+                    {(settings?.customTags && settings.customTags.length > 0
+                      ? settings.customTags
+                      : [
+                          { id: "popular", label: "الأكثر طلباً", emoji: "🔥" },
+                          { id: "spicy", label: "حار", emoji: "🌶️" },
+                          { id: "vegetarian", label: "نباتي", emoji: "🥗" },
+                          { id: "new", label: "جديد", emoji: "✨" },
+                        ]
+                    ).map((tag) => {
+                      const isChecked = editingItem.tags?.includes(tag.id);
                       return (
                         <button
                           key={tag.id}
@@ -3102,7 +3597,7 @@ export default function AdminPage() {
                           onClick={() => {
                             const updated = isChecked
                               ? editingItem.tags.filter((t) => t !== tag.id)
-                              : [...editingItem.tags, tag.id as any];
+                              : [...editingItem.tags, tag.id];
                             setEditingItem({ ...editingItem, tags: updated });
                           }}
                           className={`px-3 py-1.5 rounded-xl font-bold text-xs border transition flex items-center gap-1.5 ${
@@ -3525,6 +4020,145 @@ export default function AdminPage() {
               >
                 <Printer className="w-4 h-4" />
                 <span>طباعة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM TAG EDIT / ADD MODAL */}
+      {editingTag && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-stone-200">
+            <div className="flex justify-between items-center pb-2 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#780000]" />
+                <h3 className="text-sm font-black text-stone-900">
+                  {isNewTag ? "إضافة شارة تمييز جديدة" : `تعديل شارة: ${editingTag.label}`}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingTag(null)}
+                className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-400 hover:text-stone-700 flex items-center justify-center transition"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs">
+              {/* Tag Label */}
+              <div>
+                <label className="font-bold text-stone-800 block mb-1.5">
+                  اسم الشارة بالعربي:
+                </label>
+                <input
+                  type="text"
+                  value={editingTag.label}
+                  onChange={(e) => setEditingTag({ ...editingTag, label: e.target.value })}
+                  placeholder="مثال: توصية الشيف، طبق اليوم، خالي من الجلوتين"
+                  className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                />
+              </div>
+
+              {/* Tag Emoji */}
+              <div>
+                <label className="font-bold text-stone-800 block mb-1.5">
+                  الرمز التعبيري (الإيموجي):
+                </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={editingTag.emoji || ""}
+                    onChange={(e) => setEditingTag({ ...editingTag, emoji: e.target.value })}
+                    placeholder="اختر إيموجي"
+                    className="w-20 px-3 py-2 text-center text-xl bg-stone-50 border border-stone-300 rounded-xl font-bold focus:outline-none focus:bg-white focus:border-[#780000]"
+                  />
+                  <span className="text-[11px] text-stone-400">اختر من الرموز الشائعة بالأسفل:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 p-2 bg-stone-50 border border-stone-200 rounded-xl">
+                  {["🔥", "🌶️", "🥗", "✨", "👨‍🍳", "👑", "⚡", "🧀", "🥩", "🍔", "🍕", "🥑", "🍯", "🏷️"].map(
+                    (em) => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={() => setEditingTag({ ...editingTag, emoji: em })}
+                        className={`w-7 h-7 flex items-center justify-center text-sm rounded-lg hover:scale-110 transition ${
+                          editingTag.emoji === em ? "bg-stone-900 text-white shadow-xs" : "hover:bg-white"
+                        }`}
+                      >
+                        {em}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Tag Color */}
+              <div>
+                <label className="font-bold text-stone-800 block mb-1.5">
+                  لون تمييز الشارة:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "amber", label: "عسلي / ذهبي", bg: "bg-amber-500" },
+                    { id: "red", label: "أحمر ناري", bg: "bg-red-600" },
+                    { id: "emerald", label: "أخضر نباتي", bg: "bg-emerald-600" },
+                    { id: "purple", label: "بنفسجي ملكي", bg: "bg-purple-600" },
+                    { id: "blue", label: "أزرق منعش", bg: "bg-blue-600" },
+                    { id: "rose", label: "وردي جذاب", bg: "bg-rose-600" },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setEditingTag({ ...editingTag, color: c.id })}
+                      className={`p-2 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition ${
+                        editingTag.color === c.id
+                          ? "border-stone-900 bg-stone-900 text-white shadow-xs"
+                          : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"
+                      }`}
+                    >
+                      <span className={`w-3 h-3 rounded-full ${c.bg} shrink-0`} />
+                      <span className="truncate">{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Preview of Tag */}
+              <div className="pt-2">
+                <span className="font-bold text-[11px] text-stone-500 block mb-1">
+                  معاينة مظهر الشارة:
+                </span>
+                <div className="p-3 bg-stone-100 rounded-xl border border-stone-200 flex items-center justify-center">
+                  <span className="font-black text-xs px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm bg-stone-900 text-white">
+                    <span>{editingTag.emoji || "🏷️"}</span>
+                    <span>{editingTag.label || "اسم الشارة"}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-stone-100 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingTag(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!editingTag.label.trim()) {
+                    alert("يرجى كتابة اسم الشارة");
+                    return;
+                  }
+                  handleSaveTag(editingTag);
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-[#780000] hover:bg-[#600000] text-white shadow-xs transition"
+              >
+                حفظ الشارة
               </button>
             </div>
           </div>

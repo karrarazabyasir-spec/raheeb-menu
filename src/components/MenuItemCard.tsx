@@ -59,23 +59,54 @@ export function MenuItemCard({ item, settings, onSelectItem }: MenuItemCardProps
         />
 
         {/* Subtle top tag badge */}
-        <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 z-10">
-          {item.tags.includes("popular") && (
-            <span className="bg-amber-500 text-stone-950 font-bold text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
-              <Star className="w-2.5 h-2.5 fill-stone-950" />
-              <span className="hidden sm:inline">{t("popular")}</span>
-            </span>
-          )}
-          {item.tags.includes("spicy") && (
-            <span className="bg-red-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
-              <Flame className="w-2.5 h-2.5 fill-white" />
-            </span>
-          )}
-          {item.tags.includes("new") && (
-            <span className="bg-blue-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow">
-              <Sparkles className="w-2.5 h-2.5" />
-            </span>
-          )}
+        <div className="absolute top-1.5 right-1.5 flex flex-wrap gap-1 z-10 max-w-[85%]">
+          {item.tags?.map((tagId) => {
+            const foundTag = settings?.customTags?.find((t) => t.id === tagId);
+            const label =
+              foundTag?.label ||
+              (tagId === "popular"
+                ? "الأكثر طلباً"
+                : tagId === "spicy"
+                ? "حار"
+                : tagId === "new"
+                ? "جديد"
+                : tagId === "vegetarian"
+                ? "نباتي"
+                : tagId);
+            const emoji =
+              foundTag?.emoji ||
+              (tagId === "popular"
+                ? "🔥"
+                : tagId === "spicy"
+                ? "🌶️"
+                : tagId === "new"
+                ? "✨"
+                : tagId === "vegetarian"
+                ? "🥗"
+                : "🏷️");
+            const colorClass =
+              foundTag?.color === "red"
+                ? "bg-red-600 text-white"
+                : foundTag?.color === "emerald"
+                ? "bg-emerald-600 text-white"
+                : foundTag?.color === "purple"
+                ? "bg-purple-600 text-white"
+                : foundTag?.color === "blue"
+                ? "bg-blue-600 text-white"
+                : foundTag?.color === "rose"
+                ? "bg-rose-600 text-white"
+                : "bg-amber-500 text-stone-950";
+
+            return (
+              <span
+                key={tagId}
+                className={`${colorClass} font-black text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm`}
+              >
+                <span>{emoji}</span>
+                <span className="hidden sm:inline">{label}</span>
+              </span>
+            );
+          })}
         </div>
 
         {/* Sold out overlay */}

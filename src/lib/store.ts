@@ -48,6 +48,10 @@ function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSetting
     deliveryEnabled: settings.deliveryEnabled ?? initialSettings.deliveryEnabled,
     freeDeliveryThreshold: settings.freeDeliveryThreshold ?? initialSettings.freeDeliveryThreshold,
     defaultDeliveryTime: settings.defaultDeliveryTime || initialSettings.defaultDeliveryTime,
+    customTags: Array.isArray(settings.customTags) && settings.customTags.length > 0
+      ? settings.customTags
+      : initialSettings.customTags,
+    promoBanner: settings.promoBanner || initialSettings.promoBanner,
   };
 }
 

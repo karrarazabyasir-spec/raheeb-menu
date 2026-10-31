@@ -24,6 +24,22 @@ export const initialSettings: RestaurantSettings = {
   freeDeliveryThreshold: 0,
   defaultDeliveryTime: "30-45 دقيقة",
   deliveryZones: [],
+  promoBanner: {
+    id: "promo-dish-1",
+    isActive: true,
+    title: "طبق جديد مميز في قائمتنا! ✨",
+    subtitle: "تذوق أحدث أطباق رهيب المحضرة بأجود المكونات والتتبيلة السرية",
+    itemId: "item-1",
+    imageUrl: "",
+    badgeText: "جديد وحصري 🔥",
+    buttonText: "اطلب الآن وجربه",
+  },
+  customTags: [
+    { id: "popular", label: "الأكثر طلباً", emoji: "🔥", color: "amber" },
+    { id: "spicy", label: "حار", emoji: "🌶️", color: "red" },
+    { id: "vegetarian", label: "نباتي", emoji: "🥗", color: "emerald" },
+    { id: "new", label: "جديد", emoji: "✨", color: "purple" },
+  ],
 };
 
 export const initialCategories: Category[] = [
