@@ -53,6 +53,8 @@ function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSetting
       ? settings.customTags
       : initialSettings.customTags,
     promoBanner: settings.promoBanner || initialSettings.promoBanner,
+    bannerActive: Boolean(settings.bannerActive),
+    bannerMessage: typeof settings.bannerMessage === "string" ? settings.bannerMessage : "",
   };
 }
 

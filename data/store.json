@@ -17,12 +17,73 @@
     "estimatedPreparationTimeMinutes": 20,
     "address": "كربلاء - الحسينية",
     "openingHours": "يومياً من 12:00 ظهراً حتى 01:00 بعد منتصف الليل",
-    "bannerMessage": "🔥 خصم خاص 15% على جميع وجبات المشويات العائلية بكود: RAHEEB15",
-    "bannerActive": true,
+    "bannerMessage": "",
+    "bannerActive": false,
     "deliveryEnabled": true,
-    "freeDeliveryThreshold": 0,
+    "freeDeliveryThreshold": 1000,
     "defaultDeliveryTime": "30-45 دقيقة",
-    "deliveryZones": []
+    "deliveryZones": [
+      {
+        "id": "zone-1793394189549",
+        "nameAr": "المجتبى",
+        "nameEn": "المجتبى",
+        "fee": 1500,
+        "minOrder": 0,
+        "estimatedTime": "30-45 دقيقة",
+        "isActive": true
+      },
+      {
+        "id": "zone-1793426956912",
+        "nameAr": "حي العباس",
+        "nameEn": "حي العباس",
+        "fee": 3000,
+        "minOrder": 0,
+        "estimatedTime": "30-45 دقيقة",
+        "isActive": true
+      }
+    ],
+    "promoBanner": {
+      "id": "promo-dish-1",
+      "isActive": true,
+      "title": "طبق جديد مميز في قائمتنا! ✨",
+      "subtitle": "تذوق أحدث أطباق رهيب المحضرة بأجود المكونات والتتبيلة السرية",
+      "itemId": "item-1793432515772",
+      "imageUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793432451326-8xb7dr.jpg",
+      "badgeText": "جديد وحصري 🔥",
+      "buttonText": "اطلب الآن وجربه"
+    },
+    "customTags": [
+      {
+        "id": "popular",
+        "label": "الأكثر طلباً",
+        "emoji": "🔥",
+        "color": "amber"
+      },
+      {
+        "id": "spicy",
+        "label": "حار",
+        "emoji": "🌶️",
+        "color": "red"
+      },
+      {
+        "id": "vegetarian",
+        "label": "نباتي",
+        "emoji": "🥗",
+        "color": "emerald"
+      },
+      {
+        "id": "new",
+        "label": "جديد",
+        "emoji": "✨",
+        "color": "purple"
+      },
+      {
+        "id": "tag-1793432117168",
+        "label": "دايت",
+        "emoji": "🥑",
+        "color": "emerald"
+      }
+    ]
   },
   "categories": [
     {
@@ -82,24 +143,42 @@
       "nameEn": "Royal Raheeb Mixed Grill",
       "descriptionAr": "تشكيلة من أسياخ كباب اللحم، وشيش طاووق، وكفتة مع البصل المشوي والخبز المحمص وصلصة الثومية",
       "descriptionEn": "Skewers of beef kebab, shish tawook, and kofta with grilled vegetables and garlic paste",
-      "basePrice": 58,
+      "basePrice": 2000,
       "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80",
       "tags": [
         "popular"
       ],
-      "isAvailable": false,
+      "isAvailable": true,
       "variants": [
         {
           "id": "var-1-half",
-          "price": 58,
+          "price": 2000,
           "nameAr": "نصف كيلو (شخصين)",
           "nameEn": "Half Kilo"
         },
         {
           "id": "var-1-kilo",
-          "price": 110,
+          "price": 5000,
           "nameAr": "كيلو كامل (4-5 أشخاص)",
           "nameEn": "1 Kilo"
+        },
+        {
+          "id": "var-1793430116562",
+          "price": 2000,
+          "nameAr": "حجم جديد",
+          "nameEn": "New Size"
+        },
+        {
+          "id": "var-1793430118461",
+          "price": 2000,
+          "nameAr": "حجم جديد",
+          "nameEn": "New Size"
+        },
+        {
+          "id": "var-1793430118678",
+          "price": 2000,
+          "nameAr": "حجم جديد",
+          "nameEn": "New Size"
         }
       ],
       "optionGroups": [
@@ -145,6 +224,48 @@
               "price": 3,
               "nameAr": "مخلل خيار ولفت بلدي",
               "nameEn": "Pickles"
+            }
+          ],
+          "required": false
+        },
+        {
+          "id": "grp-1793430121177",
+          "nameAr": "مجموعة خيارات جديدة",
+          "nameEn": "New Option Group",
+          "options": [
+            {
+              "id": "opt-1793430121177-1",
+              "price": 0,
+              "nameAr": "خيار 1",
+              "nameEn": "Option 1"
+            }
+          ],
+          "required": false
+        },
+        {
+          "id": "grp-1793430121825",
+          "nameAr": "مجموعة خيارات جديدة",
+          "nameEn": "New Option Group",
+          "options": [
+            {
+              "id": "opt-1793430121825-1",
+              "price": 0,
+              "nameAr": "خيار 1",
+              "nameEn": "Option 1"
+            }
+          ],
+          "required": false
+        },
+        {
+          "id": "grp-1793430122748",
+          "nameAr": "مجموعة خيارات جديدة",
+          "nameEn": "New Option Group",
+          "options": [
+            {
+              "id": "opt-1793430122748-1",
+              "price": 0,
+              "nameAr": "خيار 1",
+              "nameEn": "Option 1"
             }
           ],
           "required": false
@@ -300,23 +421,6 @@
       "optionGroups": []
     },
     {
-      "id": "item-7",
-      "categoryId": "cat-appetizers",
-      "nameAr": "بطاطا حارة بخلطة الكزبرة والثوم",
-      "nameEn": "Batata Harra (Spicy Potatoes)",
-      "descriptionAr": "مكعبات البطاطس المقلية المقرمشة المقلبة بالكزبرة الخضراء، الثوم، الفلفل الحار وزيت الزيتون",
-      "descriptionEn": "Crispy potato cubes sautéed with fresh coriander, garlic, chili, and lemon juice",
-      "basePrice": 17,
-      "imageUrl": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop&q=80",
-      "tags": [
-        "spicy",
-        "vegetarian"
-      ],
-      "isAvailable": true,
-      "variants": [],
-      "optionGroups": []
-    },
-    {
       "id": "item-8",
       "categoryId": "cat-combos",
       "nameAr": "بوكس التوفير العائلي رهيب",
@@ -350,36 +454,54 @@
       "optionGroups": []
     },
     {
-      "id": "item-10",
-      "categoryId": "cat-beverages",
-      "nameAr": "موهيتو توت أزرق منعش",
-      "nameEn": "Blueberry Mojito",
-      "descriptionAr": "سفن أب مثلج مع حبات التوت البري والنعناع الأخضر والليمون الطازج",
-      "descriptionEn": "Sparkling soda with muddled blueberries, fresh mint, and zesty lime",
-      "basePrice": 15,
-      "imageUrl": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80",
+      "id": "item-1793432515772",
+      "categoryId": "cat-mashawi",
+      "nameAr": "فلافل",
+      "nameEn": "فلافل",
+      "descriptionAr": "حمص و عنبة",
+      "descriptionEn": "حمص و عنبة",
+      "basePrice": 1500,
+      "imageUrl": "https://ofdgtioowdpthbnldfvk.supabase.co/storage/v1/object/public/menu-images/items/1793432553856-vdrc64.jpg",
       "tags": [
-        "new"
+        "tag-1793432117168"
       ],
       "isAvailable": true,
-      "variants": [],
-      "optionGroups": []
-    },
-    {
-      "id": "item-11",
-      "categoryId": "cat-desserts",
-      "nameAr": "كنافة نابلسية بالجبنة خشنة",
-      "nameEn": "Crispy Cheese Kunafa",
-      "descriptionAr": "كنافة مخبوزة على الفحم بجبنة عكاوي ذائبة ومسقية بالقطر الفاخر مع الفستق الحلبي",
-      "descriptionEn": "Charcoal baked warm kunafa with stretchy sweet cheese and pistachio crumble",
-      "basePrice": 22,
-      "imageUrl": "https://images.unsplash.com/photo-1579954115545-a95591f28bfc?w=600&auto=format&fit=crop&q=80",
-      "tags": [
-        "popular"
+      "variants": [
+        {
+          "id": "var-1793432558450",
+          "price": 1500,
+          "nameAr": "صغير",
+          "nameEn": "صغير"
+        },
+        {
+          "id": "var-1793432571305",
+          "price": 2000,
+          "nameAr": "وسط",
+          "nameEn": "وسط"
+        }
       ],
-      "isAvailable": true,
-      "variants": [],
-      "optionGroups": []
+      "optionGroups": [
+        {
+          "id": "grp-1793432580473",
+          "nameAr": "مقبلات",
+          "nameEn": "مقبلات",
+          "options": [
+            {
+              "id": "opt-1793432580473-1",
+              "price": 500,
+              "nameAr": "عنبة",
+              "nameEn": "عنبة"
+            },
+            {
+              "id": "opt-1793432819302-0.9274539415577232",
+              "price": 750,
+              "nameAr": "يومية",
+              "nameEn": "يومية"
+            }
+          ],
+          "required": false
+        }
+      ]
     }
   ],
   "tables": [
@@ -471,6 +593,311 @@
   ],
   "orders": [
     {
+      "type": "delivery",
+      "customerName": "رسول",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 1500,
+      "address": "الحر",
+      "landmark": "الحر",
+      "driverNotes": "",
+      "items": [
+        {
+          "id": "ord-item-1793434604481-pkp0w",
+          "menuItemId": "item-6",
+          "nameAr": "متبل باذنجان مدخن بالرمان",
+          "nameEn": "Smoked Eggplant Mutabbal",
+          "unitPrice": 19,
+          "quantity": 3,
+          "totalPrice": 57
+        }
+      ],
+      "subtotal": 57,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1557,
+      "paymentMethod": "cash",
+      "status": "ready",
+      "id": "ord-1793434604481-jrku6",
+      "orderNumber": 114,
+      "createdAt": "2026-10-31T08:16:44.481Z",
+      "updatedAt": "2026-10-31T10:26:00.514Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "منكوش",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 0,
+      "address": "الجامع",
+      "landmark": "الجامع",
+      "driverNotes": "خبز حار",
+      "items": [
+        {
+          "id": "ord-item-1793434066742-qxqi5",
+          "menuItemId": "item-1",
+          "nameAr": "مشكل مشويات رهيب الملكي",
+          "nameEn": "Royal Raheeb Mixed Grill",
+          "variantName": "كيلو كامل (4-5 أشخاص)",
+          "selectedOptionsText": "خبز تنور طازج، صحن طحينة إضافي (+4 د.ع)، مخلل خيار ولفت بلدي (+3 د.ع)، ثومية حارة (+4 د.ع)، خيار 1، خيار 1، خيار 1",
+          "unitPrice": 5011,
+          "quantity": 1,
+          "totalPrice": 5011
+        }
+      ],
+      "subtotal": 5011,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 5011,
+      "paymentMethod": "cash",
+      "status": "ready",
+      "id": "ord-1793434066742-mo234",
+      "orderNumber": 113,
+      "createdAt": "2026-10-31T08:07:46.742Z",
+      "updatedAt": "2026-10-31T08:17:33.996Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "فرفوش",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 0,
+      "address": "البلدية",
+      "landmark": "البلدية",
+      "driverNotes": "وياك ببسي",
+      "lat": 32.6069099,
+      "lng": 44.0831235,
+      "items": [
+        {
+          "id": "ord-item-1793433867503-no975",
+          "menuItemId": "item-1793432515772",
+          "nameAr": "فلافل",
+          "nameEn": "فلافل",
+          "variantName": "صغير",
+          "unitPrice": 1500,
+          "quantity": 1,
+          "totalPrice": 1500
+        }
+      ],
+      "subtotal": 1500,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1500,
+      "paymentMethod": "cash",
+      "status": "completed",
+      "id": "ord-1793433867503-vn2qk",
+      "orderNumber": 112,
+      "createdAt": "2026-10-31T08:04:27.503Z",
+      "updatedAt": "2026-10-31T08:05:46.505Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "يهود",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 1500,
+      "address": "قرب تقاطع الرواد - شارع 14 رمضان",
+      "landmark": "",
+      "driverNotes": "",
+      "lat": 32.60689979486991,
+      "lng": 44.083345270503,
+      "items": [
+        {
+          "id": "ord-item-1793428076385-xyo56",
+          "menuItemId": "item-1",
+          "nameAr": "مشكل مشويات رهيب الملكي",
+          "nameEn": "Royal Raheeb Mixed Grill",
+          "variantName": "نصف كيلو (شخصين)",
+          "selectedOptionsText": "خبز شامي حار على الصاج",
+          "unitPrice": 58,
+          "quantity": 1,
+          "totalPrice": 58
+        }
+      ],
+      "subtotal": 58,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1558,
+      "paymentMethod": "cash",
+      "status": "ready",
+      "id": "ord-1793428076386-0fvqk",
+      "orderNumber": 111,
+      "createdAt": "2026-10-31T06:27:56.385Z",
+      "updatedAt": "2026-10-31T06:32:43.067Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "عمار",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 1500,
+      "address": "قرب تقاطع الرواد - شارع 14 رمضان",
+      "landmark": "",
+      "driverNotes": "",
+      "lat": 32.606881642363824,
+      "lng": 44.0833140946952,
+      "items": [
+        {
+          "id": "ord-item-1793426075003-h19tz",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن فردي",
+          "unitPrice": 48,
+          "quantity": 1,
+          "totalPrice": 48
+        },
+        {
+          "id": "ord-item-1793426075003-dy4n0",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن مضاعف",
+          "notes": "بربري",
+          "unitPrice": 89,
+          "quantity": 1,
+          "totalPrice": 89
+        }
+      ],
+      "subtotal": 137,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1637,
+      "paymentMethod": "cash",
+      "status": "completed",
+      "id": "ord-1793426075003-02x63",
+      "orderNumber": 110,
+      "createdAt": "2026-10-31T05:54:35.003Z",
+      "updatedAt": "2026-10-31T06:10:23.780Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "علوش",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 1500,
+      "address": "قرب تقاطع الرواد - شارع 14 رمضان",
+      "landmark": "",
+      "driverNotes": "",
+      "items": [
+        {
+          "id": "ord-item-1793424907998-yc59m",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن فردي",
+          "unitPrice": 48,
+          "quantity": 1,
+          "totalPrice": 48
+        }
+      ],
+      "subtotal": 48,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1548,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793424907998-eoxlp",
+      "orderNumber": 109,
+      "createdAt": "2026-10-31T05:35:07.998Z",
+      "updatedAt": "2026-10-31T05:35:07.998Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "سندوي",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 1500,
+      "address": "قرب مرقد الحر",
+      "landmark": "",
+      "driverNotes": "باجه",
+      "lat": 32.6554197,
+      "lng": 43.9886763,
+      "items": [
+        {
+          "id": "ord-item-1793394400203-be4b7",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن فردي",
+          "unitPrice": 48,
+          "quantity": 1,
+          "totalPrice": 48
+        },
+        {
+          "id": "ord-item-1793394400203-024a8",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن مضاعف",
+          "notes": "تشريب",
+          "unitPrice": 89,
+          "quantity": 1,
+          "totalPrice": 89
+        }
+      ],
+      "subtotal": 137,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1637,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793394400203-2b2ev",
+      "orderNumber": 108,
+      "createdAt": "2026-10-30T21:06:40.203Z",
+      "updatedAt": "2026-10-30T21:06:40.203Z"
+    },
+    {
+      "type": "delivery",
+      "customerName": "عندوس",
+      "customerPhone": "07800280836",
+      "deliveryZoneId": "zone-1793394189549",
+      "deliveryZoneName": "المجتبى",
+      "deliveryFee": 1500,
+      "address": "قرب مرقد الحر",
+      "landmark": "",
+      "driverNotes": "",
+      "lat": 32.6553936,
+      "lng": 43.988649,
+      "items": [
+        {
+          "id": "ord-item-1793394273358-gqkuy",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن فردي",
+          "unitPrice": 48,
+          "quantity": 1,
+          "totalPrice": 48
+        }
+      ],
+      "subtotal": 48,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 1548,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793394273358-djmu8",
+      "orderNumber": 107,
+      "createdAt": "2026-10-30T21:04:33.358Z",
+      "updatedAt": "2026-10-30T21:04:33.358Z"
+    },
+    {
       "type": "table",
       "tableNumber": 6,
       "items": [
@@ -490,11 +917,12 @@
       "tax": 0,
       "total": 22,
       "paymentMethod": "cash",
-      "status": "received",
+      "status": "cancelled",
       "id": "ord-1793206223637-rv5b7",
       "orderNumber": 106,
       "createdAt": "2026-10-28T16:50:23.637Z",
-      "updatedAt": "2026-10-28T16:50:23.637Z"
+      "updatedAt": "2026-10-31T06:29:02.868Z",
+      "cancelReason": "اعتذار المطعم"
     },
     {
       "type": "takeaway",
@@ -660,22 +1088,7 @@
       "updatedAt": "2026-10-28T11:04:31.920Z"
     }
   ],
-  "coupons": [
-    {
-      "code": "RAHEEB15",
-      "type": "percent",
-      "value": 15,
-      "minOrderValue": 50,
-      "isActive": true
-    },
-    {
-      "code": "WELCOME10",
-      "type": "fixed",
-      "value": 10,
-      "minOrderValue": 40,
-      "isActive": true
-    }
-  ],
+  "coupons": [],
   "waiterCalls": [
     {
       "id": "call-1793183189549",
@@ -692,5 +1105,35 @@
       "createdAt": "2026-10-28T10:26:27.035Z"
     }
   ],
-  "nextOrderNumber": 107
+  "nextOrderNumber": 115,
+  "reviews": [
+    {
+      "id": "rev-1793433946536-hyfd9",
+      "orderId": "ord-1793433867503-vn2qk",
+      "orderNumber": 112,
+      "customerName": "فرفوش",
+      "customerPhone": "07800280836",
+      "orderType": "delivery",
+      "rating": 5,
+      "tags": [
+        "تغليف ممتاز ومحكم 📦"
+      ],
+      "comment": "",
+      "createdAt": "2026-10-31T08:05:46.536Z"
+    },
+    {
+      "id": "rev-1793429209738-9znls",
+      "orderId": "ord-1793428319978-5j6ck",
+      "orderNumber": 112,
+      "customerName": "بريسم",
+      "customerPhone": "07800280836",
+      "orderType": "delivery",
+      "rating": 3,
+      "tags": [
+        "الأكل يحتاج حرارة أكثر 🍲"
+      ],
+      "comment": "",
+      "createdAt": "2026-10-31T06:46:49.738Z"
+    }
+  ]
 }

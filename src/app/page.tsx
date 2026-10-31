@@ -67,9 +67,9 @@ function MenuContent() {
   const fetchData = async () => {
     try {
       const [settingsRes, catRes, menuRes] = await Promise.all([
-        fetch("/api/settings"),
-        fetch("/api/categories"),
-        fetch("/api/menu"),
+        fetch("/api/settings", { cache: "no-store" }),
+        fetch("/api/categories", { cache: "no-store" }),
+        fetch("/api/menu", { cache: "no-store" }),
       ]);
       const [settingsData, catData, menuData] = await Promise.all([
         settingsRes.json(),
