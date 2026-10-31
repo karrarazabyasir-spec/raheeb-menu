@@ -58,6 +58,8 @@ import {
   CheckCircle,
   XCircle,
   Flame,
+  MapPin,
+  Gift,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -80,6 +82,7 @@ export default function AdminPage() {
   const [newZoneMinOrder, setNewZoneMinOrder] = useState<number>(0);
   const [newZoneTime, setNewZoneTime] = useState("30-45 دقيقة");
   const [showAddZoneModal, setShowAddZoneModal] = useState(false);
+  const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
 
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -246,31 +249,64 @@ export default function AdminPage() {
   };
 
   // Delivery Zone Helpers
-  const handleAddZone = async () => {
-    if (!settings || !newZoneNameAr.trim()) return;
-    const newZone: DeliveryZone = {
-      id: "zone-" + Date.now(),
-      nameAr: newZoneNameAr.trim(),
-      nameEn: newZoneNameAr.trim(),
-      fee: Number(newZoneFee) || 0,
-      minOrder: Number(newZoneMinOrder) || 0,
-      estimatedTime: newZoneTime.trim() || "30-45 دقيقة",
-      isActive: true,
-    };
-    const updatedZones = [...(settings.deliveryZones || []), newZone];
-    const updatedSettings = { ...settings, deliveryZones: updatedZones };
-    setSettings(updatedSettings);
+  const handleOpenAddZone = () => {
+    setEditingZone(null);
     setNewZoneNameAr("");
     setNewZoneFee(2000);
     setNewZoneMinOrder(0);
     setNewZoneTime("30-45 دقيقة");
+    setShowAddZoneModal(true);
+  };
+
+  const handleOpenEditZone = (zone: DeliveryZone) => {
+    setEditingZone(zone);
+    setNewZoneNameAr(zone.nameAr);
+    setNewZoneFee(zone.fee);
+    setNewZoneMinOrder(zone.minOrder || 0);
+    setNewZoneTime(zone.estimatedTime || "30-45 دقيقة");
+    setShowAddZoneModal(true);
+  };
+
+  const handleSaveZoneModal = async () => {
+    if (!settings || !newZoneNameAr.trim()) return;
+
+    let updatedZones: DeliveryZone[];
+    if (editingZone) {
+      updatedZones = (settings.deliveryZones || []).map((z) =>
+        z.id === editingZone.id
+          ? {
+              ...z,
+              nameAr: newZoneNameAr.trim(),
+              nameEn: newZoneNameAr.trim(),
+              fee: Number(newZoneFee) || 0,
+              minOrder: Number(newZoneMinOrder) || 0,
+              estimatedTime: newZoneTime.trim() || "30-45 دقيقة",
+            }
+          : z
+      );
+    } else {
+      const newZone: DeliveryZone = {
+        id: "zone-" + Date.now(),
+        nameAr: newZoneNameAr.trim(),
+        nameEn: newZoneNameAr.trim(),
+        fee: Number(newZoneFee) || 0,
+        minOrder: Number(newZoneMinOrder) || 0,
+        estimatedTime: newZoneTime.trim() || "30-45 دقيقة",
+        isActive: true,
+      };
+      updatedZones = [...(settings.deliveryZones || []), newZone];
+    }
+
+    const updatedSettings = { ...settings, deliveryZones: updatedZones };
+    setSettings(updatedSettings);
     setShowAddZoneModal(false);
-    // Immediately persist to backend so refreshing the page preserves the zone!
+    setEditingZone(null);
     await handleSaveSettings(undefined, updatedSettings);
   };
 
   const handleDeleteZone = async (zoneId: string) => {
     if (!settings) return;
+    if (!confirm("هل أنت متأكد من حذف هذه المنطقة؟")) return;
     const updatedZones = (settings.deliveryZones || []).filter((z) => z.id !== zoneId);
     const updatedSettings = { ...settings, deliveryZones: updatedZones };
     setSettings(updatedSettings);
@@ -285,14 +321,6 @@ export default function AdminPage() {
     const updatedSettings = { ...settings, deliveryZones: updatedZones };
     setSettings(updatedSettings);
     await handleSaveSettings(undefined, updatedSettings);
-  };
-
-  const handleUpdateZone = (zoneId: string, field: keyof DeliveryZone, value: any) => {
-    if (!settings) return;
-    const updatedZones = (settings.deliveryZones || []).map((z) =>
-      z.id === zoneId ? { ...z, [field]: value } : z
-    );
-    setSettings({ ...settings, deliveryZones: updatedZones });
   };
 
   // Generate QR for a table
@@ -1333,39 +1361,65 @@ export default function AdminPage() {
         {/* TAB: DELIVERY ZONES & SETTINGS */}
         {activeTab === "delivery" && settings && (
           <div className="space-y-6 max-w-4xl">
-            {/* Header / Intro Card */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* 1. General Delivery Settings Card */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
                 <div>
                   <h2 className="text-base font-black text-stone-900 flex items-center gap-2">
-                    <Bike className="w-5 h-5 text-purple-600" />
-                    <span>إعدادات التوصيل ومناطق الخدمة</span>
+                    <Bike className="w-5 h-5 text-[#780000]" />
+                    <span>إعدادات خدمة التوصيل</span>
                   </h2>
-                  <p className="text-xs text-stone-500">
-                    تفعيل أو تعطيل التوصيل، تحديد أجور ومناطق التوصيل، والحد الأدنى للطلب
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    التحكم في تشغيل الخدمة، التوصيل المجاني، والوقت التقديري الافتراضي
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => handleSaveSettings()}
-                  className="px-5 py-2.5 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2"
+                  className="px-5 py-2.5 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow transition flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  <span>حفظ التعديلات</span>
+                  <span>حفظ الإعدادات</span>
                 </button>
               </div>
 
-              {/* Delivery Service Master Toggle */}
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs font-black text-purple-950 block">خدمة التوصيل للمنازل (Delivery)</span>
-                  <span className="text-[11px] text-purple-800">
-                    {settings.deliveryEnabled
-                      ? "الخدمة مفعّلة حالياً، ويتاح للزبائن اختيار التوصيل عند إتمام الطلب"
-                      : "الخدمة معطلة حالياً، يتاح للزبائن فقط الطلب داخل الصالة أو الاستلام من الفرع"}
-                  </span>
+              {/* Delivery Service Master Toggle Card */}
+              <div className="p-4 rounded-2xl border border-stone-200/80 bg-stone-50/60 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-colors shrink-0 ${
+                      settings.deliveryEnabled
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-stone-200 text-stone-500"
+                    }`}
+                  >
+                    <Bike className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-stone-900 block">
+                        خدمة التوصيل للمنازل
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          settings.deliveryEnabled
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-stone-200 text-stone-600"
+                        }`}
+                      >
+                        {settings.deliveryEnabled ? "مفعّلة" : "معطلة مؤقتاً"}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-stone-500 mt-0.5 block">
+                      {settings.deliveryEnabled
+                        ? "خيار التوصيل متاح للزبائن عند إتمام الطلب من المنيو"
+                        : "خدمة التوصيل متوقفة حالياً، يتاح للزبائن الطلب داخل المطعم أو الاستلام فقط"}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Sleek Toggle Switch */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1373,277 +1427,322 @@ export default function AdminPage() {
                     setSettings(updated);
                     handleSaveSettings(undefined, updated);
                   }}
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition ${
-                    settings.deliveryEnabled
-                      ? "bg-emerald-600 text-white shadow"
-                      : "bg-stone-300 text-stone-700"
+                  className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                    settings.deliveryEnabled ? "bg-emerald-600" : "bg-stone-300"
                   }`}
+                  role="switch"
+                  aria-checked={settings.deliveryEnabled}
                 >
-                  {settings.deliveryEnabled ? "مفعّلة ويتم استقبال الطلبات ✓" : "معطلة مؤقتاً ✕"}
+                  <span
+                    className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                      settings.deliveryEnabled ? "-translate-x-6" : "translate-x-0"
+                    }`}
+                  />
                 </button>
               </div>
 
-              {/* Global Delivery Settings Form */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-xs">
-                <div>
-                  <label className="font-bold block mb-1">توصيل مجاني عند وصول الطلب إلى ({settings.currency}):</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={1000}
-                    value={settings.freeDeliveryThreshold ?? 0}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        freeDeliveryThreshold: Number(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0 لتعطيل التوصيل المجاني"
-                    className="w-full p-2.5 border rounded-xl font-bold"
-                  />
-                  <span className="text-[10px] text-stone-500 mt-0.5 block">
-                    (ضع 0 إذا كنت لا ترغب بتوصيل مجاني)
-                  </span>
+              {/* Global Settings Form: 2 Clean Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {/* Free Delivery Threshold */}
+                <div className="p-4 rounded-2xl border border-stone-200 bg-white space-y-1.5 focus-within:border-[#780000] focus-within:ring-2 focus-within:ring-[#780000]/10 transition">
+                  <div className="flex items-center justify-between text-xs font-bold text-stone-800">
+                    <label className="flex items-center gap-1.5">
+                      <Gift className="w-4 h-4 text-[#780000]" />
+                      <span>توصيل مجاني للطلبات فوق:</span>
+                    </label>
+                    <span className="text-[10px] text-stone-400 font-normal">0 لإلغاء الميزة</span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number"
+                      min={0}
+                      step={1000}
+                      value={settings.freeDeliveryThreshold ?? 0}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          freeDeliveryThreshold: Number(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full pl-12 pr-3 py-2 text-sm font-black text-stone-900 border border-stone-200 rounded-xl focus:outline-hidden focus:border-[#780000]"
+                      placeholder="0"
+                    />
+                    <span className="absolute left-3 text-xs font-bold text-stone-400 pointer-events-none">
+                      {settings.currency}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-stone-400">
+                    يحصل الزبون على توصيل مجاني تلقائياً إذا بلغت قيمة أصنافه هذا المبلغ.
+                  </p>
                 </div>
 
-                <div>
-                  <label className="font-bold block mb-1">وقت التوصيل التقديري للزبون:</label>
+                {/* Default Delivery Time */}
+                <div className="p-4 rounded-2xl border border-stone-200 bg-white space-y-1.5 focus-within:border-[#780000] focus-within:ring-2 focus-within:ring-[#780000]/10 transition">
+                  <div className="flex items-center justify-between text-xs font-bold text-stone-800">
+                    <label className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-[#780000]" />
+                      <span>الوقت التقديري الافتراضي:</span>
+                    </label>
+                  </div>
                   <input
                     type="text"
                     value={settings.defaultDeliveryTime || "30-45 دقيقة"}
                     onChange={(e) =>
                       setSettings({ ...settings, defaultDeliveryTime: e.target.value })
                     }
-                    placeholder="30-45 دقيقة"
-                    className="w-full p-2.5 border rounded-xl"
+                    className="w-full px-3 py-2 text-sm font-bold text-stone-900 border border-stone-200 rounded-xl focus:outline-hidden focus:border-[#780000]"
+                    placeholder="مثال: 30-45 دقيقة"
                   />
-                  <span className="text-[10px] text-stone-500 mt-0.5 block">
-                    يظهر للزبون في صفحة إتمام الطلب وتتبع السائق
-                  </span>
+                  <p className="text-[10px] text-stone-400">
+                    يظهر للزبائن في سلة الشراء وأثناء تتبع خط سير الطلب.
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Delivery Zones Table Card */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* 2. Delivery Zones List Card */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
                 <div>
-                  <h3 className="text-sm font-black text-stone-900">
-                    مناطق التوصيل والأسعار ({settings.deliveryZones?.length || 0})
-                  </h3>
-                  <p className="text-xs text-stone-500">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-black text-stone-900">مناطق التوصيل والأسعار</h3>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
+                      {settings.deliveryZones?.length || 0} مناطق
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5">
                     حدد أجرة التوصيل الخاصة بكل حي أو منطقة مع الحد الأدنى للطلب
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setShowAddZoneModal(true)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition"
+                  onClick={handleOpenAddZone}
+                  className="px-4 py-2 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
                 >
-                  <Plus className="w-4 h-4 stroke-[2.5]" />
+                  <Plus className="w-4 h-4" />
                   <span>إضافة منطقة جديدة</span>
                 </button>
               </div>
 
               {(!settings.deliveryZones || settings.deliveryZones.length === 0) ? (
-                <div className="p-8 text-center border-2 border-dashed border-stone-200 rounded-2xl text-stone-400 text-xs font-bold">
-                  لا توجد مناطق توصيل مضافة حالياً. اضغط "إضافة منطقة جديدة" للبدء.
+                <div className="py-12 px-4 text-center border-2 border-dashed border-stone-200 rounded-3xl bg-stone-50/50 flex flex-col items-center justify-center">
+                  <div className="w-14 h-14 rounded-2xl bg-red-50 text-[#780000] flex items-center justify-center mb-3">
+                    <MapPin className="w-7 h-7" />
+                  </div>
+                  <h4 className="text-sm font-black text-stone-800 mb-1">
+                    لم تقم بإضافة مناطق توصيل بعد
+                  </h4>
+                  <p className="text-xs text-stone-500 max-w-sm mb-4">
+                    أضف الأحياء والمناطق التي يخدمها المطعم مع تحديد كلفة التوصيل لكل منها ليختار الزبون منها بسهولة.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddZone}
+                    className="px-5 py-2.5 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>إضافة أول منطقة توصيل</span>
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3">
                   {settings.deliveryZones.map((zone) => (
                     <div
                       key={zone.id}
-                      className={`p-4 rounded-2xl border transition-all ${
+                      className={`p-4 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-3 ${
                         zone.isActive
-                          ? "bg-white border-stone-200 shadow-xs"
+                          ? "bg-white border-stone-200 shadow-xs hover:border-stone-300"
                           : "bg-stone-50 border-stone-200/60 opacity-60"
                       }`}
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center text-xs">
-                        {/* Zone Name */}
-                        <div className="sm:col-span-4">
-                          <label className="text-[10px] font-bold text-stone-500 block mb-0.5">اسم المنطقة:</label>
-                          <input
-                            type="text"
-                            value={zone.nameAr}
-                            onChange={(e) => handleUpdateZone(zone.id, "nameAr", e.target.value)}
-                            className="w-full p-2 border rounded-lg font-bold text-stone-900"
-                            placeholder="اسم المنطقة (مثال: حي الحسين)"
-                          />
+                      {/* Right: Zone Name + Time badge */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            zone.isActive ? "bg-red-50 text-[#780000]" : "bg-stone-200 text-stone-500"
+                          }`}
+                        >
+                          <MapPin className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-black text-stone-900">{zone.nameAr}</h4>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleZone(zone.id)}
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition flex items-center gap-1 ${
+                                zone.isActive
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                              }`}
+                              title="تبديل الحالة"
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  zone.isActive ? "bg-emerald-500" : "bg-stone-400"
+                                }`}
+                              />
+                              <span>{zone.isActive ? "متاحة للطلب" : "معطلة"}</span>
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-[11px] text-stone-500">
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-stone-400" />
+                              <span>{zone.estimatedTime || "30-45 دقيقة"}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Center: Fee & Min order badges */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <div className="px-3 py-1.5 bg-red-50 text-[#780000] border border-red-100 rounded-xl font-black">
+                          أجرة التوصيل: {zone.fee.toLocaleString()} {settings.currency}
                         </div>
 
-                        {/* Fee */}
-                        <div className="sm:col-span-2">
-                          <label className="text-[10px] font-bold text-stone-500 block mb-0.5">أجرة التوصيل ({settings.currency}):</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step={500}
-                            value={zone.fee}
-                            onChange={(e) => handleUpdateZone(zone.id, "fee", Number(e.target.value) || 0)}
-                            className="w-full p-2 border rounded-lg font-black text-[#780000]"
-                          />
+                        <div className="px-3 py-1.5 bg-stone-100 text-stone-700 rounded-xl font-bold">
+                          {zone.minOrder && zone.minOrder > 0
+                            ? `الحد الأدنى: ${zone.minOrder.toLocaleString()} ${settings.currency}`
+                            : "بدون حد أدنى للطلب"}
                         </div>
+                      </div>
 
-                        {/* Min Order */}
-                        <div className="sm:col-span-2">
-                          <label className="text-[10px] font-bold text-stone-500 block mb-0.5">الحد الأدنى ({settings.currency}):</label>
-                          <input
-                            type="number"
-                            min={0}
-                            step={1000}
-                            value={zone.minOrder || 0}
-                            onChange={(e) => handleUpdateZone(zone.id, "minOrder", Number(e.target.value) || 0)}
-                            className="w-full p-2 border rounded-lg font-bold text-stone-800"
-                            placeholder="0"
-                          />
-                        </div>
+                      {/* Left: Actions */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditZone(zone)}
+                          className="px-3 py-1.5 rounded-xl border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-bold transition flex items-center gap-1.5"
+                          title="تعديل المنطقة"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-stone-500" />
+                          <span>تعديل</span>
+                        </button>
 
-                        {/* Est Time */}
-                        <div className="sm:col-span-2">
-                          <label className="text-[10px] font-bold text-stone-500 block mb-0.5">الوقت المقدر:</label>
-                          <input
-                            type="text"
-                            value={zone.estimatedTime || "30-45 دقيقة"}
-                            onChange={(e) => handleUpdateZone(zone.id, "estimatedTime", e.target.value)}
-                            className="w-full p-2 border rounded-lg text-stone-700"
-                            placeholder="30-45 دقيقة"
-                          />
-                        </div>
-
-                        {/* Actions */}
-                        <div className="sm:col-span-2 flex items-center justify-end gap-2 pt-2 sm:pt-0">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleZone(zone.id)}
-                            className={`px-2.5 py-1.5 rounded-lg text-[11px] font-black transition ${
-                              zone.isActive
-                                ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                                : "bg-stone-200 text-stone-600 hover:bg-stone-300"
-                            }`}
-                            title={zone.isActive ? "تعطيل المنطقة مؤقتاً" : "تفعيل المنطقة"}
-                          >
-                            {zone.isActive ? "نشطة ✓" : "معطلة"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteZone(zone.id)}
-                            className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition"
-                            title="حذف المنطقة"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteZone(zone.id)}
+                          className="p-1.5 text-stone-400 hover:text-red-600 rounded-xl hover:bg-red-50 transition"
+                          title="حذف المنطقة"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-
-              {/* Bottom Save Action */}
-              <div className="pt-4 border-t flex flex-wrap justify-between items-center gap-2">
-                <span className="text-[11px] text-stone-500">
-                  * يتم حفظ أي تعديل تجريه بالضغط على زر "حفظ التعديلات".
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleSaveSettings()}
-                  className="px-6 py-2.5 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>حفظ التعديلات على مناطق التوصيل</span>
-                </button>
-              </div>
             </div>
 
-            {/* Modal: Add Delivery Zone */}
+            {/* Modal: Add / Edit Delivery Zone */}
             {showAddZoneModal && (
               <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
                 <div
-                  className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up"
+                  className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-scale-up"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="flex items-center justify-between border-b pb-3">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                     <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
-                      <Bike className="w-5 h-5 text-purple-600" />
-                      <span>إضافة منطقة توصيل جديدة</span>
+                      <div className="w-8 h-8 rounded-xl bg-red-50 text-[#780000] flex items-center justify-center">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <span>{editingZone ? "تعديل منطقة التوصيل" : "إضافة منطقة توصيل جديدة"}</span>
                     </h3>
                     <button
-                      onClick={() => setShowAddZoneModal(false)}
-                      className="p-1 rounded-full hover:bg-stone-100 text-stone-500"
+                      onClick={() => {
+                        setShowAddZoneModal(false);
+                        setEditingZone(null);
+                      }}
+                      className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   </div>
 
-                  <div className="space-y-3 text-xs">
+                  <div className="space-y-4 text-xs">
+                    {/* Zone Name */}
                     <div>
-                      <label className="font-bold block mb-1">اسم المنطقة *:</label>
+                      <label className="font-bold text-stone-800 block mb-1">
+                        اسم الحي أو المنطقة <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         value={newZoneNameAr}
                         onChange={(e) => setNewZoneNameAr(e.target.value)}
-                        placeholder="مثال: حي الحسين / الجمعية"
-                        className="w-full p-2.5 border rounded-xl font-bold"
+                        placeholder="مثال: المجتبى، حي الحسين، المعلمين"
+                        className="w-full px-3.5 py-2.5 border border-stone-200 rounded-xl font-bold text-stone-900 focus:outline-hidden focus:border-[#780000] focus:ring-2 focus:ring-[#780000]/10 transition"
+                        autoFocus
                       />
                     </div>
 
+                    {/* Fee & Min Order */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="font-bold block mb-1">أجرة التوصيل ({settings.currency}) *:</label>
+                        <label className="font-bold text-stone-800 block mb-1">
+                          أجرة التوصيل ({settings.currency}) <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="number"
                           min={0}
                           step={500}
                           value={newZoneFee}
                           onChange={(e) => setNewZoneFee(Number(e.target.value) || 0)}
-                          className="w-full p-2.5 border rounded-xl font-black text-[#780000]"
+                          className="w-full px-3 py-2.5 border border-stone-200 rounded-xl font-black text-[#780000] focus:outline-hidden focus:border-[#780000] focus:ring-2 focus:ring-[#780000]/10 transition"
                         />
                       </div>
                       <div>
-                        <label className="font-bold block mb-1">الحد الأدنى للطلب ({settings.currency}):</label>
+                        <label className="font-bold text-stone-800 block mb-1">
+                          الحد الأدنى للطلب ({settings.currency})
+                        </label>
                         <input
                           type="number"
                           min={0}
                           step={1000}
                           value={newZoneMinOrder}
                           onChange={(e) => setNewZoneMinOrder(Number(e.target.value) || 0)}
-                          placeholder="0"
-                          className="w-full p-2.5 border rounded-xl font-bold"
+                          placeholder="0 لعدم وجود حد أدنى"
+                          className="w-full px-3 py-2.5 border border-stone-200 rounded-xl font-bold text-stone-800 focus:outline-hidden focus:border-[#780000] focus:ring-2 focus:ring-[#780000]/10 transition"
                         />
                       </div>
                     </div>
 
+                    {/* Est Time */}
                     <div>
-                      <label className="font-bold block mb-1">وقت التوصيل التقديري للمنطقة:</label>
+                      <label className="font-bold text-stone-800 block mb-1">
+                        الوقت التقديري للتوصيل
+                      </label>
                       <input
                         type="text"
                         value={newZoneTime}
                         onChange={(e) => setNewZoneTime(e.target.value)}
-                        placeholder="مثال: 30-40 دقيقة"
-                        className="w-full p-2.5 border rounded-xl"
+                        placeholder="مثال: 30-45 دقيقة"
+                        className="w-full px-3.5 py-2.5 border border-stone-200 rounded-xl font-semibold text-stone-800 focus:outline-hidden focus:border-[#780000] focus:ring-2 focus:ring-[#780000]/10 transition"
                       />
+                      <span className="text-[10px] text-stone-400 mt-1 block">
+                        يظهر للزبون عند اختياره هذه المنطقة تحديداً
+                      </span>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t flex justify-end gap-2">
+                  <div className="pt-3 border-t border-stone-100 flex justify-end gap-2">
                     <button
                       type="button"
-                      onClick={() => setShowAddZoneModal(false)}
-                      className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold"
+                      onClick={() => {
+                        setShowAddZoneModal(false);
+                        setEditingZone(null);
+                      }}
+                      className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition"
                     >
                       إلغاء
                     </button>
                     <button
                       type="button"
-                      onClick={handleAddZone}
+                      onClick={handleSaveZoneModal}
                       disabled={!newZoneNameAr.trim()}
-                      className="px-5 py-2 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold shadow disabled:opacity-50"
+                      className="px-6 py-2.5 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold shadow-xs transition disabled:opacity-50"
                     >
-                      إضافة المنطقة
+                      {editingZone ? "حفظ التعديل" : "إضافة المنطقة"}
                     </button>
                   </div>
                 </div>
