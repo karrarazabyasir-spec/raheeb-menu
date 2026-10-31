@@ -191,11 +191,16 @@ export default function KitchenPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {orders.map((order) => {
+              // Timer counts strictly from the moment the cashier approved & sent the order to the kitchen
+              const kitchenStartTime = order.acceptedAt
+                ? new Date(order.acceptedAt).getTime()
+                : new Date(order.updatedAt || order.createdAt).getTime();
+
               const elapsedMinutes = Math.floor(
-                (currentTime - new Date(order.createdAt).getTime()) / 60000
+                (currentTime - kitchenStartTime) / 60000
               );
               const elapsedSeconds = Math.floor(
-                ((currentTime - new Date(order.createdAt).getTime()) % 60000) / 1000
+                ((currentTime - kitchenStartTime) % 60000) / 1000
               );
               const isDelayed = elapsedMinutes >= 15;
               const isUrgent = elapsedMinutes >= 25;
@@ -234,12 +239,15 @@ export default function KitchenPage() {
                             : "سفري / استلام 🥡"}
                         </span>
                       </div>
-                      <span className="text-[11px] text-stone-400">
-                        {new Date(order.createdAt).toLocaleTimeString("ar-SA", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+                      <div className="flex items-center gap-1.5 text-[11px] text-stone-400 mt-0.5">
+                        <span>استُلم للطهي:</span>
+                        <span className="font-bold text-stone-200">
+                          {new Date(kitchenStartTime).toLocaleTimeString("ar-SA", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Timer Badge */}

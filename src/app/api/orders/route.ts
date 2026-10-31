@@ -43,6 +43,7 @@ export async function GET(request: Request) {
         paymentMethod: o.payment_method,
         status: o.status,
         cancelReason: o.cancel_reason || undefined,
+        acceptedAt: o.accepted_at || undefined,
         createdAt: o.created_at,
         updatedAt: o.updated_at,
       }));

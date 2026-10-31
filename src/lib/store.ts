@@ -465,6 +465,9 @@ export const db = {
 
     order.status = status;
     order.updatedAt = new Date().toISOString();
+    if (status === "preparing" && !order.acceptedAt) {
+      order.acceptedAt = order.updatedAt;
+    }
     if (cancelReason) {
       order.cancelReason = cancelReason;
     }
@@ -472,17 +475,33 @@ export const db = {
     writeData(data);
     eventBus.emit("order_status_changed", order);
 
+    const supaUpdate: any = {
+      status,
+      cancel_reason: cancelReason || null,
+      updated_at: order.updatedAt,
+    };
+    if (order.acceptedAt) {
+      supaUpdate.accepted_at = order.acceptedAt;
+    }
+
     // Sync status change to Supabase
     supabaseAdmin
       .from("orders")
-      .update({
-        status,
-        cancel_reason: cancelReason || null,
-        updated_at: order.updatedAt,
-      })
+      .update(supaUpdate)
       .eq("id", orderId)
       .then(({ error }) => {
-        if (error) console.error("Supabase order status update error:", error);
+        if (error) {
+          // If accepted_at column does not exist in table, update base columns
+          supabaseAdmin
+            .from("orders")
+            .update({
+              status,
+              cancel_reason: cancelReason || null,
+              updated_at: order.updatedAt,
+            })
+            .eq("id", orderId)
+            .then(() => {});
+        }
       });
 
     return order;

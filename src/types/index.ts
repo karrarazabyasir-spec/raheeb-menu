@@ -192,6 +192,7 @@ export interface Order {
   paymentMethod: "cash";
   status: OrderStatus;
   cancelReason?: string;
+  acceptedAt?: string; // Time cashier approved the order and sent it to the kitchen
   createdAt: string;
   updatedAt: string;
 }

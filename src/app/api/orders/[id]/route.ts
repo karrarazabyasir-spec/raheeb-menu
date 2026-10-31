@@ -47,6 +47,7 @@ export async function GET(
         paymentMethod: data.payment_method,
         status: data.status,
         cancelReason: data.cancel_reason || undefined,
+        acceptedAt: data.accepted_at || undefined,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
@@ -83,19 +84,44 @@ export async function PATCH(
     const body = await request.json();
     const { status, cancelReason } = body as { status: OrderStatus; cancelReason?: string };
 
+    const nowIso = new Date().toISOString();
     const updated = db.updateOrderStatus(id, status, cancelReason);
 
+    const supaUpdatePayload: any = {
+      status,
+      cancel_reason: cancelReason || null,
+      updated_at: nowIso,
+    };
+    if (status === "preparing") {
+      supaUpdatePayload.accepted_at = nowIso;
+    }
+
     // Also update directly in Supabase
-    const { data: supaData } = await supabaseAdmin
-      .from("orders")
-      .update({
-        status,
-        cancel_reason: cancelReason || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select()
-      .single();
+    let supaData: any = null;
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("orders")
+        .update(supaUpdatePayload)
+        .eq("id", id)
+        .select()
+        .single();
+      if (!error && data) {
+        supaData = data;
+      } else {
+        // Fallback without accepted_at if column not yet added to SQL schema
+        const { data: fbData } = await supabaseAdmin
+          .from("orders")
+          .update({
+            status,
+            cancel_reason: cancelReason || null,
+            updated_at: nowIso,
+          })
+          .eq("id", id)
+          .select()
+          .single();
+        supaData = fbData;
+      }
+    } catch {}
 
     if (!updated && !supaData) {
       return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
@@ -118,6 +144,7 @@ export async function PATCH(
       paymentMethod: supaData.payment_method,
       status: supaData.status,
       cancelReason: supaData.cancel_reason || undefined,
+      acceptedAt: supaData.accepted_at || (status === "preparing" ? nowIso : undefined),
       createdAt: supaData.created_at,
       updatedAt: supaData.updated_at,
     };
