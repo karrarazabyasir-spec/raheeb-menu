@@ -744,20 +744,21 @@ export default function AdminPage() {
 
   const maxDishCount = topDishes.length > 0 ? topDishes[0].count : 1;
 
-  // Daily trend for the last 7 days
+  // Daily trend for the last 7 days (Starting from Today on the far right in RTL -> Yesterday -> ... -> 6 days ago)
   const arabicDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
   const last7DaysTrend = Array.from({ length: 7 }).map((_, idx) => {
     if (!mountedTime) {
       return {
-        dayLabel: arabicDays[idx % 7],
+        dayLabel: idx === 0 ? "اليوم" : idx === 1 ? "أمس" : arabicDays[idx % 7],
         dateFormatted: "-",
         total: 0,
         count: 0,
+        isToday: idx === 0,
       };
     }
     const d = new Date(mountedTime);
-    d.setDate(d.getDate() - (6 - idx));
-    const dayLabel = idx === 6 ? "اليوم" : idx === 5 ? "أمس" : arabicDays[d.getDay()];
+    d.setDate(d.getDate() - idx);
+    const dayLabel = idx === 0 ? "اليوم" : idx === 1 ? "أمس" : arabicDays[d.getDay()];
     const dateFormatted = `${d.getDate()}/${d.getMonth() + 1}`;
     const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
@@ -774,6 +775,7 @@ export default function AdminPage() {
       dateFormatted,
       total: dayTotal,
       count: dayOrders.length,
+      isToday: idx === 0,
     };
   });
 
@@ -2585,7 +2587,7 @@ export default function AdminPage() {
                 <div className="h-48 flex items-end justify-between gap-2 pt-6 pb-2 px-1 border-b border-stone-100" dir="rtl">
                   {last7DaysTrend.map((day, i) => {
                     const heightPercent = Math.max(12, Math.round((day.total / peakSales) * 100));
-                    const isToday = i === 6;
+                    const isToday = day.isToday ?? (i === 0);
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                         {/* Tooltip on hover */}
