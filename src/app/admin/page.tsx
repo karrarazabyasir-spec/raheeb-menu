@@ -1245,8 +1245,8 @@ export default function AdminPage() {
                     nameEn: "",
                     descriptionAr: "",
                     descriptionEn: "",
-                    basePrice: 25,
-                    imageUrl: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600",
+                    basePrice: 0,
+                    imageUrl: "",
                     tags: [],
                     isAvailable: true,
                     variants: [],
@@ -3037,23 +3037,37 @@ export default function AdminPage() {
                           <img
                             src={editingItem.imageUrl}
                             alt="Preview"
-                            className="w-14 h-14 rounded-2xl object-cover border-2 border-white ring-1 ring-stone-200 shadow-xs"
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-white ring-1 ring-stone-200 shadow-xs"
                           />
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem({ ...editingItem, imageUrl: "" })}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-xs hover:bg-red-700 transition"
+                            title="حذف الصورة"
+                          >
+                            ✕
+                          </button>
                         </div>
                       ) : (
-                        <div className="w-14 h-14 rounded-2xl bg-stone-100 border border-dashed border-stone-300 flex items-center justify-center text-stone-400 shrink-0">
-                          <ImageIcon className="w-6 h-6" />
+                        <div className="w-16 h-16 rounded-2xl bg-stone-100 border-2 border-dashed border-stone-300 flex flex-col items-center justify-center text-stone-400 shrink-0">
+                          <ImageIcon className="w-6 h-6 stroke-[1.8]" />
                         </div>
                       )}
 
-                      <div className="flex-1 space-y-1.5">
-                        <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#780000] hover:bg-[#600000] text-white rounded-xl text-xs font-bold transition shadow-xs">
+                      <div className="flex-1 space-y-1">
+                        <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-[#780000] hover:bg-[#600000] text-white rounded-xl text-xs font-bold transition shadow-xs">
                           {isUploading ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <UploadCloud className="w-3.5 h-3.5" />
+                            <UploadCloud className="w-4 h-4" />
                           )}
-                          <span>{isUploading ? "جاري الرفع..." : "رفع صورة من جهازك"}</span>
+                          <span>
+                            {isUploading
+                              ? "جاري رفع الصورة..."
+                              : editingItem.imageUrl
+                              ? "تغيير صورة الطبق 📷"
+                              : "رفع صورة من جهازك ☁️"}
+                          </span>
                           <input
                             type="file"
                             accept="image/*"
@@ -3062,13 +3076,9 @@ export default function AdminPage() {
                             className="hidden"
                           />
                         </label>
-                        <input
-                          type="text"
-                          value={editingItem.imageUrl}
-                          onChange={(e) => setEditingItem({ ...editingItem, imageUrl: e.target.value })}
-                          placeholder="أو ضع رابط صورة مباشر..."
-                          className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-xl text-[11px] text-stone-700 focus:outline-none focus:border-[#780000]"
-                        />
+                        <p className="text-[10px] text-stone-400 font-medium">
+                          يدعم صور JPG و PNG و WebP بجودة عالية
+                        </p>
                       </div>
                     </div>
                   </div>
