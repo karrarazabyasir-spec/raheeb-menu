@@ -25,7 +25,56 @@ import {
   ArrowRight,
   Sparkles,
   Bike,
+  Send,
+  Heart,
 } from "lucide-react";
+
+const PRESET_OPINIONS: Record<number, string[]> = {
+  5: [
+    "الأكل ساخن ولذيذ جداً 🔥",
+    "التوصيل سريع ودقيق ⚡",
+    "تغليف ممتاز ومحكم 📦",
+    "مشويات رهيبة وطازجة 🥩",
+    "تعامل راقي ومحترم 👏",
+    "كميات راهية وممتازة 👑",
+  ],
+  4: [
+    "الأكل لذيذ وطازج 👍",
+    "التوصيل بوقت مناسب ⏰",
+    "تغليف نظيف ومرتب 📦",
+    "تجربة جميلة وسأكررها ✨",
+    "الكميات مناسبة 🍽️",
+  ],
+  3: [
+    "الأكل يحتاج حرارة أكثر 🍲",
+    "تأخر وقت التوصيل قليلاً ⏳",
+    "يحتاج تحسين التتبيلة 🧂",
+    "الكمية أقل من المتوقع 🤏",
+  ],
+  2: [
+    "الأكل وصل بارداً ❄️",
+    "تأخر السائق كثيراً ⏰",
+    "أصناف ناقصة أو غير مطابقة ❌",
+    "التغليف سيء أو مسكوب 📦",
+    "الطعم لم يكن بالمستوى 👎",
+  ],
+  1: [
+    "الأكل وصل بارداً ❄️",
+    "تأخر السائق كثيراً ⏰",
+    "أصناف ناقصة أو غير مطابقة ❌",
+    "التغليف غير لائق ومسكوب 📦",
+    "الطعم سيء للغاية 👎",
+    "تعامل المندوب غير لائق 🚫",
+  ],
+};
+
+const RATING_LABELS: Record<number, { text: string; color: string }> = {
+  5: { text: "ممتاز ورهيب! 🔥", color: "text-amber-500 bg-amber-50 border-amber-200" },
+  4: { text: "جيد جداً 👍", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+  3: { text: "مقبول / عادي 👌", color: "text-blue-600 bg-blue-50 border-blue-200" },
+  2: { text: "يحتاج تحسين 😕", color: "text-orange-600 bg-orange-50 border-orange-200" },
+  1: { text: "تجربة سيئة 😞", color: "text-rose-600 bg-rose-50 border-rose-200" },
+};
 
 function OrderTrackingContent() {
   const params = useParams();
@@ -38,6 +87,9 @@ function OrderTrackingContent() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [rating, setRating] = useState<number>(5);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [reviewComment, setReviewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const [callMessage, setCallMessage] = useState<string | null>(null);
 
@@ -152,6 +204,53 @@ function OrderTrackingContent() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const toggleOpinionTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleRatingChange = (newRating: number) => {
+    setRating(newRating);
+    const validTags = PRESET_OPINIONS[newRating] || [];
+    setSelectedTags((prev) => prev.filter((t) => validTags.includes(t)));
+  };
+
+  const handleReviewSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!order || isSubmittingReview || reviewSent) return;
+
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          orderType: order.type,
+          rating,
+          tags: selectedTags,
+          comment: reviewComment,
+        }),
+      });
+
+      if (res.ok) {
+        setReviewSent(true);
+        // Automatically close/redirect back to main menu after brief thank you
+        setTimeout(() => {
+          router.push("/");
+        }, 1500);
+      }
+    } catch (err) {
+      console.error("Error submitting review:", err);
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -449,34 +548,132 @@ function OrderTrackingContent() {
           </div>
         </div>
 
-        {/* Rating & Review */}
-        <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm text-center space-y-2">
-          <span className="text-xs font-bold text-stone-700">كيف تقيّم تجربتك اليوم في مطعم رهيب؟</span>
-          {reviewSent ? (
-            <p className="text-xs text-emerald-700 font-bold">شكراً لتقييمك الرائع! رأيك يهمنا دائماً ❤️</p>
-          ) : (
-            <div className="flex items-center justify-center gap-1.5 pt-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => {
-                    setRating(star);
-                    setReviewSent(true);
-                  }}
-                  className="p-1 hover:scale-125 transition-transform"
-                >
-                  <Star
-                    className={`w-6 h-6 ${
-                      star <= rating
-                        ? "text-amber-400 fill-amber-400"
-                        : "text-stone-300"
-                    }`}
-                  />
-                </button>
-              ))}
+        {/* Rating & Review Section (Active when order is completed) */}
+        {order.status === "completed" && (
+          <div className="bg-white rounded-2xl p-5 border-2 border-amber-300 shadow-md text-right space-y-4 transition-all">
+            <div className="text-center space-y-1">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-100 text-amber-700 mb-1">
+                <Heart className="w-5 h-5 fill-amber-500 text-amber-500" />
+              </div>
+              <h3 className="text-base font-black text-stone-900">
+                كيف تقيّم تجربتك اليوم في مطعم رهيب؟
+              </h3>
+              <p className="text-xs text-stone-500 font-medium">
+                رأيك يهمنا ويسهم في تطوير وتحسين جودة طعامنا وخدمتنا
+              </p>
             </div>
-          )}
-        </div>
+
+            {reviewSent ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 text-center space-y-2 animate-in fade-in zoom-in duration-300">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-7 h-7" />
+                </div>
+                <h4 className="text-sm font-black text-emerald-900">
+                  شكراً لتقييمك ومشاركتنا رأيك! ❤️
+                </h4>
+                <p className="text-xs text-emerald-700 font-medium">
+                  تم حفظ التقييم بنجاح، جاري إعادتك للقائمة الرئيسية...
+                </p>
+                <div className="w-24 h-1 bg-emerald-200 rounded-full mx-auto overflow-hidden">
+                  <div className="h-full bg-emerald-600 animate-[pulse_1s_infinite]"></div>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                {/* Interactive Stars */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center justify-center gap-2 py-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => handleRatingChange(star)}
+                        className="p-1 hover:scale-125 active:scale-95 transition-transform"
+                      >
+                        <Star
+                          className={`w-8 h-8 transition-colors ${
+                            star <= rating
+                              ? "text-amber-400 fill-amber-400 drop-shadow-sm"
+                              : "text-stone-200 hover:text-amber-200"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  {/* Rating Label Badge */}
+                  <span
+                    className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                      RATING_LABELS[rating]?.color || "text-stone-700 bg-stone-100"
+                    }`}
+                  >
+                    {RATING_LABELS[rating]?.text}
+                  </span>
+                </div>
+
+                {/* Preset Opinions / Tags */}
+                {PRESET_OPINIONS[rating] && PRESET_OPINIONS[rating].length > 0 && (
+                  <div className="space-y-2 pt-1 border-t border-stone-100">
+                    <label className="text-xs font-bold text-stone-700 block">
+                      اختر ما يعبر عن تجربتك (يمكنك اختيار أكثر من خيار):
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PRESET_OPINIONS[rating].map((tag) => {
+                        const isSelected = selectedTags.includes(tag);
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => toggleOpinionTag(tag)}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all text-right ${
+                              isSelected
+                                ? "bg-[#780000] text-white border-[#780000] shadow-sm scale-[1.02]"
+                                : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100 hover:border-stone-300"
+                            }`}
+                          >
+                            {isSelected ? `✓ ${tag}` : tag}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Comment Field */}
+                <div className="space-y-1.5 pt-1 border-t border-stone-100">
+                  <label className="text-xs font-bold text-stone-700 block">
+                    ملاحظات أو تعليق إضافي (اختياري):
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="اكتب ملاحظتك أو رأيك هنا لمساعدتنا على التطور..."
+                    className="w-full text-xs p-3 rounded-xl border border-stone-200 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] transition"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="w-full py-3 px-4 rounded-xl bg-[#780000] hover:bg-[#5c0000] active:scale-[0.99] text-white text-xs font-black flex items-center justify-center gap-2 shadow-md transition disabled:opacity-60"
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>جاري إرسال التقييم...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>إرسال التقييم ومغادرة الصفحة</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
         {/* Re-order or new order button */}
         <div className="pt-2">

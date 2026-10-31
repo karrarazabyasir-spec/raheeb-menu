@@ -4,6 +4,7 @@ import { EventEmitter } from "events";
 import {
   Category,
   Coupon,
+  CustomerReview,
   MenuItem,
   Order,
   OrderStatus,
@@ -22,6 +23,7 @@ export interface DatabaseSchema {
   orders: Order[];
   coupons: Coupon[];
   waiterCalls: WaiterCall[];
+  reviews?: CustomerReview[];
   nextOrderNumber: number;
 }
 
@@ -68,6 +70,7 @@ async function readDataAsync(): Promise<DatabaseSchema> {
       const parsed = JSON.parse(text) as DatabaseSchema;
       if (parsed && parsed.settings) {
         parsed.settings = ensureSettingsDefaults(parsed.settings);
+        parsed.reviews = Array.isArray(parsed.reviews) ? parsed.reviews : [];
         memoryCache = parsed;
         lastCloudFetchTime = Date.now();
         return memoryCache;
@@ -95,6 +98,7 @@ function syncCloudDataInBackground() {
         const parsed = JSON.parse(text) as DatabaseSchema;
         if (parsed && parsed.settings) {
           parsed.settings = ensureSettingsDefaults(parsed.settings);
+          parsed.reviews = Array.isArray(parsed.reviews) ? parsed.reviews : [];
           memoryCache = parsed;
         }
       }
@@ -109,6 +113,9 @@ function readData(): DatabaseSchema {
     if (memoryCache.settings) {
       memoryCache.settings = ensureSettingsDefaults(memoryCache.settings);
     }
+    if (!Array.isArray(memoryCache.reviews)) {
+      memoryCache.reviews = [];
+    }
     return memoryCache;
   }
 
@@ -118,6 +125,9 @@ function readData(): DatabaseSchema {
       memoryCache = JSON.parse(content) as DatabaseSchema;
       if (memoryCache && memoryCache.settings) {
         memoryCache.settings = ensureSettingsDefaults(memoryCache.settings);
+      }
+      if (memoryCache && !Array.isArray(memoryCache.reviews)) {
+        memoryCache.reviews = [];
       }
       return memoryCache;
     }
@@ -136,6 +146,7 @@ function readData(): DatabaseSchema {
       { code: "WELCOME10", type: "fixed", value: 10, minOrderValue: 40, isActive: true },
     ],
     waiterCalls: [],
+    reviews: [],
     nextOrderNumber: 101,
   };
   return memoryCache;
@@ -561,5 +572,27 @@ export const db = {
     }
     writeData(data);
     return coupon;
+  },
+
+  // Reviews
+  getReviews(): CustomerReview[] {
+    const data = readData();
+    return data.reviews || [];
+  },
+
+  async getReviewsAsync(): Promise<CustomerReview[]> {
+    const data = await readDataAsync();
+    return data.reviews || [];
+  },
+
+  async addReview(reviewData: CustomerReview): Promise<CustomerReview> {
+    const data = await readDataAsync();
+    if (!data.reviews) {
+      data.reviews = [];
+    }
+    // Prepend to show latest first
+    data.reviews.unshift(reviewData);
+    await writeData(data);
+    return reviewData;
   },
 };

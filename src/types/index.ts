@@ -219,6 +219,11 @@ export interface SavedCustomerOrder {
 
 export interface CustomerReview {
   id: string;
+  orderId?: string;
+  orderNumber?: number;
+  customerName?: string;
+  customerPhone?: string;
+  orderType?: OrderType;
   rating: number; // 1 to 5
   tags: string[];
   comment: string;

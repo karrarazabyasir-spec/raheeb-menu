@@ -8,6 +8,7 @@ import { subscribeToLiveEvents, broadcastLiveEvent } from "@/lib/realtime";
 import {
   Category,
   Coupon,
+  CustomerReview,
   DeliveryZone,
   ItemVariant,
   MenuItem,
@@ -60,11 +61,14 @@ import {
   Flame,
   MapPin,
   Gift,
+  Star,
+  MessageSquare,
+  ThumbsUp,
 } from "lucide-react";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
-    "analytics" | "menu" | "categories" | "tables" | "coupons" | "branding" | "settings" | "delivery"
+    "analytics" | "menu" | "categories" | "tables" | "coupons" | "branding" | "settings" | "delivery" | "reviews"
   >("analytics");
 
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
@@ -73,6 +77,9 @@ export default function AdminPage() {
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [reviewFilter, setReviewFilter] = useState<number | "all">("all");
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [analyticsRange, setAnalyticsRange] = useState<"today" | "week" | "month" | "all">("all");
   const [mountedTime, setMountedTime] = useState<number | null>(null);
 
@@ -146,27 +153,45 @@ export default function AdminPage() {
   const [newCouponValue, setNewCouponValue] = useState("");
   const [newCouponMin, setNewCouponMin] = useState("");
 
+  const fetchReviews = async () => {
+    setIsLoadingReviews(true);
+    try {
+      const res = await fetch("/api/reviews");
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  };
+
   const fetchData = async () => {
     try {
-      const [setRes, catRes, menuRes, tblRes, ordRes] = await Promise.all([
+      const [setRes, catRes, menuRes, tblRes, ordRes, revRes] = await Promise.all([
         fetch("/api/settings"),
         fetch("/api/categories"),
         fetch("/api/menu"),
         fetch("/api/tables"),
         fetch("/api/orders"),
+        fetch("/api/reviews"),
       ]);
-      const [setData, catData, menuData, tblData, ordData] = await Promise.all([
+      const [setData, catData, menuData, tblData, ordData, revData] = await Promise.all([
         setRes.json(),
         catRes.json(),
         menuRes.json(),
         tblRes.json(),
         ordRes.json(),
+        revRes.json(),
       ]);
       setSettings(setData);
       setCategories(catData);
       setMenuItems(menuData);
       setTables(tblData.tables || []);
       setOrders(ordData);
+      setReviews(Array.isArray(revData) ? revData : []);
     } catch (e) {
       console.error(e);
     }
@@ -203,6 +228,8 @@ export default function AdminPage() {
         event === "waiter_dismissed"
       ) {
         fetchLiveOrdersAndTables();
+      } else if (event === "new_review") {
+        fetchReviews();
       } else if (event === "menu_updated" && payload && payload.id) {
         setMenuItems((prev) =>
           prev.map((i) => (i.id === payload.id ? { ...i, ...payload } : i))
@@ -765,6 +792,15 @@ export default function AdminPage() {
             >
               <Bike className="w-4 h-4 text-purple-600" />
               <span>مناطق التوصيل ({settings?.deliveryZones?.length || 0})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("reviews")}
+              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${
+                activeTab === "reviews" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
+              }`}
+            >
+              <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+              <span>التقييمات والآراء ({reviews.length})</span>
             </button>
             <button
               onClick={() => setActiveTab("settings")}
@@ -1752,6 +1788,300 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TAB: CUSTOMER REVIEWS */}
+        {activeTab === "reviews" && (
+          <div className="space-y-5">
+            {/* Header & Refresh */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs">
+              <div>
+                <h2 className="text-base font-black text-stone-900 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                  تقييمات وآراء الزبائن
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  استعراض آراء العملاء وانطباعاتهم بعد استلام الطلبات ومستوى رضاهم
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchReviews}
+                disabled={isLoadingReviews}
+                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-50"
+              >
+                <Clock className={`w-3.5 h-3.5 ${isLoadingReviews ? "animate-spin" : ""}`} />
+                <span>تحديث الآراء</span>
+              </button>
+            </div>
+
+            {/* Rating Stats Grid */}
+            {(() => {
+              const total = reviews.length;
+              const avg = total > 0 ? (reviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0) / total).toFixed(1) : "0.0";
+              const fiveCount = reviews.filter((r) => Number(r.rating) === 5).length;
+              const fourCount = reviews.filter((r) => Number(r.rating) === 4).length;
+              const threeCount = reviews.filter((r) => Number(r.rating) === 3).length;
+              const lowCount = reviews.filter((r) => Number(r.rating) <= 2).length;
+              const satisfaction = total > 0 ? Math.round(((fiveCount + fourCount) / total) * 100) : 100;
+
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                      <Star className="w-6 h-6 fill-amber-400 text-amber-500" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-stone-500 block">متوسط التقييم العام</span>
+                      <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className="text-2xl font-black text-stone-900">{avg}</span>
+                        <span className="text-xs font-bold text-stone-400">/ 5.0</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                      <MessageSquare className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-stone-500 block">إجمالي الآراء والتقييمات</span>
+                      <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className="text-2xl font-black text-stone-900">{total}</span>
+                        <span className="text-xs font-bold text-stone-400">تقييم</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                      <ThumbsUp className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-stone-500 block">نسبة رضا الزبائن</span>
+                      <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className="text-2xl font-black text-emerald-700">{satisfaction}%</span>
+                        <span className="text-xs font-bold text-stone-400">راضي جداً</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-stone-200/80 shadow-xs flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-stone-500 block">تقييمات 5 نجوم (ممتاز)</span>
+                      <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className="text-2xl font-black text-purple-900">{fiveCount}</span>
+                        <span className="text-xs font-bold text-stone-400">
+                          ({total > 0 ? Math.round((fiveCount / total) * 100) : 0}%)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Filter Chips */}
+            <div className="flex flex-wrap items-center gap-2 bg-white p-3 rounded-2xl border border-stone-200/80 shadow-xs text-xs font-bold">
+              <span className="text-stone-500 ml-1">تصفية التقييمات:</span>
+              <button
+                type="button"
+                onClick={() => setReviewFilter("all")}
+                className={`px-3 py-1.5 rounded-xl transition ${
+                  reviewFilter === "all"
+                    ? "bg-[#780000] text-white shadow-xs"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                }`}
+              >
+                الكل ({reviews.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewFilter(5)}
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1 transition ${
+                  reviewFilter === 5
+                    ? "bg-amber-500 text-white shadow-xs"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                }`}
+              >
+                <span>5 نجوم ★</span>
+                <span>({reviews.filter((r) => Number(r.rating) === 5).length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewFilter(4)}
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1 transition ${
+                  reviewFilter === 4
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                }`}
+              >
+                <span>4 نجوم ★</span>
+                <span>({reviews.filter((r) => Number(r.rating) === 4).length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewFilter(3)}
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1 transition ${
+                  reviewFilter === 3
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                }`}
+              >
+                <span>3 نجوم ★</span>
+                <span>({reviews.filter((r) => Number(r.rating) === 3).length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReviewFilter(2)}
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1 transition ${
+                  reviewFilter === 2
+                    ? "bg-rose-600 text-white shadow-xs"
+                    : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                }`}
+              >
+                <span>1-2 نجوم ★</span>
+                <span>({reviews.filter((r) => Number(r.rating) <= 2).length})</span>
+              </button>
+            </div>
+
+            {/* Reviews List */}
+            {(() => {
+              const filtered = reviews.filter((r) => {
+                if (reviewFilter === "all") return true;
+                if (reviewFilter === 2) return Number(r.rating) <= 2;
+                return Number(r.rating) === reviewFilter;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="bg-white rounded-2xl p-12 text-center border border-stone-200/80 shadow-xs space-y-3">
+                    <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto">
+                      <Star className="w-7 h-7 fill-amber-400 text-amber-400" />
+                    </div>
+                    <h3 className="text-base font-black text-stone-800">لا توجد تقييمات مسجلة بعد</h3>
+                    <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                      عند اكتمال وتسليم أي طلب، سيظهر للزبون خيار تقييم الطلب وإعطاء رأيه، وستُعرض تقييماتهم هنا فوراً.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filtered.map((rev) => {
+                    const ratingNum = Number(rev.rating) || 5;
+                    const dateStr = rev.createdAt
+                      ? new Date(rev.createdAt).toLocaleString("ar-IQ", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })
+                      : "الآن";
+
+                    return (
+                      <div
+                        key={rev.id}
+                        className="bg-white rounded-2xl p-4 border border-stone-200/80 shadow-xs hover:shadow-md transition space-y-3 flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          {/* Card Header */}
+                          <div className="flex items-start justify-between gap-2 border-b border-stone-100 pb-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-black text-stone-900">
+                                  {rev.customerName || "زبون مطعم رهيب"}
+                                </h4>
+                                {rev.orderNumber && (
+                                  <span className="text-[10px] font-extrabold bg-[#780000]/10 text-[#780000] px-2 py-0.5 rounded-full">
+                                    طلب #{rev.orderNumber}
+                                  </span>
+                                )}
+                              </div>
+                              {rev.customerPhone && (
+                                <a
+                                  href={`tel:${rev.customerPhone}`}
+                                  className="text-xs text-stone-500 font-bold hover:text-[#780000] transition mt-0.5 inline-block"
+                                >
+                                  📞 {rev.customerPhone}
+                                </a>
+                              )}
+                            </div>
+                            <div className="text-left">
+                              <span className="text-[11px] font-bold text-stone-400 block">{dateStr}</span>
+                              {rev.orderType && (
+                                <span className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-0.5 rounded-md mt-1 inline-block">
+                                  {rev.orderType === "delivery" && "توصيل 🛵"}
+                                  {rev.orderType === "takeaway" && "سفري 🥡"}
+                                  {rev.orderType === "table" && "صالة 🍽️"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Stars and Rating Tag */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`w-4 h-4 ${
+                                    s <= ratingNum
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-stone-200"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                ratingNum === 5
+                                  ? "bg-amber-50 text-amber-700"
+                                  : ratingNum === 4
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : ratingNum === 3
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "bg-rose-50 text-rose-700"
+                              }`}
+                            >
+                              {ratingNum === 5 && "ممتاز جداً 🔥"}
+                              {ratingNum === 4 && "جيد جداً 👍"}
+                              {ratingNum === 3 && "مقبول 👌"}
+                              {ratingNum <= 2 && "تجربة غير مرضية 👎"}
+                            </span>
+                          </div>
+
+                          {/* Selected Preset Opinion Tags */}
+                          {Array.isArray(rev.tags) && rev.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {rev.tags.map((tag, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-stone-100 text-stone-800 border border-stone-200/60"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Written Comment */}
+                          {rev.comment && (
+                            <div className="bg-stone-50 border border-stone-200/70 rounded-xl p-3 text-xs text-stone-700 font-medium leading-relaxed flex items-start gap-2">
+                              <MessageSquare className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
+                              <p className="flex-1 italic">"{rev.comment}"</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
