@@ -112,6 +112,8 @@ export default function AdminPage() {
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
 
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [bannerSavedSuccess, setBannerSavedSuccess] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleUploadImage = async (
@@ -291,7 +293,8 @@ export default function AdminPage() {
   const handleSaveSettings = async (e?: React.FormEvent, customSettings?: RestaurantSettings) => {
     if (e) e.preventDefault();
     const target = customSettings || settings;
-    if (!target) return;
+    if (!target || isSavingSettings) return;
+    setIsSavingSettings(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
@@ -302,9 +305,16 @@ export default function AdminPage() {
         const saved = await res.json();
         setSettings(saved);
         flashMessage("تم حفظ وتحديث الإعدادات بنجاح! ✓");
+        setBannerSavedSuccess(true);
+        setTimeout(() => setBannerSavedSuccess(false), 3500);
+      } else {
+        alert("حدث خطأ أثناء حفظ الإعدادات، يرجى المحاولة ثانية");
       }
     } catch (e) {
       console.error(e);
+      alert("تعذر الاتصال بالخادم لحفظ الإعدادات");
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -2977,41 +2987,57 @@ export default function AdminPage() {
                     إعدادات بنر الطبق الجديد
                   </h3>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-stone-600">حالة ظهور البنر:</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-stone-600">الحالة:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = settings.promoBanner || {
+                          id: "promo-dish-1",
+                          isActive: false,
+                          title: "طبق جديد مميز في قائمتنا! ✨",
+                        };
+                        setSettings({
+                          ...settings,
+                          promoBanner: {
+                            ...current,
+                            isActive: !current.isActive,
+                          },
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
+                        settings.promoBanner?.isActive
+                          ? "bg-emerald-600 text-white shadow-xs"
+                          : "bg-stone-200 text-stone-600 hover:bg-stone-300"
+                      }`}
+                    >
+                      {settings.promoBanner?.isActive ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>نشط بالمنيو</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>معطّل ومخفي</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => {
-                      const current = settings.promoBanner || {
-                        id: "promo-dish-1",
-                        isActive: false,
-                        title: "طبق جديد مميز في قائمتنا! ✨",
-                      };
-                      setSettings({
-                        ...settings,
-                        promoBanner: {
-                          ...current,
-                          isActive: !current.isActive,
-                        },
-                      });
-                    }}
-                    className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition ${
-                      settings.promoBanner?.isActive
-                        ? "bg-emerald-600 text-white shadow-xs"
-                        : "bg-stone-200 text-stone-600 hover:bg-stone-300"
-                    }`}
+                    disabled={isSavingSettings}
+                    onClick={() => handleSaveSettings()}
+                    className="px-4 py-1.5 bg-[#780000] hover:bg-[#600000] disabled:bg-stone-400 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                   >
-                    {settings.promoBanner?.isActive ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>نشط ومعروض للزبائن</span>
-                      </>
+                    {isSavingSettings ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <>
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>معطّل ومخفي</span>
-                      </>
+                      <Save className="w-3.5 h-3.5" />
                     )}
+                    <span>حفظ التعديلات</span>
                   </button>
                 </div>
               </div>
@@ -3223,14 +3249,35 @@ export default function AdminPage() {
               </div>
 
               {/* Action Button */}
-              <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <div className="pt-4 border-t border-stone-100 flex flex-wrap items-center justify-between gap-3">
+                {bannerSavedSuccess ? (
+                  <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold animate-fade-in shadow-xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>تم حفظ وتطبيق البنر الإعلاني فوراً بنجاح! ✓</span>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-stone-400 font-medium">
+                    يتم تطبيق التعديلات فوراً على المنيو بمجرد الضغط على زر الحفظ
+                  </span>
+                )}
+
                 <button
                   type="button"
+                  disabled={isSavingSettings}
                   onClick={() => handleSaveSettings()}
-                  className="px-6 py-3 bg-[#780000] hover:bg-[#600000] text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-2"
+                  className="px-6 py-3 bg-[#780000] hover:bg-[#600000] disabled:bg-stone-400 text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>حفظ وتطبيق إعدادات البنر الإعلاني</span>
+                  {isSavingSettings ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>جاري الحفظ الفوري...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>حفظ وتطبيق إعدادات البنر الإعلاني</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

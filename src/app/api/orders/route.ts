@@ -129,9 +129,9 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if (!address) {
+      if (!address && !landmark) {
         return NextResponse.json(
-          { error: "يرجى كتابة العنوان بالتفصيل للتوصيل" },
+          { error: "يرجى كتابة أقرب نقطة دالة للتوصيل" },
           { status: 400 }
         );
       }

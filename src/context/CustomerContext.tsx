@@ -84,19 +84,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
       const addresses = localStorage.getItem(ADDRESSES_KEY);
       if (addresses) {
-        setSavedAddresses(JSON.parse(addresses));
+        const parsed = JSON.parse(addresses);
+        const cleaned = Array.isArray(parsed)
+          ? parsed.filter((a) => a.street !== "قرب تقاطع الرواد - شارع 14 رمضان")
+          : [];
+        setSavedAddresses(cleaned);
       } else {
-        const initial = [
-          {
-            id: "addr-home",
-            title: "المنزل",
-            area: "المنصور",
-            street: "قرب تقاطع الرواد - شارع 14 رمضان",
-            phone: savedPhone || "",
-            isDefault: true,
-          },
-        ];
-        setSavedAddresses(initial);
+        setSavedAddresses([]);
       }
     } catch (e) {
       console.warn("Could not load customer data from storage", e);

@@ -25,8 +25,6 @@ import {
   CheckCircle2,
   Bike,
   Navigation,
-  FileText,
-  DollarSign,
   Sparkles,
 } from "lucide-react";
 
@@ -72,10 +70,8 @@ export function CartDrawer({ settings }: CartDrawerProps) {
 
   // Delivery specific fields
   const [selectedZoneId, setSelectedZoneId] = useState<string>(activeDeliveryZones[0]?.id || "");
-  const [deliveryAddress, setDeliveryAddress] = useState(defaultAddress?.street || "");
-  const [deliveryLandmark, setDeliveryLandmark] = useState("");
+  const [deliveryLandmark, setDeliveryLandmark] = useState(defaultAddress?.street || "");
   const [driverNotes, setDriverNotes] = useState("");
-  const [cashToPay, setCashToPay] = useState<string>("");
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationSuccessMsg, setLocationSuccessMsg] = useState(false);
@@ -222,9 +218,9 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     }
 
     if (finalOrderType === "delivery") {
-      if (!deliveryAddress.trim()) {
+      if (!deliveryLandmark.trim()) {
         setSubmitError(
-          isRtl ? "يرجى كتابة تفاصيل العنوان (الشارع والدار) للتوصيل" : "Please enter your delivery address"
+          isRtl ? "يرجى كتابة أقرب نقطة دالة للتوصيل" : "Please enter a nearby landmark"
         );
         return;
       }
@@ -247,10 +243,9 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         customerPhone: finalOrderType !== "table" ? customerPhone.trim() : undefined,
         pickupTime: finalOrderType === "takeaway" ? pickupTime : undefined,
         deliveryZoneId: finalOrderType === "delivery" ? currentZone?.id : undefined,
-        address: finalOrderType === "delivery" ? deliveryAddress.trim() : undefined,
+        address: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         landmark: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         driverNotes: finalOrderType === "delivery" ? driverNotes.trim() : undefined,
-        cashToPay: finalOrderType === "delivery" && cashToPay ? Number(cashToPay) : undefined,
         lat: locationCoords?.lat,
         lng: locationCoords?.lng,
         cartItems: items,
@@ -286,7 +281,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         pickupTime: finalOrderType === "takeaway" ? pickupTime : undefined,
         deliveryZoneName: finalOrderType === "delivery" ? currentZone?.nameAr : undefined,
         deliveryFee: finalOrderType === "delivery" ? deliveryFee : 0,
-        address: finalOrderType === "delivery" ? deliveryAddress.trim() : undefined,
+        address: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         landmark: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         items: items.map((i) => ({
           menuItemId: i.menuItemId,
@@ -472,18 +467,6 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                       </select>
                     </div>
 
-                    {/* Delivery Address Details */}
-                    <div className="relative">
-                      <FileText className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
-                      <input
-                        type="text"
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        placeholder="العنوان بالتفصيل (اسم الشارع، رقم الدار/البناية) *"
-                        className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                      />
-                    </div>
-
                     {/* Landmark */}
                     <div className="relative">
                       <Navigation className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
@@ -491,7 +474,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                         type="text"
                         value={deliveryLandmark}
                         onChange={(e) => setDeliveryLandmark(e.target.value)}
-                        placeholder="أقرب نقطة دالة (مثال: قرب جامع، صيدلية، مدرسة)"
+                        placeholder="أقرب نقطة دالة (مثال: قرب جامع، صيدلية، مدرسة) *"
                         className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
                       />
                     </div>
@@ -532,24 +515,14 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                       )}
                     </div>
 
-                    {/* Change / Note for driver */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <div className="relative">
-                        <DollarSign className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-2.5" />
-                        <input
-                          type="number"
-                          value={cashToPay}
-                          onChange={(e) => setCashToPay(e.target.value)}
-                          placeholder="المبلغ الذي ستدفعه (للفكة)"
-                          className="w-full text-[11px] pr-7 pl-2 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                        />
-                      </div>
+                    {/* Note for driver */}
+                    <div className="relative pt-0.5">
                       <input
                         type="text"
                         value={driverNotes}
                         onChange={(e) => setDriverNotes(e.target.value)}
                         placeholder="ملاحظة للسائق (اختياري)"
-                        className="w-full text-[11px] px-2.5 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
+                        className="w-full text-xs px-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
                       />
                     </div>
                   </div>

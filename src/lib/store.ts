@@ -37,6 +37,7 @@ eventBus.setMaxListeners(100);
 
 let memoryCache: DatabaseSchema | null = null;
 let lastCloudFetchTime = 0;
+let lastWriteTime = 0;
 
 function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSettings {
   return {
@@ -57,7 +58,7 @@ function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSetting
 
 async function readDataAsync(): Promise<DatabaseSchema> {
   const now = Date.now();
-  if (memoryCache && now - lastCloudFetchTime < 10000) {
+  if (memoryCache && (now - lastWriteTime < 30000 || now - lastCloudFetchTime < 15000)) {
     if (memoryCache.settings) {
       memoryCache.settings = ensureSettingsDefaults(memoryCache.settings);
     }
@@ -89,8 +90,10 @@ async function readDataAsync(): Promise<DatabaseSchema> {
 
 function syncCloudDataInBackground() {
   const now = Date.now();
-  // Throttle cloud fetch to once every 10 seconds
-  if (now - lastCloudFetchTime < 10000) return;
+  // Never overwrite recent local edits within 30 seconds
+  if (now - lastWriteTime < 30000) return;
+  // Throttle cloud fetch to once every 15 seconds
+  if (now - lastCloudFetchTime < 15000) return;
   lastCloudFetchTime = now;
 
   supabaseAdmin.storage
@@ -98,6 +101,8 @@ function syncCloudDataInBackground() {
     .download("config/store.json")
     .then(async ({ data, error }) => {
       if (data && !error) {
+        // Double check not overwritten by recent write
+        if (Date.now() - lastWriteTime < 30000) return;
         const text = await data.text();
         const parsed = JSON.parse(text) as DatabaseSchema;
         if (parsed && parsed.settings) {
@@ -158,6 +163,8 @@ function readData(): DatabaseSchema {
 
 async function writeData(data: DatabaseSchema): Promise<void> {
   memoryCache = data;
+  lastWriteTime = Date.now();
+  lastCloudFetchTime = Date.now();
 
   // 1. Try local filesystem (works on dev / persistent servers)
   try {
@@ -201,7 +208,7 @@ export const db = {
   },
 
   async updateSettings(partial: Partial<RestaurantSettings>): Promise<RestaurantSettings> {
-    const data = readData();
+    const data = memoryCache || readData();
     data.settings = { ...data.settings, ...partial };
     await writeData(data);
     eventBus.emit("settings_updated", data.settings);
