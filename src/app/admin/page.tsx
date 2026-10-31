@@ -64,12 +64,14 @@ import {
   Star,
   MessageSquare,
   ThumbsUp,
+  Menu,
 } from "lucide-react";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<
     "analytics" | "menu" | "categories" | "tables" | "coupons" | "branding" | "settings" | "delivery" | "reviews"
   >("analytics");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -686,154 +688,365 @@ export default function AdminPage() {
 
   const brandColor = settings?.primaryColor || "#780000";
 
+  const TAB_CONFIG: Record<
+    string,
+    { title: string; subtitle: string; icon: React.ReactNode }
+  > = {
+    analytics: {
+      title: "التقارير والإحصاءات والمبيعات",
+      subtitle: "متابعة المبيعات، الطلبات، والأداء المالي للمطعم",
+      icon: <BarChart3 className="w-5 h-5 text-amber-500" />,
+    },
+    reviews: {
+      title: "التقييمات والآراء",
+      subtitle: "استعراض آراء الزبائن ومستوى رضاهم بعد استلام الطلبات",
+      icon: <Star className="w-5 h-5 text-amber-500 fill-amber-400" />,
+    },
+    menu: {
+      title: "الأصناف والأسعار",
+      subtitle: "إدارة الوجبات، الأسعار، الأحجام، والإضافات",
+      icon: <UtensilsCrossed className="w-5 h-5 text-emerald-600" />,
+    },
+    categories: {
+      title: "الأقسام والتصنيفات",
+      subtitle: "ترتيب وتنسيق أقسام قائمة الطعام",
+      icon: <Layers className="w-5 h-5 text-blue-600" />,
+    },
+    delivery: {
+      title: "مناطق ورسوم التوصيل",
+      subtitle: "تحديد مناطق التوصيل، الرسوم، والحد الأدنى للطلب",
+      icon: <Bike className="w-5 h-5 text-purple-600" />,
+    },
+    tables: {
+      title: "الطاولات ورموز QR",
+      subtitle: "إدارة طاولات الصالة ورموز الباركود السريعة",
+      icon: <QrCode className="w-5 h-5 text-indigo-600" />,
+    },
+    branding: {
+      title: "الهوية والألوان والشعار",
+      subtitle: "تخصيص ألوان المتجر، الشعار، واسم المطعم",
+      icon: <Palette className="w-5 h-5 text-rose-500" />,
+    },
+    settings: {
+      title: "الإعدادات العامة والواتساب",
+      subtitle: "أرقام التواصل، الواتساب، والعملة وساعات العمل",
+      icon: <Settings className="w-5 h-5 text-stone-600" />,
+    },
+  };
+
+  const navSections = [
+    {
+      title: "الرئيسية والعمليات",
+      items: [
+        {
+          id: "analytics" as const,
+          label: "التقارير والإحصاءات",
+          icon: <BarChart3 className="w-4 h-4 text-amber-500" />,
+          badge: null,
+          badgeColor: "",
+        },
+        {
+          id: "reviews" as const,
+          label: "التقييمات والآراء",
+          icon: <Star className="w-4 h-4 text-amber-400 fill-amber-400" />,
+          badge: reviews.length,
+          badgeColor: "bg-amber-100 text-amber-800",
+        },
+      ],
+    },
+    {
+      title: "إدارة القائمة والخدمات",
+      items: [
+        {
+          id: "menu" as const,
+          label: "الأصناف والأسعار",
+          icon: <UtensilsCrossed className="w-4 h-4 text-emerald-600" />,
+          badge: menuItems.length,
+          badgeColor: "bg-stone-100 text-stone-700",
+        },
+        {
+          id: "categories" as const,
+          label: "الأقسام والتصنيفات",
+          icon: <Layers className="w-4 h-4 text-blue-600" />,
+          badge: categories.length,
+          badgeColor: "bg-stone-100 text-stone-700",
+        },
+        {
+          id: "delivery" as const,
+          label: "مناطق ورسوم التوصيل",
+          icon: <Bike className="w-4 h-4 text-purple-600" />,
+          badge: settings?.deliveryZones?.length || 0,
+          badgeColor: "bg-purple-100 text-purple-800",
+        },
+        {
+          id: "tables" as const,
+          label: "الطاولات ورموز QR",
+          icon: <QrCode className="w-4 h-4 text-indigo-600" />,
+          badge: tables.length,
+          badgeColor: "bg-stone-100 text-stone-700",
+        },
+      ],
+    },
+    {
+      title: "النظام والتخصيص",
+      items: [
+        {
+          id: "branding" as const,
+          label: "الهوية والألوان والشعار",
+          icon: <Palette className="w-4 h-4 text-rose-500" />,
+          badge: null,
+          badgeColor: "",
+        },
+        {
+          id: "settings" as const,
+          label: "الإعدادات العامة والواتساب",
+          icon: <Settings className="w-4 h-4 text-stone-600" />,
+          badge: null,
+          badgeColor: "",
+        },
+      ],
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col font-sans">
-      {/* Top Bar */}
+    <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col lg:flex-row font-sans antialiased">
+      {/* Mobile Top Navbar */}
       <header
         style={{ backgroundColor: brandColor }}
-        className="text-white p-3.5 shadow-md flex items-center justify-between shrink-0 transition-colors"
+        className="lg:hidden text-white p-3.5 shadow-md flex items-center justify-between sticky top-0 z-40 shrink-0"
       >
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="w-9 h-9 rounded-xl bg-amber-400 text-stone-950 font-black flex items-center justify-center text-sm shadow hover:scale-105 transition"
-            title="المينيو"
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white transition active:scale-95"
+            aria-label="القائمة الجانبية"
           >
-            {settings?.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover rounded-xl" />
-            ) : (
-              settings?.name.charAt(0) || "ر"
-            )}
-          </Link>
-          <div>
-            <h1 className="text-base font-extrabold flex items-center gap-2">
-              <span>لوحة التحكم الكاملة — {settings?.name}</span>
-              <span className="text-[10px] bg-white/20 text-white font-black px-2 py-0.5 rounded-full">
-                الإدارة الشاملة
-              </span>
-            </h1>
-            <p className="text-[11px] text-white/80">التحكم في الألوان، الأصناف، الأسعار، الطاولات، والإعدادات</p>
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-amber-400 text-stone-950 font-black flex items-center justify-center text-xs overflow-hidden">
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                settings?.name.charAt(0) || "ر"
+              )}
+            </span>
+            <span className="font-extrabold text-sm truncate max-w-[130px]">{settings?.name}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-bold">
           <Link
             href="/"
             target="_blank"
-            className="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+            className="px-2.5 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1 transition"
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>معاينة المينيو</span>
+            <span className="hidden sm:inline">معاينة</span>
           </Link>
           <Link
             href="/cashier"
-            className="px-3 py-1.5 bg-black/20 hover:bg-black/30 text-white rounded-lg text-xs font-bold transition"
+            className="px-2.5 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg transition"
           >
             الكاشير
           </Link>
           <Link
             href="/kitchen"
-            className="px-3 py-1.5 bg-black/20 hover:bg-black/30 text-white rounded-lg text-xs font-bold transition"
+            className="px-2.5 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg transition"
           >
             المطبخ
           </Link>
         </div>
       </header>
 
-      {/* Tabs Bar */}
-      <div className="bg-white border-b border-stone-200 px-4 py-2">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap bg-stone-100 p-1 rounded-xl font-bold">
-            <button
-              onClick={() => setActiveTab("analytics")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${activeTab === "analytics" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-                }`}
+      {/* Mobile Backdrop */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-stone-950/50 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+        />
+      )}
+
+      {/* Sidebar (Desktop Sticky / Mobile Drawer) */}
+      <aside
+        className={`
+          fixed top-0 bottom-0 right-0 z-50 w-72 bg-white border-l border-stone-200/80 shadow-2xl lg:shadow-none
+          flex flex-col transition-transform duration-300 ease-in-out
+          lg:static lg:translate-x-0 lg:z-auto lg:h-screen lg:sticky lg:top-0 shrink-0
+          ${sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
+        `}
+      >
+        {/* Sidebar Header */}
+        <div
+          style={{ backgroundColor: brandColor }}
+          className="p-4 text-white flex items-center justify-between shrink-0"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/"
+              className="w-10 h-10 rounded-xl bg-amber-400 text-stone-950 font-black flex items-center justify-center text-sm shadow hover:scale-105 transition overflow-hidden shrink-0"
+              title="معاينة المينيو"
             >
-              <BarChart3 className="w-4 h-4 text-amber-600" />
-              <span>التقارير والإحصاءات</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("branding")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${activeTab === "branding" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-                }`}
-            >
-              <Palette className="w-4 h-4 text-rose-600" />
-              <span>الهوية والألوان</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("menu")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${activeTab === "menu" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-                }`}
-            >
-              <UtensilsCrossed className="w-4 h-4 text-emerald-600" />
-              <span>الأصناف والأسعار ({menuItems.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("categories")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${activeTab === "categories" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-                }`}
-            >
-              <Layers className="w-4 h-4 text-blue-600" />
-              <span>الأقسام ({categories.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("tables")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${activeTab === "tables" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-                }`}
-            >
-              <QrCode className="w-4 h-4 text-purple-600" />
-              <span>الطاولات ورموز QR ({tables.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("delivery")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${
-                activeTab === "delivery" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-              }`}
-            >
-              <Bike className="w-4 h-4 text-purple-600" />
-              <span>مناطق التوصيل ({settings?.deliveryZones?.length || 0})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${
-                activeTab === "reviews" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-              }`}
-            >
-              <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-              <span>التقييمات والآراء ({reviews.length})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`px-3 py-2 rounded-lg transition flex items-center gap-1.5 ${activeTab === "settings" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600"
-                }`}
-            >
-              <Settings className="w-4 h-4 text-stone-600" />
-              <span>الإعدادات والواتساب</span>
-            </button>
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                settings?.name.charAt(0) || "ر"
+              )}
+            </Link>
+            <div className="min-w-0">
+              <h1 className="text-sm font-extrabold truncate flex items-center gap-1.5">
+                <span>{settings?.name || "مطعم رهيب"}</span>
+              </h1>
+              <p className="text-[10px] text-white/80 font-medium truncate">لوحة التحكم الشاملة</p>
+            </div>
           </div>
 
           <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Sidebar Navigation */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-4 text-xs font-bold">
+          {navSections.map((sec, secIdx) => (
+            <div key={secIdx} className="space-y-1">
+              <span className="text-[10px] uppercase tracking-wider font-extrabold text-stone-400 px-3 block">
+                {sec.title}
+              </span>
+              <div className="space-y-0.5">
+                {sec.items.map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                        isActive
+                          ? "bg-[#780000] text-white shadow-xs font-black scale-[1.01]"
+                          : "text-stone-600 hover:text-stone-950 hover:bg-stone-100"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={isActive ? "text-white" : ""}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge !== null && item.badge !== undefined && (
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full transition-colors ${
+                            isActive
+                              ? "bg-white/20 text-white"
+                              : item.badgeColor || "bg-stone-100 text-stone-700"
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-3 border-t border-stone-200/80 bg-stone-50/70 space-y-2 shrink-0">
+          <button
             onClick={handleExportCSV}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+            className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>تصدير المبيعات CSV</span>
           </button>
-        </div>
-      </div>
 
-      {/* Success Notification Alert */}
-      {saveSuccessMsg && (
-        <div className="max-w-7xl mx-auto w-full px-4 pt-3">
-          <div className="bg-emerald-600 text-white p-3 rounded-xl font-bold text-xs text-center shadow-md animate-fade-in flex items-center justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{saveSuccessMsg}</span>
+          <div className="grid grid-cols-3 gap-1 pt-1 text-[11px] font-bold text-center">
+            <Link
+              href="/"
+              target="_blank"
+              className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition flex items-center justify-center gap-1"
+              title="معاينة المينيو"
+            >
+              <Eye className="w-3 h-3 text-stone-500" />
+              <span>المينيو</span>
+            </Link>
+            <Link
+              href="/cashier"
+              className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
+            >
+              الكاشير
+            </Link>
+            <Link
+              href="/kitchen"
+              className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
+            >
+              المطبخ
+            </Link>
           </div>
         </div>
-      )}
+      </aside>
 
-      {/* Main Tab Content */}
-      <main className="flex-1 p-4 max-w-7xl mx-auto w-full">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* Desktop Top Header Bar */}
+        <div className="hidden lg:flex items-center justify-between px-6 py-3.5 bg-white border-b border-stone-200/80 shrink-0 sticky top-0 z-30 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center">
+              {TAB_CONFIG[activeTab]?.icon || <Settings className="w-4 h-4 text-stone-600" />}
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-stone-900">
+                {TAB_CONFIG[activeTab]?.title || "لوحة التحكم"}
+              </h2>
+              <p className="text-[11px] text-stone-400 font-medium">
+                {TAB_CONFIG[activeTab]?.subtitle || "إدارة أقسام المتجر"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              target="_blank"
+              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5 text-stone-500" />
+              <span>معاينة صفحة المينيو</span>
+            </Link>
+            <Link
+              href="/cashier"
+              className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
+            >
+              شاشة الكاشير
+            </Link>
+            <Link
+              href="/kitchen"
+              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-xl text-xs font-bold transition"
+            >
+              شاشة المطبخ
+            </Link>
+          </div>
+        </div>
+
+        {/* Success Notification Alert */}
+        {saveSuccessMsg && (
+          <div className="max-w-7xl mx-auto w-full px-4 pt-3">
+            <div className="bg-emerald-600 text-white p-3 rounded-xl font-bold text-xs text-center shadow-md animate-fade-in flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{saveSuccessMsg}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Main Tab Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6">
         {/* TAB 1: BRANDING & COLORS */}
         {activeTab === "branding" && settings && (
           <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs max-w-3xl space-y-6">
@@ -2625,6 +2838,7 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+    </div>
 
       {/* COMPREHENSIVE ITEM EDIT / ADD MODAL */}
       {editingItem && (
