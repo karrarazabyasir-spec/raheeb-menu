@@ -70,6 +70,10 @@ import {
   Menu,
   Megaphone,
   Copy,
+  Navigation,
+  LocateFixed,
+  Calculator,
+  Compass,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -117,6 +121,11 @@ export default function AdminPage() {
   const [newZoneTime, setNewZoneTime] = useState("30-45 دقيقة");
   const [showAddZoneModal, setShowAddZoneModal] = useState(false);
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null);
+
+  // Delivery Distance & Location state
+  const [gettingAdminLocation, setGettingAdminLocation] = useState(false);
+  const [adminLocationSuccess, setAdminLocationSuccess] = useState(false);
+  const [testDistanceKm, setTestDistanceKm] = useState<number>(5);
 
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -504,6 +513,37 @@ export default function AdminPage() {
     const updatedSettings = { ...settings, deliveryZones: updatedZones };
     setSettings(updatedSettings);
     await handleSaveSettings(undefined, updatedSettings);
+  };
+
+  const handleGetAdminLocation = () => {
+    if (!navigator.geolocation) {
+      alert("خاصية تحديد الموقع غير مدعومة في متصفحك");
+      return;
+    }
+    setGettingAdminLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (settings) {
+          const lat = Math.round(pos.coords.latitude * 1000000) / 1000000;
+          const lng = Math.round(pos.coords.longitude * 1000000) / 1000000;
+          const updated = {
+            ...settings,
+            restaurantLat: lat,
+            restaurantLng: lng,
+          };
+          setSettings(updated);
+          setAdminLocationSuccess(true);
+          setTimeout(() => setAdminLocationSuccess(false), 3500);
+        }
+        setGettingAdminLocation(false);
+      },
+      (err) => {
+        console.warn("Admin geolocation error:", err);
+        setGettingAdminLocation(false);
+        alert("تعذر قراءة موقعك الجغرافي تلقائياً. يمكنك كتابة خط العرض وخط الطول يدوياً.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   // Generate QR for a table
@@ -1018,10 +1058,16 @@ export default function AdminPage() {
         },
         {
           id: "delivery" as const,
-          label: "مناطق ورسوم التوصيل",
+          label: "خدمة ورسوم التوصيل",
           icon: <Bike className="w-4 h-4 text-purple-600" />,
-          badge: settings?.deliveryZones?.length || 0,
-          badgeColor: "bg-purple-100 text-purple-800",
+          badge:
+            (settings?.deliveryPricingMode || "distance") === "distance"
+              ? "حسب المسافة 📍"
+              : `${settings?.deliveryZones?.length || 0} مناطق`,
+          badgeColor:
+            (settings?.deliveryPricingMode || "distance") === "distance"
+              ? "bg-emerald-100 text-emerald-800"
+              : "bg-purple-100 text-purple-800",
         },
         {
           id: "tables" as const,
@@ -1929,8 +1975,118 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              {/* Pricing Mode Selector */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-stone-900 flex items-center gap-1.5">
+                    <Compass className="w-4 h-4 text-[#780000]" />
+                    <span>نظام احتساب كلفة التوصيل للزبائن:</span>
+                  </label>
+                  <span className="text-[11px] text-stone-400">
+                    اختر الطريقة المعتمدة حالياً
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Mode 1: Distance Based (Active by default) */}
+                  <div
+                    onClick={() => {
+                      const updated = { ...settings, deliveryPricingMode: "distance" as const };
+                      setSettings(updated);
+                      handleSaveSettings(undefined, updated);
+                    }}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                      (settings.deliveryPricingMode || "distance") === "distance"
+                        ? "border-[#780000] bg-red-50/20 shadow-xs"
+                        : "border-stone-200 bg-white hover:border-stone-300 opacity-70"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            (settings.deliveryPricingMode || "distance") === "distance"
+                              ? "bg-[#780000] text-white"
+                              : "bg-stone-100 text-stone-600"
+                          }`}
+                        >
+                          <Navigation className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-stone-900">
+                            حساب الكلفة حسب المسافة (الكيلومتر)
+                          </h4>
+                          <p className="text-[10px] text-stone-500 mt-0.5">
+                            يتم احتساب الأجرة بدقة بناءً على بعد موقع الزبون عن المطعم
+                          </p>
+                        </div>
+                      </div>
+                      {(settings.deliveryPricingMode || "distance") === "distance" && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
+                          المفعّل حالياً ✓
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mode 2: Fixed Zones (Suspended) */}
+                  <div
+                    onClick={() => {
+                      const updated = { ...settings, deliveryPricingMode: "fixed" as const };
+                      setSettings(updated);
+                      handleSaveSettings(undefined, updated);
+                    }}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between gap-3 ${
+                      settings.deliveryPricingMode === "fixed"
+                        ? "border-[#780000] bg-red-50/20 shadow-xs"
+                        : "border-stone-200 bg-white hover:border-stone-300 opacity-70"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            settings.deliveryPricingMode === "fixed"
+                              ? "bg-[#780000] text-white"
+                              : "bg-stone-100 text-stone-600"
+                          }`}
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-stone-900">
+                            نظام الأجرة الثابتة حسب المناطق
+                          </h4>
+                          <p className="text-[10px] text-stone-500 mt-0.5">
+                            تحديد أجرة توصيل مخصصة وثابتة لكل حي أو منطقة
+                          </p>
+                        </div>
+                      </div>
+                      {settings.deliveryPricingMode === "fixed" ? (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
+                          المفعّل حالياً ✓
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">
+                          معلّق مؤقتاً ⏸️
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {(settings.deliveryPricingMode || "distance") === "distance" && (
+                  <div className="p-3 bg-amber-50/80 border border-amber-200/70 rounded-xl text-xs text-amber-900 flex items-center gap-2.5">
+                    <span className="text-base">💡</span>
+                    <span>
+                      نظام الأجرة الثابتة حسب المناطق <strong className="font-bold">معلق حالياً ومحفوظ بالكامل</strong> دون حذف أي بيانات، ويمكنك التبديل بين النظامين بنقرة واحدة في أي وقت.
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Global Settings Form: 2 Clean Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2 border-t border-stone-100">
                 {/* Free Delivery Threshold */}
                 <div className="p-4 rounded-2xl border border-stone-200 bg-white space-y-1.5 focus-within:border-[#780000] focus-within:ring-2 focus-within:ring-[#780000]/10 transition">
                   <div className="flex items-center justify-between text-xs font-bold text-stone-800">
@@ -1988,29 +2144,323 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* 2. Delivery Zones List Card */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-4">
+            {/* 2. SECTION: Restaurant Location & Distance Delivery Settings */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/80 shadow-xs space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-black text-stone-900">مناطق التوصيل والأسعار</h3>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700">
-                      {settings.deliveryZones?.length || 0} مناطق
+                    <h3 className="text-sm font-black text-stone-900 flex items-center gap-2">
+                      <LocateFixed className="w-5 h-5 text-[#780000]" />
+                      <span>موقع المطعم وتسعير التوصيل بالمسافة (لكل كم)</span>
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      النظام المعتمد 🛵
                     </span>
                   </div>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    حدد أجرة التوصيل الخاصة بكل حي أو منطقة مع الحد الأدنى للطلب
+                    حدد إحداثيات موقع المطعم الجغرافي وكلفة الكيلومتر الواحد لحساب الأجرة تلقائياً
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleOpenAddZone}
-                  className="px-4 py-2 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
+                  onClick={handleGetAdminLocation}
+                  disabled={gettingAdminLocation}
+                  className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>إضافة منطقة جديدة</span>
+                  {gettingAdminLocation ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                      <span>جاري قراءة الموقع...</span>
+                    </>
+                  ) : adminLocationSuccess ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>تم تحديث الإحداثيات بنجاح ✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <LocateFixed className="w-3.5 h-3.5 text-blue-600" />
+                      <span>جلب موقع المطعم الحالي بالـ GPS 📍</span>
+                    </>
+                  )}
                 </button>
+              </div>
+
+              {/* Coordinates & Location Info */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                  {/* Location Name / Description */}
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1">
+                      اسم أو عنوان موقع المطعم:
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.restaurantLocationName || ""}
+                      onChange={(e) =>
+                        setSettings({ ...settings, restaurantLocationName: e.target.value })
+                      }
+                      placeholder="مثال: الفرع الرئيسي - كربلاء، الحسينية"
+                      className="w-full px-3 py-2.5 border border-stone-200 rounded-xl font-bold text-stone-900 focus:outline-hidden focus:border-[#780000]"
+                    />
+                  </div>
+
+                  {/* Latitude */}
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1">
+                      خط العرض (Latitude) <span className="text-red-500">*</span>:
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={settings.restaurantLat ?? 32.616}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          restaurantLat: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="مثال: 32.6160"
+                      className="w-full px-3 py-2.5 border border-stone-200 rounded-xl font-mono font-bold text-stone-900 focus:outline-hidden focus:border-[#780000]"
+                    />
+                  </div>
+
+                  {/* Longitude */}
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1">
+                      خط الطول (Longitude) <span className="text-red-500">*</span>:
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={settings.restaurantLng ?? 44.0249}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          restaurantLng: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="مثال: 44.0249"
+                      className="w-full px-3 py-2.5 border border-stone-200 rounded-xl font-mono font-bold text-stone-900 focus:outline-hidden focus:border-[#780000]"
+                    />
+                  </div>
+                </div>
+
+                {/* Map Verification Link */}
+                {settings.restaurantLat && settings.restaurantLng && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200/80 text-xs">
+                    <span className="text-stone-600 font-medium flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#780000]" />
+                      <span>
+                        الإحداثيات الحالية: ({settings.restaurantLat}, {settings.restaurantLng})
+                      </span>
+                    </span>
+                    <a
+                      href={`https://maps.google.com/?q=${settings.restaurantLat},${settings.restaurantLng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 transition"
+                    >
+                      <span>معاينة النقطة في خرائط Google ↗</span>
+                    </a>
+                  </div>
+                )}
+
+                {/* Pricing Parameters Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-2 border-t border-stone-100">
+                  {/* Cost per km */}
+                  <div className="p-4 rounded-2xl border-2 border-red-100 bg-red-50/20 space-y-1.5">
+                    <label className="font-black text-stone-900 block">
+                      كلفة التوصيل لكل كم (كم):
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min={0}
+                        step={250}
+                        value={settings.deliveryCostPerKm ?? 1000}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            deliveryCostPerKm: Number(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full pl-12 pr-3 py-2 text-sm font-black text-[#780000] bg-white border border-red-200 rounded-xl focus:outline-hidden focus:border-[#780000]"
+                        placeholder="1000"
+                      />
+                      <span className="absolute left-3 text-xs font-bold text-stone-400 pointer-events-none">
+                        {settings.currency}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-stone-500">
+                      يُضرب في المسافة المقطوعة بين المطعم والزبون.
+                    </p>
+                  </div>
+
+                  {/* Min Delivery Fee */}
+                  <div className="p-4 rounded-2xl border border-stone-200 bg-white space-y-1.5">
+                    <label className="font-black text-stone-900 block">
+                      الحد الأدنى لأجرة التوصيل:
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min={0}
+                        step={500}
+                        value={settings.deliveryMinFee ?? 2000}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            deliveryMinFee: Number(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full pl-12 pr-3 py-2 text-sm font-black text-stone-900 border border-stone-200 rounded-xl focus:outline-hidden focus:border-[#780000]"
+                        placeholder="2000"
+                      />
+                      <span className="absolute left-3 text-xs font-bold text-stone-400 pointer-events-none">
+                        {settings.currency}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-stone-500">
+                      أقل كلفة تحتسب حتى لو كانت المسافة قريبة جداً.
+                    </p>
+                  </div>
+
+                  {/* Max Delivery Distance */}
+                  <div className="p-4 rounded-2xl border border-stone-200 bg-white space-y-1.5">
+                    <label className="font-black text-stone-900 block">
+                      أقصى نطاق للتوصيل:
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={settings.deliveryMaxDistanceKm ?? 25}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            deliveryMaxDistanceKm: Number(e.target.value) || 0,
+                          })
+                        }
+                        className="w-full pl-10 pr-3 py-2 text-sm font-black text-stone-900 border border-stone-200 rounded-xl focus:outline-hidden focus:border-[#780000]"
+                        placeholder="25"
+                      />
+                      <span className="absolute left-3 text-xs font-bold text-stone-400 pointer-events-none">
+                        كم
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-stone-500">
+                      يتم إشعار الزبون بالاعتذار إذا تجاوز هذا النطاق.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Live Distance Fee Simulator */}
+                <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-stone-900">
+                      <Calculator className="w-4 h-4 text-purple-600" />
+                      <span>حاسبة تجريبية فورية لحساب كلفة التوصيل:</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                      اختبار فوري للمطعم
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-stone-700">المسافة التجريبية:</span>
+                      <input
+                        type="number"
+                        min={0.5}
+                        max={50}
+                        step={0.5}
+                        value={testDistanceKm}
+                        onChange={(e) => setTestDistanceKm(parseFloat(e.target.value) || 1)}
+                        className="w-20 px-2.5 py-1.5 border border-stone-300 rounded-lg text-center font-black text-stone-900 bg-white"
+                      />
+                      <span className="font-bold text-stone-500">كم</span>
+                    </div>
+
+                    <div className="flex-1 flex flex-wrap items-center justify-end gap-3">
+                      <span className="text-stone-500 text-[11px]">
+                        المعادلة: {testDistanceKm} كم × {(settings.deliveryCostPerKm ?? 1000).toLocaleString()} {settings.currency} =
+                      </span>
+                      <span className="text-base font-black text-[#780000] bg-white px-3 py-1 rounded-xl border border-stone-200 shadow-2xs">
+                        {Math.max(
+                          settings.deliveryMinFee ?? 2000,
+                          Math.round((testDistanceKm * (settings.deliveryCostPerKm ?? 1000)) / 250) * 250
+                        ).toLocaleString()}{" "}
+                        {settings.currency}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Delivery Zones List Card (Preserved & Suspended when in distance mode) */}
+            <div
+              className={`bg-white rounded-3xl p-6 border shadow-xs space-y-4 transition-all ${
+                (settings.deliveryPricingMode || "distance") === "distance"
+                  ? "border-stone-200/60 bg-stone-50/40"
+                  : "border-stone-200/80"
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-black text-stone-900 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-stone-600" />
+                      <span>نظام الأجرة الثابتة حسب المناطق والأحياء</span>
+                    </h3>
+                    <span
+                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                        (settings.deliveryPricingMode || "distance") === "distance"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      {(settings.deliveryPricingMode || "distance") === "distance"
+                        ? "معلّق مؤقتاً ⏸️"
+                        : "مفعّل ✓"}
+                    </span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700">
+                      {settings.deliveryZones?.length || 0} مناطق محفوظة
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    {(settings.deliveryPricingMode || "distance") === "distance"
+                      ? "هذا القسم محفوظ بالكامل دون حذف. يمكنك إضافة وتعديل المناطق للعودة إليه لاحقاً."
+                      : "حدد أجرة التوصيل الخاصة بكل حي أو منطقة مع الحد الأدنى للطلب"}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {(settings.deliveryPricingMode || "distance") === "distance" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...settings, deliveryPricingMode: "fixed" as const };
+                        setSettings(updated);
+                        handleSaveSettings(undefined, updated);
+                      }}
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                    >
+                      <span>تفعيل هذا النظام</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleOpenAddZone}
+                    className="px-4 py-2 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>إضافة منطقة جديدة</span>
+                  </button>
+                </div>
               </div>
 
               {(!settings.deliveryZones || settings.deliveryZones.length === 0) ? (

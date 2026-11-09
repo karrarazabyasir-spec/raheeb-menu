@@ -20,6 +20,14 @@
     "bannerMessage": "",
     "bannerActive": false,
     "deliveryEnabled": true,
+    "deliveryPricingMode": "distance",
+    "restaurantLat": 32.616,
+    "restaurantLng": 44.0249,
+    "restaurantLocationName": "كربلاء - الحسينية",
+    "deliveryCostPerKm": 1000,
+    "deliveryMinFee": 2000,
+    "deliveryBaseFee": 0,
+    "deliveryMaxDistanceKm": 25,
     "freeDeliveryThreshold": 1000,
     "defaultDeliveryTime": "30-45 دقيقة",
     "deliveryZones": [
@@ -594,6 +602,60 @@
   "orders": [
     {
       "type": "delivery",
+      "customerName": "Ahmed",
+      "customerPhone": "07727837125",
+      "deliveryZoneId": "zone-1793426956912",
+      "deliveryZoneName": "حي العباس",
+      "deliveryFee": 0,
+      "address": "جامع الزهراء",
+      "landmark": "جامع الزهراء",
+      "driverNotes": "",
+      "items": [
+        {
+          "id": "ord-item-1793475891252-zbmin",
+          "menuItemId": "item-1",
+          "nameAr": "مشكل مشويات رهيب الملكي",
+          "nameEn": "Royal Raheeb Mixed Grill",
+          "variantName": "نصف كيلو (شخصين)",
+          "selectedOptionsText": "خبز شامي حار على الصاج",
+          "unitPrice": 2000,
+          "quantity": 1,
+          "totalPrice": 2000
+        },
+        {
+          "id": "ord-item-1793475891252-qwndq",
+          "menuItemId": "item-2",
+          "nameAr": "أوصال لحم نعيمي مشوي",
+          "nameEn": "Grilled Lamb Awصال",
+          "variantName": "صحن فردي",
+          "unitPrice": 48,
+          "quantity": 2,
+          "totalPrice": 96
+        },
+        {
+          "id": "ord-item-1793475891252-oaq9l",
+          "menuItemId": "item-6",
+          "nameAr": "متبل باذنجان مدخن بالرمان",
+          "nameEn": "Smoked Eggplant Mutabbal",
+          "unitPrice": 19,
+          "quantity": 1,
+          "totalPrice": 19
+        }
+      ],
+      "subtotal": 2115,
+      "discount": 0,
+      "serviceFee": 0,
+      "tax": 0,
+      "total": 2115,
+      "paymentMethod": "cash",
+      "status": "received",
+      "id": "ord-1793475891252-y2u22",
+      "orderNumber": 115,
+      "createdAt": "2026-10-31T19:44:51.252Z",
+      "updatedAt": "2026-10-31T19:44:51.252Z"
+    },
+    {
+      "type": "delivery",
       "customerName": "رسول",
       "customerPhone": "07800280836",
       "deliveryZoneId": "zone-1793394189549",
@@ -1105,7 +1167,7 @@
       "createdAt": "2026-10-28T10:26:27.035Z"
     }
   ],
-  "nextOrderNumber": 115,
+  "nextOrderNumber": 116,
   "reviews": [
     {
       "id": "rev-1793433946536-hyfd9",

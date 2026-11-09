@@ -17,6 +17,9 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     text += `📱 *الهاتف:* ${order.customerPhone || "غير محدد"}\n`;
     text += `📍 *المنطقة:* ${order.deliveryZoneName || "توصيل"}\n`;
     text += `🏠 *العنوان:* ${order.address || "غير محدد"}\n`;
+    if (order.distanceKm && order.distanceKm > 0) {
+      text += `📏 *المسافة:* ${order.distanceKm} كم\n`;
+    }
     if (order.landmark) {
       text += `🏛️ *أقرب نقطة دالة:* ${order.landmark}\n`;
     }
@@ -95,6 +98,9 @@ export function generateDriverWhatsAppMessage(order: Order, settings: Restaurant
   text += `📞 *رقم الهاتف:* ${order.customerPhone || "—"}\n`;
   text += `📍 *المنطقة:* ${order.deliveryZoneName || "توصيل"}\n`;
   text += `🏠 *العنوان:* ${order.address || "—"}\n`;
+  if (order.distanceKm && order.distanceKm > 0) {
+    text += `📏 *المسافة:* ${order.distanceKm} كم\n`;
+  }
   if (order.landmark) {
     text += `🏛️ *أقرب نقطة دالة:* ${order.landmark}\n`;
   }

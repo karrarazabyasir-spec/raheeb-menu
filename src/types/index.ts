@@ -42,7 +42,15 @@ export interface RestaurantSettings {
   customTags?: CustomTag[];
   // Delivery settings
   deliveryEnabled?: boolean;
-  deliveryZones?: DeliveryZone[];
+  deliveryPricingMode?: "distance" | "fixed"; // "distance" (based on km) or "fixed" (based on zones)
+  restaurantLat?: number; // Restaurant latitude for distance calculation
+  restaurantLng?: number; // Restaurant longitude for distance calculation
+  restaurantLocationName?: string; // e.g. "كربلاء - الحسينية"
+  deliveryCostPerKm?: number; // Cost in IQD per kilometer (e.g. 1000)
+  deliveryMinFee?: number; // Minimum delivery fee (e.g. 2000)
+  deliveryBaseFee?: number; // Base starting fee / meter start (e.g. 0)
+  deliveryMaxDistanceKm?: number; // Maximum delivery coverage radius in km (e.g. 25)
+  deliveryZones?: DeliveryZone[]; // Preserved fixed zones
   freeDeliveryThreshold?: number; // e.g. 50000 -> 0 fee
   defaultDeliveryTime?: string; // e.g. "35-50 دقيقة"
 }
@@ -182,6 +190,7 @@ export interface Order {
   landmark?: string;
   lat?: number;
   lng?: number;
+  distanceKm?: number;
   driverNotes?: string;
   cashToPay?: number; // amount customer will pay to prepare change
   items: OrderItem[];
@@ -225,6 +234,7 @@ export interface SavedCustomerOrder {
   pickupTime?: string;
   deliveryZoneName?: string;
   deliveryFee?: number;
+  distanceKm?: number;
   address?: string;
   landmark?: string;
   items: {

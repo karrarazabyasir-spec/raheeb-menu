@@ -602,6 +602,9 @@ export default function CashierPage() {
 
                             <div className="text-[11px] text-stone-600">
                               <p><span className="font-bold text-stone-800">العنوان:</span> {order.address}</p>
+                              {order.distanceKm && order.distanceKm > 0 && (
+                                <p><span className="font-bold text-stone-800">المسافة:</span> {order.distanceKm} كم</p>
+                              )}
                               {order.landmark && (
                                 <p><span className="font-bold text-stone-800">أقرب دالة:</span> {order.landmark}</p>
                               )}

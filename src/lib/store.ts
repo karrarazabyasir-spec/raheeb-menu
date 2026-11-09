@@ -43,6 +43,14 @@ function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSetting
   return {
     ...initialSettings,
     ...settings,
+    deliveryPricingMode: settings.deliveryPricingMode ?? initialSettings.deliveryPricingMode ?? "distance",
+    restaurantLat: typeof settings.restaurantLat === "number" ? settings.restaurantLat : initialSettings.restaurantLat,
+    restaurantLng: typeof settings.restaurantLng === "number" ? settings.restaurantLng : initialSettings.restaurantLng,
+    restaurantLocationName: settings.restaurantLocationName || initialSettings.restaurantLocationName,
+    deliveryCostPerKm: typeof settings.deliveryCostPerKm === "number" ? settings.deliveryCostPerKm : initialSettings.deliveryCostPerKm,
+    deliveryMinFee: typeof settings.deliveryMinFee === "number" ? settings.deliveryMinFee : initialSettings.deliveryMinFee,
+    deliveryBaseFee: typeof settings.deliveryBaseFee === "number" ? settings.deliveryBaseFee : initialSettings.deliveryBaseFee,
+    deliveryMaxDistanceKm: typeof settings.deliveryMaxDistanceKm === "number" ? settings.deliveryMaxDistanceKm : initialSettings.deliveryMaxDistanceKm,
     deliveryZones: Array.isArray(settings.deliveryZones)
       ? settings.deliveryZones
       : [],
@@ -417,6 +425,7 @@ export const db = {
       cash_to_pay: newOrder.cashToPay || null,
       lat: newOrder.lat || null,
       lng: newOrder.lng || null,
+      distance_km: newOrder.distanceKm || null,
     };
 
     try {

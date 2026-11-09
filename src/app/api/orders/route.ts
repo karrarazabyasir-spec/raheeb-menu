@@ -3,6 +3,7 @@ import { db } from "@/lib/store";
 import { CartItem, Order, OrderItem, OrderStatus, OrderType } from "@/types";
 import { supabaseAdmin } from "@/lib/supabase";
 import { broadcastLiveEvent } from "@/lib/realtime";
+import { calculateDistanceKm, calculateDeliveryFee } from "@/lib/distance";
 
 
 export async function GET(request: Request) {
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
         cashToPay: o.cash_to_pay || undefined,
         lat: o.lat || undefined,
         lng: o.lng || undefined,
+        distanceKm: typeof o.distance_km === "number" ? o.distance_km : o.distanceKm,
         items: o.items,
         subtotal: o.subtotal,
         discount: o.discount,
@@ -230,39 +232,105 @@ export async function POST(request: Request) {
     // Delivery Fee calculation (SERVER-SIDE ONLY)
     let deliveryFee = 0;
     let selectedZoneName: string | undefined = undefined;
+    let orderDistanceKm: number | undefined = undefined;
 
     if (type === "delivery") {
-      const zones = settings.deliveryZones || [];
-      const matchedZone = zones.find((z) => z.id === deliveryZoneId && z.isActive);
+      const mode = settings.deliveryPricingMode || "distance";
 
-      if (matchedZone) {
-        selectedZoneName = matchedZone.nameAr;
-        // Check zone min order
-        if (matchedZone.minOrder && calculatedSubtotal < matchedZone.minOrder) {
-          const diff = matchedZone.minOrder - calculatedSubtotal;
+      if (mode === "distance") {
+        const hasRestaurantCoords =
+          typeof settings.restaurantLat === "number" &&
+          typeof settings.restaurantLng === "number" &&
+          !isNaN(settings.restaurantLat) &&
+          !isNaN(settings.restaurantLng);
+
+        const hasCustomerCoords =
+          typeof lat === "number" &&
+          typeof lng === "number" &&
+          !isNaN(lat) &&
+          !isNaN(lng);
+
+        if (hasRestaurantCoords && hasCustomerCoords) {
+          const dist = calculateDistanceKm(
+            settings.restaurantLat!,
+            settings.restaurantLng!,
+            lat!,
+            lng!
+          );
+          orderDistanceKm = dist;
+
+          // Check maximum delivery distance
+          if (
+            settings.deliveryMaxDistanceKm &&
+            settings.deliveryMaxDistanceKm > 0 &&
+            dist > settings.deliveryMaxDistanceKm
+          ) {
+            return NextResponse.json(
+              {
+                error: `عذراً، موقعك يبعد (${dist} كم) وهو خارج نطاق التوصيل الأقصى للمطعم (${settings.deliveryMaxDistanceKm} كم)`,
+              },
+              { status: 400 }
+            );
+          }
+
+          const feeCalc = calculateDeliveryFee({
+            distanceKm: dist,
+            costPerKm: settings.deliveryCostPerKm ?? 1000,
+            minFee: settings.deliveryMinFee ?? 2000,
+            baseFee: settings.deliveryBaseFee ?? 0,
+            freeDeliveryThreshold: settings.freeDeliveryThreshold,
+            subtotal: calculatedSubtotal,
+          });
+
+          deliveryFee = feeCalc.fee;
+          selectedZoneName = `توصيل بالمسافة (${dist} كم)`;
+        } else {
+          // If customer coordinates were not provided, use min/base delivery fee as fallback
+          const feeCalc = calculateDeliveryFee({
+            distanceKm: 0,
+            costPerKm: settings.deliveryCostPerKm ?? 1000,
+            minFee: settings.deliveryMinFee ?? 2000,
+            baseFee: settings.deliveryBaseFee ?? 0,
+            freeDeliveryThreshold: settings.freeDeliveryThreshold,
+            subtotal: calculatedSubtotal,
+          });
+          deliveryFee = feeCalc.fee;
+          selectedZoneName = "توصيل بالمسافة (موقع يدوي)";
+        }
+      } else {
+        // "fixed" zone mode (kept intact for seamless return)
+        const zones = settings.deliveryZones || [];
+        const matchedZone = zones.find((z) => z.id === deliveryZoneId && z.isActive);
+
+        if (matchedZone) {
+          selectedZoneName = matchedZone.nameAr;
+          // Check zone min order
+          if (matchedZone.minOrder && calculatedSubtotal < matchedZone.minOrder) {
+            const diff = matchedZone.minOrder - calculatedSubtotal;
+            return NextResponse.json(
+              {
+                error: `الحد الأدنى لطلب التوصيل لمنطقة (${matchedZone.nameAr}) هو ${matchedZone.minOrder} ${settings.currency}. يرجى إضافة أصناف بقيمة ${diff} ${settings.currency} إضافية.`,
+              },
+              { status: 400 }
+            );
+          }
+          deliveryFee = matchedZone.fee;
+        } else if (zones.length > 0) {
+          // Zone not found or inactive
           return NextResponse.json(
-            {
-              error: `الحد الأدنى لطلب التوصيل لمنطقة (${matchedZone.nameAr}) هو ${matchedZone.minOrder} ${settings.currency}. يرجى إضافة أصناف بقيمة ${diff} ${settings.currency} إضافية.`,
-            },
+            { error: "يرجى اختيار منطقة توصيل صحيحة ومتاحة من القائمة" },
             { status: 400 }
           );
         }
-        deliveryFee = matchedZone.fee;
-      } else if (zones.length > 0) {
-        // Zone not found or inactive
-        return NextResponse.json(
-          { error: "يرجى اختيار منطقة توصيل صحيحة ومتاحة من القائمة" },
-          { status: 400 }
-        );
-      }
 
-      // Check Free Delivery Threshold
-      if (
-        settings.freeDeliveryThreshold &&
-        settings.freeDeliveryThreshold > 0 &&
-        calculatedSubtotal >= settings.freeDeliveryThreshold
-      ) {
-        deliveryFee = 0;
+        // Check Free Delivery Threshold
+        if (
+          settings.freeDeliveryThreshold &&
+          settings.freeDeliveryThreshold > 0 &&
+          calculatedSubtotal >= settings.freeDeliveryThreshold
+        ) {
+          deliveryFee = 0;
+        }
       }
     }
 
@@ -277,6 +345,7 @@ export async function POST(request: Request) {
       deliveryZoneId: type === "delivery" ? deliveryZoneId : undefined,
       deliveryZoneName: type === "delivery" ? selectedZoneName : undefined,
       deliveryFee: type === "delivery" ? deliveryFee : 0,
+      distanceKm: type === "delivery" ? orderDistanceKm : undefined,
       address: type === "delivery" ? address?.trim() : undefined,
       landmark: type === "delivery" ? landmark?.trim() : undefined,
       driverNotes: type === "delivery" ? driverNotes?.trim() : undefined,
