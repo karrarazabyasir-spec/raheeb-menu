@@ -57,7 +57,6 @@ export function CartDrawer({ settings }: CartDrawerProps) {
 
   const isTableOrder = !!tableNumber;
   const deliveryEnabled = settings.deliveryEnabled !== false;
-  const activeDeliveryZones = (settings.deliveryZones || []).filter((z) => z.isActive);
 
   // Order type: table, takeaway, or delivery
   const [chosenType, setChosenType] = useState<"table" | "takeaway" | "delivery">(
@@ -69,8 +68,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
   const [selectedAddressId, setSelectedAddressId] = useState<string>(defaultAddress?.id || "");
   const [pickupTime, setPickupTime] = useState("في أسرع وقت");
 
-  // Delivery specific fields
-  const [selectedZoneId, setSelectedZoneId] = useState<string>(activeDeliveryZones[0]?.id || "");
+  // Delivery specific fields (Distance-based only)
   const [deliveryLandmark, setDeliveryLandmark] = useState(defaultAddress?.street || "");
   const [driverNotes, setDriverNotes] = useState("");
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -129,8 +127,6 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     }
   };
 
-  // Get active selected delivery zone
-  const currentZone = activeDeliveryZones.find((z) => z.id === selectedZoneId) || activeDeliveryZones[0];
 
   // Geolocation helper
   const handleGetLocation = () => {
@@ -162,31 +158,29 @@ export function CartDrawer({ settings }: CartDrawerProps) {
   const discountAmount = appliedCoupon ? appliedCoupon.discount : 0;
   const afterDiscount = Math.max(0, subtotal - discountAmount);
 
-  // Delivery Pricing Mode: "distance" (default) or "fixed" (zones)
-  const isDistanceMode = (settings.deliveryPricingMode || "distance") === "distance";
+  // Restaurant location coordinates (from settings or defaults)
+  const restaurantLat =
+    typeof settings.restaurantLat === "number" && !isNaN(settings.restaurantLat)
+      ? settings.restaurantLat
+      : 32.616;
+  const restaurantLng =
+    typeof settings.restaurantLng === "number" && !isNaN(settings.restaurantLng)
+      ? settings.restaurantLng
+      : 44.0249;
 
-  const hasRestaurantCoords =
-    typeof settings.restaurantLat === "number" &&
-    typeof settings.restaurantLng === "number" &&
-    !isNaN(settings.restaurantLat) &&
-    !isNaN(settings.restaurantLng);
+  // Always calculate distance automatically based on customer coords vs restaurant
+  const distanceKm: number | null = locationCoords
+    ? calculateDistanceKm(
+        restaurantLat,
+        restaurantLng,
+        locationCoords.lat,
+        locationCoords.lng
+      )
+    : null;
 
-  const distanceKm: number | null =
-    isDistanceMode && hasRestaurantCoords && locationCoords
-      ? calculateDistanceKm(
-          settings.restaurantLat!,
-          settings.restaurantLng!,
-          locationCoords.lat,
-          locationCoords.lng
-        )
-      : null;
-
+  const maxDist = settings.deliveryMaxDistanceKm || 25;
   const isExceedingMaxDistance =
-    isDistanceMode &&
-    distanceKm !== null &&
-    !!settings.deliveryMaxDistanceKm &&
-    settings.deliveryMaxDistanceKm > 0 &&
-    distanceKm > settings.deliveryMaxDistanceKm;
+    distanceKm !== null && maxDist > 0 && distanceKm > maxDist;
 
   const isFreeDelivery =
     chosenType === "delivery" &&
@@ -194,12 +188,12 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     settings.freeDeliveryThreshold > 0 &&
     subtotal >= settings.freeDeliveryThreshold;
 
-  // Delivery fee calculation
+  // Delivery fee calculation (Pure distance-based calculation)
   let deliveryFee = 0;
   if (chosenType === "delivery") {
     if (isFreeDelivery) {
       deliveryFee = 0;
-    } else if (isDistanceMode) {
+    } else {
       const calc = calculateDeliveryFee({
         distanceKm: distanceKm || 0,
         costPerKm: settings.deliveryCostPerKm ?? 1000,
@@ -209,8 +203,6 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         subtotal,
       });
       deliveryFee = calc.fee;
-    } else if (currentZone) {
-      deliveryFee = currentZone.fee;
     }
   }
 
@@ -258,16 +250,9 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         );
         return;
       }
-      if (isDistanceMode && isExceedingMaxDistance) {
+      if (isExceedingMaxDistance) {
         setSubmitError(
-          `عذراً، موقعك يبعد (${distanceKm} كم) وهو خارج نطاق التوصيل الأقصى للمطعم (${settings.deliveryMaxDistanceKm} كم)`
-        );
-        return;
-      }
-      if (!isDistanceMode && currentZone?.minOrder && subtotal < currentZone.minOrder) {
-        const diff = currentZone.minOrder - subtotal;
-        setSubmitError(
-          `الحد الأدنى للطلب لمنطقة (${currentZone.nameAr}) هو ${currentZone.minOrder} ${currency}. متبقي ${diff} ${currency}.`
+          `عذراً، موقعك يبعد (${distanceKm} كم) وهو خارج نطاق التوصيل الأقصى للمطعم (${maxDist} كم)`
         );
         return;
       }
@@ -282,7 +267,6 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         customerName: finalOrderType !== "table" ? customerName.trim() : undefined,
         customerPhone: finalOrderType !== "table" ? customerPhone.trim() : undefined,
         pickupTime: finalOrderType === "takeaway" ? pickupTime : undefined,
-        deliveryZoneId: finalOrderType === "delivery" && !isDistanceMode ? currentZone?.id : undefined,
         address: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         landmark: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         driverNotes: finalOrderType === "delivery" ? driverNotes.trim() : undefined,
@@ -322,11 +306,9 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         pickupTime: finalOrderType === "takeaway" ? pickupTime : undefined,
         deliveryZoneName:
           finalOrderType === "delivery"
-            ? isDistanceMode
-              ? distanceKm
-                ? `توصيل بالمسافة (${distanceKm} كم)`
-                : "توصيل بالمسافة"
-              : currentZone?.nameAr
+            ? distanceKm
+              ? `توصيل حسب المسافة (${distanceKm} كم)`
+              : "توصيل حسب المسافة"
             : undefined,
         deliveryFee: finalOrderType === "delivery" ? deliveryFee : 0,
         distanceKm: distanceKm || undefined,
@@ -489,156 +471,97 @@ export function CartDrawer({ settings }: CartDrawerProps) {
 
                 {/* DELIVERY SPECIFIC FIELDS */}
                 {chosenType === "delivery" && (
-                  <div className="space-y-2.5 pt-2 border-t border-stone-200/70 animate-fade-in">
-                    {/* Mode 1: Distance Based Delivery */}
-                    {isDistanceMode ? (
-                      <div className="space-y-2">
-                        {/* Distance & Fee Preview Banner */}
-                        <div
-                          className={`p-3 rounded-2xl border transition-all ${
-                            distanceKm !== null
-                              ? isExceedingMaxDistance
-                                ? "bg-rose-50 border-rose-300 text-rose-900"
-                                : "bg-emerald-50 border-emerald-300 text-emerald-900"
-                              : "bg-amber-50/70 border-amber-200 text-stone-800"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between text-xs font-bold">
-                            <span className="flex items-center gap-1.5">
-                              <Bike className="w-4 h-4 text-[#780000]" />
-                              <span>التوصيل حسب المسافة</span>
+                  <div className="space-y-3 pt-2 border-t border-stone-200/70 animate-fade-in">
+                    {/* Distance & Fee Preview Banner */}
+                    <div
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        distanceKm !== null
+                          ? isExceedingMaxDistance
+                            ? "bg-rose-50 border-rose-300 text-rose-900"
+                            : "bg-emerald-50 border-emerald-300 text-emerald-900"
+                          : "bg-amber-50/70 border-amber-200 text-stone-800"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <Bike className="w-4 h-4 text-[#780000]" />
+                          <span>حساب التوصيل حسب المسافة</span>
+                        </span>
+                        <span className="text-[10px] text-stone-500 font-bold">
+                          الوقت المقدر: {settings.defaultDeliveryTime || "30-45 دقيقة"}
+                        </span>
+                      </div>
+
+                      {distanceKm !== null ? (
+                        <div className="mt-2 space-y-1.5 pt-2 border-t border-stone-200/60">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-stone-700 flex items-center gap-1">
+                              <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                              <span>المسافة بينك وبين المطعم:</span>
                             </span>
-                            <span className="text-[10px] text-stone-500 font-bold">
-                              الوقت التقديري: {settings.defaultDeliveryTime || "30-45 دقيقة"}
+                            <span className="font-black text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
+                              {distanceKm} كم
                             </span>
                           </div>
-
-                          {distanceKm !== null ? (
-                            <div className="mt-2 space-y-1.5 pt-2 border-t border-stone-200/60">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-bold text-stone-700 flex items-center gap-1">
-                                  <Navigation className="w-3.5 h-3.5 text-blue-600" />
-                                  <span>المسافة التقديرية بينك وبين المطعم:</span>
-                                </span>
-                                <span className="font-black text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
-                                  {distanceKm} كم
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-bold text-stone-700">كلفة التوصيل:</span>
-                                <span className="font-black text-[#780000] text-sm">
-                                  {isFreeDelivery ? "مجاني 🎉" : `+${deliveryFee.toLocaleString()} ${currency}`}
-                                </span>
-                              </div>
-                              {isExceedingMaxDistance && (
-                                <p className="text-[11px] text-rose-700 font-black mt-1 bg-white p-2 rounded-lg border border-rose-200">
-                                  ⚠️ عذراً، موقعك يبعد ({distanceKm} كم) وهو خارج نطاق التوصيل الأقصى للمطعم ({settings.deliveryMaxDistanceKm} كم).
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="mt-1 text-[11px] text-stone-600 space-y-0.5">
-                              <p>
-                                ⚡ الكلفة: <span className="font-black text-stone-900">{(settings.deliveryCostPerKm ?? 1000).toLocaleString()} {currency}</span> لكل كم (الحد الأدنى: {(settings.deliveryMinFee ?? 2000).toLocaleString()} {currency}).
-                              </p>
-                              <p className="text-[10px] text-stone-400">
-                                اضغط على الزر أدناه لتحديد موقعك وحساب الكلفة بدقة تلقائياً ⬇️
-                              </p>
-                            </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-stone-700">كلفة التوصيل:</span>
+                            <span className="font-black text-[#780000] text-sm">
+                              {isFreeDelivery ? "مجاني 🎉" : `+${deliveryFee.toLocaleString()} ${currency}`}
+                            </span>
+                          </div>
+                          {isExceedingMaxDistance && (
+                            <p className="text-[11px] text-rose-700 font-black mt-1 bg-white p-2 rounded-lg border border-rose-200">
+                              ⚠️ عذراً، موقعك يبعد ({distanceKm} كم) وهو خارج نطاق التوصيل الأقصى للمطعم ({maxDist} كم).
+                            </p>
                           )}
                         </div>
+                      ) : (
+                        <div className="mt-1 text-[11px] text-stone-600 space-y-1">
+                          <p>
+                            ⚡ الأجرة: <span className="font-black text-stone-900">{(settings.deliveryCostPerKm ?? 1000).toLocaleString()} {currency}</span> لكل كم (الحد الأدنى: {(settings.deliveryMinFee ?? 2000).toLocaleString()} {currency}).
+                          </p>
+                          <p className="text-[10px] text-stone-500 font-medium">
+                            اضغط على الزر بالأسفل لتحديد موقعك وحساب الكلفة بدقة تلقائياً ⬇️
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
-                        {/* GPS Button */}
-                        <div>
-                          <button
-                            type="button"
-                            onClick={handleGetLocation}
-                            disabled={gettingLocation}
-                            className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition shadow-xs ${
-                              locationCoords
-                                ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-                                : "bg-white border-blue-300 text-blue-700 hover:bg-blue-50"
-                            }`}
-                          >
-                            {gettingLocation ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin text-current" />
-                                <span>جاري تحديد موقعك بالـ GPS لحساب المسافة...</span>
-                              </>
-                            ) : locationCoords ? (
-                              <>
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span>تم تحديد موقعك بدقة ({distanceKm ? `${distanceKm} كم` : "✓"}) - اضغط للتحديث</span>
-                              </>
-                            ) : (
-                              <>
-                                <Navigation className="w-4 h-4 text-blue-600 animate-pulse" />
-                                <span>📍 اضغط لتحديد موقعي وحساب المسافة بدقة</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Mode 2: Fixed Zones (Completely preserved!) */
-                      <>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-[11px] font-bold text-stone-700 flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-[#780000]" />
-                              <span>منطقة التوصيل:</span>
-                            </label>
-                            {currentZone && (
-                              <span className="text-[10px] text-stone-500 font-bold">
-                                وقت الوصول: {currentZone.estimatedTime || settings.defaultDeliveryTime || "30-45 دقيقة"}
-                              </span>
-                            )}
-                          </div>
-                          <select
-                            value={selectedZoneId}
-                            onChange={(e) => setSelectedZoneId(e.target.value)}
-                            className="w-full text-xs p-2.5 bg-white border border-stone-200 rounded-xl font-bold text-stone-900 focus:ring-2 focus:ring-[#780000] focus:outline-none"
-                          >
-                            {activeDeliveryZones.map((z) => (
-                              <option key={z.id} value={z.id}>
-                                {z.nameAr} • أجرة التوصيل: {z.fee} {currency} {z.minOrder ? `(أقل طلب: ${z.minOrder})` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* GPS Pin Button for Driver Location in fixed mode */}
-                        <div>
-                          <button
-                            type="button"
-                            onClick={handleGetLocation}
-                            disabled={gettingLocation}
-                            className={`w-full py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition ${
-                              locationCoords
-                                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
-                            }`}
-                          >
-                            {gettingLocation ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#780000]" />
-                                <span>جاري تحديد موقعك الجغرافي...</span>
-                              </>
-                            ) : locationCoords ? (
-                              <>
-                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                <span>تم تحديد موقعك بدقة للسائق ✓ (اضغط للتحديث)</span>
-                              </>
-                            ) : (
-                              <>
-                                <Navigation className="w-3.5 h-3.5 text-blue-600" />
-                                <span>تحديد موقعي المباشر على الخريطة للسائق 📍</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    {/* GPS Button */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleGetLocation}
+                        disabled={gettingLocation}
+                        className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition shadow-xs cursor-pointer ${
+                          locationCoords
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                            : "bg-white border-blue-300 text-blue-700 hover:bg-blue-50"
+                        }`}
+                      >
+                        {gettingLocation ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-current" />
+                            <span>جاري تحديد موقعك بالـ GPS لحساب المسافة...</span>
+                          </>
+                        ) : locationCoords ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>تم تحديد موقعك بدقة ({distanceKm ? `${distanceKm} كم` : "✓"}) - اضغط للتحديث</span>
+                          </>
+                        ) : (
+                          <>
+                            <Navigation className="w-4 h-4 text-blue-600 animate-pulse" />
+                            <span>📍 اضغط لتحديد موقعي وحساب المسافة بدقة</span>
+                          </>
+                        )}
+                      </button>
+                      {locationSuccessMsg && (
+                        <p className="text-[10px] text-emerald-700 font-bold text-center mt-1">
+                          تم احتساب المسافة وإرفاق إحداثيات موقعك ليقود السائق لمنزلك مباشرة!
+                        </p>
+                      )}
+                    </div>
 
                     {/* Landmark */}
                     <div className="relative">
@@ -821,13 +744,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
               {chosenType === "delivery" && !isTableOrder && (
                 <div className="flex justify-between text-stone-700 font-bold">
                   <span>
-                    أجرة التوصيل{" "}
-                    {isDistanceMode
-                      ? distanceKm !== null
-                        ? `(${distanceKm} كم)`
-                        : "(حسب المسافة)"
-                      : `(${currentZone?.nameAr || "توصيل"})`}
-                    :
+                    أجرة التوصيل {distanceKm !== null ? `(${distanceKm} كم)` : "(حسب المسافة)"}:
                   </span>
                   <span className={isFreeDelivery ? "text-emerald-700 font-black" : "text-stone-900"}>
                     {isFreeDelivery ? "مجاني 🎉" : `+${deliveryFee.toLocaleString()} ${currency}`}
