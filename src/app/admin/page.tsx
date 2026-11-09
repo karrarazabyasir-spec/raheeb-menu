@@ -2214,7 +2214,7 @@ export default function AdminPage() {
                     <input
                       type="number"
                       step="any"
-                      value={settings.restaurantLat ?? 32.616}
+                      value={settings.restaurantLat ?? 32.664911}
                       onChange={(e) =>
                         setSettings({
                           ...settings,
@@ -2234,7 +2234,7 @@ export default function AdminPage() {
                     <input
                       type="number"
                       step="any"
-                      value={settings.restaurantLng ?? 44.0249}
+                      value={settings.restaurantLng ?? 44.151059}
                       onChange={(e) =>
                         setSettings({
                           ...settings,

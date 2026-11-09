@@ -162,11 +162,11 @@ export function CartDrawer({ settings }: CartDrawerProps) {
   const restaurantLat =
     typeof settings.restaurantLat === "number" && !isNaN(settings.restaurantLat)
       ? settings.restaurantLat
-      : 32.616;
+      : 32.664911;
   const restaurantLng =
     typeof settings.restaurantLng === "number" && !isNaN(settings.restaurantLng)
       ? settings.restaurantLng
-      : 44.0249;
+      : 44.151059;
 
   // Always calculate distance automatically based on customer coords vs restaurant
   const distanceKm: number | null = locationCoords
