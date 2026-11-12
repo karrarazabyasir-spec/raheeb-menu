@@ -184,6 +184,13 @@ export default function AdminPage() {
 
   // QR Modal
   const [qrModalTable, setQrModalTable] = useState<Table | null>(null);
+  const [qrModalCustom, setQrModalCustom] = useState<{
+    title: string;
+    subtitle: string;
+    description: string;
+    filename: string;
+    url: string;
+  } | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
   // Edit / Add Item Comprehensive Modal
@@ -548,12 +555,54 @@ export default function AdminPage() {
 
   // Generate QR for a table
   const handleOpenQR = async (table: Table) => {
+    setQrModalCustom(null);
     setQrModalTable(table);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/?table=${table.number}`;
     try {
       const dataUrl = await QRCode.toDataURL(url, {
         width: 350,
+        margin: 2,
+        color: { dark: settings?.primaryColor || "#780000", light: "#ffffff" },
+      });
+      setQrDataUrl(dataUrl);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Generate QR for Delivery, Takeaway (Hand Pickup), or General Menu
+  const handleOpenCustomQR = async (mode: "delivery" | "takeaway" | "general") => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const config = {
+      delivery: {
+        title: "بطاقة QR لخدمة التوصيل",
+        subtitle: "الطلب عبر التوصيل للمنازل 🛵",
+        description: "امسح الرمز لفتح المينيو والطلب عبر خدمة التوصيل مباشرة",
+        filename: "QR_Delivery.png",
+        url: `${origin}/?mode=delivery`,
+      },
+      takeaway: {
+        title: "بطاقة QR للاستلام باليد",
+        subtitle: "الطلب للاستلام من الفرع (سفري) 🛍️",
+        description: "امسح الرمز للطلب المسبق والاستلام باليد من الفرع",
+        filename: "QR_Takeaway.png",
+        url: `${origin}/?mode=takeaway`,
+      },
+      general: {
+        title: "بطاقة QR للمينيو العام",
+        subtitle: "المينيو الإلكتروني الكامل 📱",
+        description: "امسح الرمز لتصفح قائمة الطعام والطلب",
+        filename: "QR_Menu.png",
+        url: `${origin}/`,
+      },
+    }[mode];
+
+    setQrModalTable(null);
+    setQrModalCustom(config);
+    try {
+      const dataUrl = await QRCode.toDataURL(config.url, {
+        width: 400,
         margin: 2,
         color: { dark: settings?.primaryColor || "#780000", light: "#ffffff" },
       });
@@ -1676,7 +1725,97 @@ export default function AdminPage() {
 
         {/* TAB 4: TABLES & QR */}
         {activeTab === "tables" && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* External Orders QR Section (Delivery & Takeaway) */}
+            <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-xs space-y-4">
+              <div>
+                <h2 className="text-sm font-black text-stone-900 flex items-center gap-2">
+                  <QrCode className="w-4 h-4 text-[#780000]" />
+                  <span>رموز QR لخدمة التوصيل والاستلام باليد</span>
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  رموز جاهزة للطباعة أو النشر في صفحات التواصل الاجتماعي لفتح المينيو مباشرة بنوع الطلب المحدد
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Delivery QR Card */}
+                <div className="bg-[#fdfbf9] rounded-2xl p-4 border border-stone-200 flex flex-col justify-between gap-3 text-center">
+                  <div>
+                    <span className="text-[10px] font-bold text-[#780000] bg-red-50 px-2.5 py-0.5 rounded-full inline-block mb-1.5">
+                      خدمة التوصيل 🛵
+                    </span>
+                    <h3 className="text-sm font-black text-stone-900">
+                      باركود التوصيل للمنازل
+                    </h3>
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      يفتح المينيو بوضع التوصيل وحساب المسافة بالـ GPS تلقائياً
+                    </p>
+                  </div>
+                  <div className="py-2 flex justify-center">
+                    <QrCode className="w-14 h-14 text-[#780000]" />
+                  </div>
+                  <button
+                    onClick={() => handleOpenCustomQR("delivery")}
+                    className="w-full py-2.5 bg-[#780000] hover:bg-[#5c0000] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>عرض وطباعة QR التوصيل</span>
+                  </button>
+                </div>
+
+                {/* Takeaway / Hand Pickup QR Card */}
+                <div className="bg-[#fdfbf9] rounded-2xl p-4 border border-stone-200 flex flex-col justify-between gap-3 text-center">
+                  <div>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full inline-block mb-1.5">
+                      الاستلام باليد 🛍️
+                    </span>
+                    <h3 className="text-sm font-black text-stone-900">
+                      باركود الاستلام من الفرع
+                    </h3>
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      يفتح المينيو بوضع الاستلام باليد (سفري) بدون أجور توصيل
+                    </p>
+                  </div>
+                  <div className="py-2 flex justify-center">
+                    <QrCode className="w-14 h-14 text-amber-700" />
+                  </div>
+                  <button
+                    onClick={() => handleOpenCustomQR("takeaway")}
+                    className="w-full py-2.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>عرض وطباعة QR الاستلام</span>
+                  </button>
+                </div>
+
+                {/* General Menu QR Card */}
+                <div className="bg-[#fdfbf9] rounded-2xl p-4 border border-stone-200 flex flex-col justify-between gap-3 text-center">
+                  <div>
+                    <span className="text-[10px] font-bold text-stone-700 bg-stone-200/70 px-2.5 py-0.5 rounded-full inline-block mb-1.5">
+                      عام 📱
+                    </span>
+                    <h3 className="text-sm font-black text-stone-900">
+                      باركود المنيو العام
+                    </h3>
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      يفتح المينيو الرئيسي مع حرية اختيار نوع الطلب للزبون
+                    </p>
+                  </div>
+                  <div className="py-2 flex justify-center">
+                    <QrCode className="w-14 h-14 text-stone-800" />
+                  </div>
+                  <button
+                    onClick={() => handleOpenCustomQR("general")}
+                    className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    <span>عرض وطباعة QR العام</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-black text-stone-900">
@@ -5208,6 +5347,65 @@ export default function AdminPage() {
               <a
                 href={qrDataUrl}
                 download={`QR_Table_${qrModalTable.number}.png`}
+                className="py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+              >
+                <Download className="w-4 h-4" />
+                <span>تنزيل PNG</span>
+              </a>
+              <button
+                onClick={() => window.print()}
+                className="py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+              >
+                <Printer className="w-4 h-4" />
+                <span>طباعة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM QR MODAL (DELIVERY / TAKEAWAY / GENERAL) */}
+      {qrModalCustom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl text-center">
+            <div className="flex justify-between items-center pb-2 border-b">
+              <span className="text-xs font-bold text-stone-500">{qrModalCustom.title}</span>
+              <button
+                onClick={() => setQrModalCustom(null)}
+                className="text-stone-400 hover:text-stone-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 border-2 border-stone-200 rounded-2xl bg-[#fdfbf9] space-y-2">
+              <h3 className="text-base font-black text-stone-900">{settings?.name}</h3>
+              <p className="text-xs font-extrabold" style={{ color: brandColor }}>
+                {qrModalCustom.subtitle}
+              </p>
+
+              {qrDataUrl && (
+                <div className="py-2 flex justify-center">
+                  <img
+                    src={qrDataUrl}
+                    alt={qrModalCustom.title}
+                    className="w-48 h-48 rounded-xl shadow-xs"
+                  />
+                </div>
+              )}
+
+              <p className="text-[11px] font-bold text-stone-500">
+                {qrModalCustom.description}
+              </p>
+              <p className="text-[10px] font-mono text-stone-400 break-all pt-1">
+                {qrModalCustom.url}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <a
+                href={qrDataUrl}
+                download={qrModalCustom.filename}
                 className="py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
               >
                 <Download className="w-4 h-4" />

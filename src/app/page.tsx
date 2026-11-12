@@ -47,7 +47,7 @@ function MenuContent() {
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Automatically detect table from URL QR query (?table=X), otherwise default to delivery
+  // Automatically detect table from URL QR query (?table=X) or mode (?mode=delivery|takeaway)
   useEffect(() => {
     const tbl = searchParams.get("table");
     if (tbl) {
@@ -58,9 +58,13 @@ function MenuContent() {
         return;
       }
     }
-    // Direct link -> automatically delivery / takeaway
     setTableNumber(null);
-    setOrderType("takeaway");
+    const mode = searchParams.get("mode");
+    if (mode === "takeaway") {
+      setOrderType("takeaway");
+    } else {
+      setOrderType("delivery");
+    }
   }, [searchParams, setTableNumber, setOrderType]);
 
   // Load menu data and settings

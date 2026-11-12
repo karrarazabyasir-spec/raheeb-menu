@@ -45,6 +45,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     clearCart,
     subtotal,
     tableNumber,
+    orderType,
   } = useCart();
 
   const {
@@ -60,8 +61,26 @@ export function CartDrawer({ settings }: CartDrawerProps) {
 
   // Order type: table, takeaway, or delivery
   const [chosenType, setChosenType] = useState<"table" | "takeaway" | "delivery">(
-    isTableOrder ? "table" : deliveryEnabled ? "delivery" : "takeaway"
+    isTableOrder
+      ? "table"
+      : orderType === "takeaway"
+      ? "takeaway"
+      : deliveryEnabled
+      ? "delivery"
+      : "takeaway"
   );
+
+  useEffect(() => {
+    if (isTableOrder) {
+      setChosenType("table");
+    } else if (orderType === "takeaway" || orderType === "delivery") {
+      if (orderType === "delivery" && !deliveryEnabled) {
+        setChosenType("takeaway");
+      } else {
+        setChosenType(orderType);
+      }
+    }
+  }, [isTableOrder, orderType, deliveryEnabled]);
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState(contextPhone || defaultAddress?.phone || "");
