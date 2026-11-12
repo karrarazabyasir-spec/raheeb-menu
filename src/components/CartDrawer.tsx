@@ -487,9 +487,11 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                           <Bike className="w-4 h-4 text-[#780000]" />
                           <span>حساب التوصيل حسب المسافة</span>
                         </span>
-                        <span className="text-[10px] text-stone-500 font-bold">
-                          الوقت المقدر: {settings.defaultDeliveryTime || "30-45 دقيقة"}
-                        </span>
+                        {distanceKm !== null && (
+                          <span className="text-[10px] text-stone-500 font-bold">
+                            الوقت المقدر: {settings.defaultDeliveryTime || "30-45 دقيقة"}
+                          </span>
+                        )}
                       </div>
 
                       {distanceKm !== null ? (
