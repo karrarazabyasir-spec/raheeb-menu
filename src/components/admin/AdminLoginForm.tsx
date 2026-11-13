@@ -9,6 +9,21 @@ interface AdminLoginFormProps {
   onLoginSuccess: (user: StaffUser) => void;
 }
 
+function normalizeDigits(str: string): string {
+  return String(str || "")
+    .replace(/[٠۰]/g, "0")
+    .replace(/[١۱]/g, "1")
+    .replace(/[٢۲]/g, "2")
+    .replace(/[٣۳]/g, "3")
+    .replace(/[٤۴]/g, "4")
+    .replace(/[٥۵]/g, "5")
+    .replace(/[٦۶]/g, "6")
+    .replace(/[٧۷]/g, "7")
+    .replace(/[٨۸]/g, "8")
+    .replace(/[٩۹]/g, "9")
+    .trim();
+}
+
 export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -33,8 +48,8 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: username.trim(),
-          password: password.trim(),
+          username: normalizeDigits(username.trim().toLowerCase()),
+          password: normalizeDigits(password.trim()),
         }),
       });
 
@@ -217,3 +232,4 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
     </div>
   );
 }
+

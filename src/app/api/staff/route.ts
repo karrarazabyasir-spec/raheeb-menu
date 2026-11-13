@@ -4,6 +4,21 @@ import { db } from "@/lib/store";
 import { StaffUser } from "@/types";
 
 // Helper to check if caller is owner
+function normalizeDigits(str: string): string {
+  return String(str || "")
+    .replace(/[٠۰]/g, "0")
+    .replace(/[١۱]/g, "1")
+    .replace(/[٢۲]/g, "2")
+    .replace(/[٣۳]/g, "3")
+    .replace(/[٤۴]/g, "4")
+    .replace(/[٥۵]/g, "5")
+    .replace(/[٦۶]/g, "6")
+    .replace(/[٧۷]/g, "7")
+    .replace(/[٨۸]/g, "8")
+    .replace(/[٩۹]/g, "9")
+    .trim();
+}
+
 async function getCallerRole(): Promise<"owner" | "editor" | null> {
   try {
     const cookieStore = await cookies();
@@ -56,10 +71,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const cleanUsername = username.trim().toLowerCase();
+    const cleanUsername = normalizeDigits(username.trim().toLowerCase());
+    const cleanPassword = normalizeDigits(password.trim());
     const currentUsers = await db.getStaffUsersAsync();
 
-    if (currentUsers.some((u) => u.username.toLowerCase() === cleanUsername)) {
+    if (currentUsers.some((u) => normalizeDigits(u.username.toLowerCase()) === cleanUsername)) {
       return NextResponse.json(
         { error: "اسم المستخدم هذا مسجل مسبقاً، يرجى اختيار اسم مستخدم آخر" },
         { status: 400 }
@@ -70,7 +86,7 @@ export async function POST(request: Request) {
       id: `staff-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       username: cleanUsername,
       name: name.trim(),
-      password: password.trim(),
+      password: cleanPassword,
       role: role === "owner" ? "owner" : "editor",
       isActive: true,
       createdAt: new Date().toISOString(),
@@ -103,7 +119,7 @@ export async function PATCH(request: Request) {
 
     const updates: Partial<StaffUser> = {};
     if (name?.trim()) updates.name = name.trim();
-    if (password?.trim()) updates.password = password.trim();
+    if (password?.trim()) updates.password = normalizeDigits(password.trim());
     if (role === "owner" || role === "editor") updates.role = role;
     if (typeof isActive === "boolean") updates.isActive = isActive;
 
@@ -154,3 +170,4 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+

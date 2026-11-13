@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 
+function normalizeDigits(str: string): string {
+  return String(str || "")
+    .replace(/[٠۰]/g, "0")
+    .replace(/[١۱]/g, "1")
+    .replace(/[٢۲]/g, "2")
+    .replace(/[٣۳]/g, "3")
+    .replace(/[٤۴]/g, "4")
+    .replace(/[٥۵]/g, "5")
+    .replace(/[٦۶]/g, "6")
+    .replace(/[٧۷]/g, "7")
+    .replace(/[٨۸]/g, "8")
+    .replace(/[٩۹]/g, "9")
+    .trim();
+}
+
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
@@ -16,12 +31,19 @@ export async function POST(request: Request) {
     const cleanPassword = String(password).trim();
 
     const staffUsers = await db.getStaffUsersAsync();
-    const user = staffUsers.find(
-      (u) =>
-        u.username.toLowerCase() === cleanUsername &&
-        u.password === cleanPassword &&
-        u.isActive !== false
-    );
+    const user = staffUsers.find((u) => {
+      const uUser = (u.username || "").toLowerCase().trim();
+      const matchUsername =
+        uUser === cleanUsername ||
+        normalizeDigits(uUser) === normalizeDigits(cleanUsername);
+
+      const uPass = (u.password || "").trim();
+      const matchPassword =
+        uPass === cleanPassword ||
+        normalizeDigits(uPass) === normalizeDigits(cleanPassword);
+
+      return matchUsername && matchPassword && u.isActive !== false;
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -66,3 +88,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
