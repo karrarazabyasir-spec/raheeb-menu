@@ -283,7 +283,8 @@ export async function POST(request: Request) {
           });
 
           deliveryFee = feeCalc.fee;
-          selectedZoneName = `توصيل بالمسافة (${dist} كم)`;
+          const customAreaName = body.deliveryZoneName?.trim();
+          selectedZoneName = customAreaName || `توصيل بالمسافة (${dist} كم)`;
         } else {
           // If customer coordinates were not provided, use min/base delivery fee as fallback
           const feeCalc = calculateDeliveryFee({
@@ -295,7 +296,8 @@ export async function POST(request: Request) {
             subtotal: calculatedSubtotal,
           });
           deliveryFee = feeCalc.fee;
-          selectedZoneName = "توصيل بالمسافة (موقع يدوي)";
+          const customAreaName = body.deliveryZoneName?.trim();
+          selectedZoneName = customAreaName || "توصيل بالمسافة (موقع يدوي)";
         }
       } else {
         // "fixed" zone mode (kept intact for seamless return)

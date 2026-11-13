@@ -15,25 +15,28 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     text += `🛵 *نوع الطلب:* توصيل للمنازل (Delivery)\n`;
     text += `👤 *الاسم:* ${order.customerName || "غير محدد"}\n`;
     text += `📱 *الهاتف:* ${order.customerPhone || "غير محدد"}\n`;
-    text += `📍 *المنطقة:* ${order.deliveryZoneName || "توصيل"}\n`;
-    text += `🏠 *العنوان:* ${order.address || "غير محدد"}\n`;
+    text += `📍 *المنطقة:* ${order.deliveryZoneName || "غير معروف"}\n`;
+    if (order.landmark) {
+      text += `🏛️ *أقرب نقطة دالة:* ${order.landmark}\n`;
+    }
     if (order.distanceKm && order.distanceKm > 0) {
       text += `📏 *المسافة:* ${order.distanceKm} كم\n`;
     }
     if (order.estimatedDeliveryTime) {
       text += `⏱️ *الوقت المقدر للتوصيل:* ~${order.estimatedDeliveryTime}\n`;
     }
-    if (order.landmark) {
-      text += `🏛️ *أقرب نقطة دالة:* ${order.landmark}\n`;
-    }
-    if (order.lat && order.lng) {
-      text += `🗺️ *رابط الموقع:* https://maps.google.com/?q=${order.lat},${order.lng}\n`;
-    }
     if (order.cashToPay) {
       text += `💵 *المبلغ المتاح للصرف:* ${order.cashToPay} ${settings.currency}\n`;
     }
     if (order.driverNotes) {
-      text += `📝 *ملاحظات التوصيل:* ${order.driverNotes}\n`;
+      text += `📝 *ملاحظات الزبون:* ${order.driverNotes}\n`;
+    }
+    if (order.lat && order.lng) {
+      text += `━━━━━━━━━━━━━━━\n`;
+      text += `🧭 *روابط توجيه وملاحة السائق (اختر تطبيقك):*\n`;
+      text += `🗺️ *Google Maps:* https://maps.google.com/?q=${order.lat},${order.lng}\n`;
+      text += `🚗 *تطبيق ويز Waze:* https://waze.com/ul?ll=${order.lat},${order.lng}&navigate=yes\n`;
+      text += `(عند النقر على الرابط يمكنك أيضاً اختيار تطبيق الخرائط المفضل لديك)\n`;
     }
   } else {
     text += `🥡 *نوع الطلب:* طلب مسبق للاستلام (Takeaway)\n`;

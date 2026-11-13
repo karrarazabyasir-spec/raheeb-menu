@@ -89,6 +89,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
   const [pickupTime, setPickupTime] = useState("في أسرع وقت");
 
   // Delivery specific fields (Distance-based only)
+  const [deliveryArea, setDeliveryArea] = useState("");
   const [deliveryLandmark, setDeliveryLandmark] = useState(defaultAddress?.street || "");
   const [driverNotes, setDriverNotes] = useState("");
   const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -169,9 +170,13 @@ export function CartDrawer({ settings }: CartDrawerProps) {
       (err) => {
         console.warn("Geolocation error:", err);
         setGettingLocation(false);
-        alert("تعذر تحديد موقعك الحالي تلقائياً. يمكنك كتابة العنوان والنقطة الدالة وسيتصل بك السائق.");
+        if (err.code === 1) {
+          alert("تم رفض إذن مشاركة الموقع. يرجى تفعيل إذن الموقع من إعدادات المتصفح أو الهاتف لإتمام طلب التوصيل وحساب المسافة بدقة.");
+        } else {
+          alert("تعذر تحديد موقعك الحالي. يرجى التأكد من تشغيل الـ GPS ثم إعادة المحاولة.");
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 12000 }
     );
   };
 
@@ -273,6 +278,14 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     }
 
     if (finalOrderType === "delivery") {
+      if (!locationCoords) {
+        setSubmitError(
+          isRtl
+            ? "يرجى الضغط على زر (📍 تحديد موقعي) بالأسفل لمشاركة موقعك بالـ GPS لإتمام طلب التوصيل وحساب المسافة وتوجيه السائق"
+            : "Please click (Detect My Location) to share your GPS position before placing delivery order"
+        );
+        return;
+      }
       if (!deliveryLandmark.trim()) {
         setSubmitError(
           isRtl ? "يرجى كتابة أقرب نقطة دالة للتوصيل" : "Please enter a nearby landmark"
@@ -290,13 +303,19 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     setIsSubmitting(true);
 
     try {
+      const finalArea = deliveryArea.trim() || "غير معروف (موقع GPS)";
+      const finalAddress = deliveryArea.trim()
+        ? `${deliveryArea.trim()} - ${deliveryLandmark.trim()}`
+        : deliveryLandmark.trim();
+
       const payload = {
         type: finalOrderType,
         tableNumber: isTableOrder ? tableNumber : undefined,
         customerName: finalOrderType !== "table" ? customerName.trim() : undefined,
         customerPhone: finalOrderType !== "table" ? customerPhone.trim() : undefined,
         pickupTime: finalOrderType === "takeaway" ? pickupTime : undefined,
-        address: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
+        deliveryZoneName: finalOrderType === "delivery" ? finalArea : undefined,
+        address: finalOrderType === "delivery" ? finalAddress : undefined,
         landmark: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         driverNotes: finalOrderType === "delivery" ? driverNotes.trim() : undefined,
         lat: locationCoords?.lat,
@@ -336,14 +355,12 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         pickupTime: finalOrderType === "takeaway" ? pickupTime : undefined,
         deliveryZoneName:
           finalOrderType === "delivery"
-            ? distanceKm
-              ? `توصيل حسب المسافة (${distanceKm} كم)`
-              : "توصيل حسب المسافة"
+            ? finalArea
             : undefined,
         deliveryFee: finalOrderType === "delivery" ? deliveryFee : 0,
         distanceKm: distanceKm || undefined,
         estimatedDeliveryTime: dynamicEstimatedTime || undefined,
-        address: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
+        address: finalOrderType === "delivery" ? finalAddress : undefined,
         landmark: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         items: items.map((i) => ({
           menuItemId: i.menuItemId,
@@ -568,6 +585,19 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                       )}
                     </div>
 
+                    {/* Mandatory GPS notice if not yet detected */}
+                    {!locationCoords && (
+                      <div className="bg-amber-50 border border-amber-200/90 rounded-xl p-2.5 flex items-start gap-2 text-xs text-amber-900">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="space-y-0.5">
+                          <p className="font-extrabold text-[11px]">مشاركة الموقع بالـ GPS مطلوبة للتوصيل *</p>
+                          <p className="text-[10px] text-amber-800 leading-relaxed">
+                            لتوجيه السائق لمنزلك بدقة عبر الخريطة (Google Maps أو Waze)، يرجى الضغط على الزر بالأسفل.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* GPS Button */}
                     <div>
                       <button
@@ -577,7 +607,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                         className={`w-full py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition shadow-xs cursor-pointer ${
                           locationCoords
                             ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-                            : "bg-white border-blue-300 text-blue-700 hover:bg-blue-50"
+                            : "bg-white border-amber-400 text-amber-900 hover:bg-amber-50 ring-2 ring-amber-400/30 font-black animate-pulse"
                         }`}
                       >
                         {gettingLocation ? (
@@ -592,8 +622,8 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                           </>
                         ) : (
                           <>
-                            <Navigation className="w-4 h-4 text-blue-600 animate-pulse" />
-                            <span>📍 اضغط لتحديد موقعي وحساب المسافة بدقة</span>
+                            <Navigation className="w-4 h-4 text-[#780000]" />
+                            <span>📍 اضغط هنا لتحديد موقعي بالـ GPS (إلزامي)</span>
                           </>
                         )}
                       </button>
@@ -602,6 +632,18 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                           تم احتساب المسافة وإرفاق إحداثيات موقعك ليقود السائق لمنزلك مباشرة!
                         </p>
                       )}
+                    </div>
+
+                    {/* Area / Neighborhood Name */}
+                    <div className="relative">
+                      <MapPin className="w-3.5 h-3.5 text-stone-400 absolute top-3 right-3" />
+                      <input
+                        type="text"
+                        value={deliveryArea}
+                        onChange={(e) => setDeliveryArea(e.target.value)}
+                        placeholder="اسم الحي أو المنطقة (مثال: الحسينية، الجمعية، حي المعلمين...) (اختياري)"
+                        className="w-full text-xs pr-8 pl-3 py-2 bg-white border border-stone-200 rounded-lg focus:ring-2 focus:ring-[#780000] focus:outline-none"
+                      />
                     </div>
 
                     {/* Landmark */}
@@ -850,11 +892,15 @@ export function CartDrawer({ settings }: CartDrawerProps) {
               {isSubmitting ? (
                 <div className="w-full flex items-center justify-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>جاري إرسال الطلب للمطبخ والكاشير...</span>
+                  <span>جاري تسجيل الطلب وفتح واتساب الكاشير...</span>
                 </div>
               ) : (
                 <>
-                  <span>{t("checkout")}</span>
+                  <span>
+                    {chosenType === "delivery" && !locationCoords
+                      ? "📍 يرجى تحديد موقعك أولاً"
+                      : t("checkout")}
+                  </span>
                   <span className="bg-white/20 px-2.5 py-1 rounded-lg text-xs font-black">
                     {total} {currency}
                   </span>
