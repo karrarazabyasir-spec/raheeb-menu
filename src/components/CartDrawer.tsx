@@ -7,7 +7,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { RestaurantSettings } from "@/types";
 import { LottiePreloader } from "@/components/LottiePreloader";
 import { useCustomer } from "@/context/CustomerContext";
-import { calculateDistanceKm, calculateDeliveryFee } from "@/lib/distance";
+import { calculateDistanceKm, calculateDeliveryFee, calculateEstimatedDeliveryTime } from "@/lib/distance";
 import { MapPin } from "lucide-react";
 
 import {
@@ -225,6 +225,15 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     }
   }
 
+  // Dynamic estimated delivery time calculation based on travel distance & restaurant prep time
+  const dynamicEstimatedTime =
+    distanceKm !== null
+      ? calculateEstimatedDeliveryTime({
+          distanceKm,
+          prepTimeMinutes: settings.estimatedPreparationTimeMinutes || 20,
+        }).textAr
+      : null;
+
   const serviceFee =
     settings.serviceFeePercent > 0
       ? Math.round(((afterDiscount * settings.serviceFeePercent) / 100) * 100) / 100
@@ -292,6 +301,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         lat: locationCoords?.lat,
         lng: locationCoords?.lng,
         distanceKm: distanceKm || undefined,
+        estimatedDeliveryTime: dynamicEstimatedTime || undefined,
         cartItems: items,
         couponCode: appliedCoupon?.code,
       };
@@ -331,6 +341,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
             : undefined,
         deliveryFee: finalOrderType === "delivery" ? deliveryFee : 0,
         distanceKm: distanceKm || undefined,
+        estimatedDeliveryTime: dynamicEstimatedTime || undefined,
         address: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         landmark: finalOrderType === "delivery" ? deliveryLandmark.trim() : undefined,
         items: items.map((i) => ({
@@ -506,9 +517,9 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                           <Bike className="w-4 h-4 text-[#780000]" />
                           <span>حساب التوصيل حسب المسافة</span>
                         </span>
-                        {distanceKm !== null && (
-                          <span className="text-[10px] text-stone-500 font-bold">
-                            الوقت المقدر: {settings.defaultDeliveryTime || "30-45 دقيقة"}
+                        {distanceKm !== null && dynamicEstimatedTime && (
+                          <span className="text-[10px] text-stone-700 font-bold bg-white/90 px-2 py-0.5 rounded-lg border border-stone-200/80 shadow-2xs">
+                            الوقت المتوقع: ~{dynamicEstimatedTime}
                           </span>
                         )}
                       </div>

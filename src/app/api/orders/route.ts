@@ -3,7 +3,7 @@ import { db } from "@/lib/store";
 import { CartItem, Order, OrderItem, OrderStatus, OrderType } from "@/types";
 import { supabaseAdmin } from "@/lib/supabase";
 import { broadcastLiveEvent } from "@/lib/realtime";
-import { calculateDistanceKm, calculateDeliveryFee } from "@/lib/distance";
+import { calculateDistanceKm, calculateDeliveryFee, calculateEstimatedDeliveryTime } from "@/lib/distance";
 
 
 export async function GET(request: Request) {
@@ -336,6 +336,14 @@ export async function POST(request: Request) {
 
     const total = Math.round((afterDiscount + serviceFee + tax + deliveryFee) * 100) / 100;
 
+    const estimatedDeliveryTime =
+      type === "delivery"
+        ? calculateEstimatedDeliveryTime({
+            distanceKm: orderDistanceKm || 0,
+            prepTimeMinutes: settings.estimatedPreparationTimeMinutes || 20,
+          }).textAr
+        : undefined;
+
     const newOrder = await db.createOrder({
       type,
       tableNumber: type === "table" ? Number(tableNumber) : undefined,
@@ -346,6 +354,7 @@ export async function POST(request: Request) {
       deliveryZoneName: type === "delivery" ? selectedZoneName : undefined,
       deliveryFee: type === "delivery" ? deliveryFee : 0,
       distanceKm: type === "delivery" ? orderDistanceKm : undefined,
+      estimatedDeliveryTime: type === "delivery" ? estimatedDeliveryTime : undefined,
       address: type === "delivery" ? address?.trim() : undefined,
       landmark: type === "delivery" ? landmark?.trim() : undefined,
       driverNotes: type === "delivery" ? driverNotes?.trim() : undefined,

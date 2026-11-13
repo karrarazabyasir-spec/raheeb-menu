@@ -203,6 +203,7 @@ export interface Order {
   lat?: number;
   lng?: number;
   distanceKm?: number;
+  estimatedDeliveryTime?: string;
   driverNotes?: string;
   cashToPay?: number; // amount customer will pay to prepare change
   items: OrderItem[];
@@ -247,6 +248,7 @@ export interface SavedCustomerOrder {
   deliveryZoneName?: string;
   deliveryFee?: number;
   distanceKm?: number;
+  estimatedDeliveryTime?: string;
   address?: string;
   landmark?: string;
   items: {

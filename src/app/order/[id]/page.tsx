@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Order, RestaurantSettings } from "@/types";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { getWhatsAppUrl } from "@/lib/whatsapp";
+import { calculateEstimatedDeliveryTime } from "@/lib/distance";
 import { subscribeToLiveEvents } from "@/lib/realtime";
 import { LottiePreloader } from "@/components/LottiePreloader";
 
@@ -432,7 +433,7 @@ function OrderTrackingContent() {
                 {isTable
                   ? `التحضير: ~${settings.estimatedPreparationTimeMinutes} دقيقة`
                   : isDelivery
-                  ? `الوقت المقدر: ~${settings.defaultDeliveryTime || "30-45"} دقيقة`
+                  ? `الوقت المقدر: ~${order.estimatedDeliveryTime || (order.distanceKm ? calculateEstimatedDeliveryTime({ distanceKm: order.distanceKm, prepTimeMinutes: settings.estimatedPreparationTimeMinutes || 20 }).textAr : (settings.defaultDeliveryTime || "30-45 دقيقة"))}`
                   : `الموعد: ${order.pickupTime}`}
               </span>
             </div>

@@ -20,6 +20,9 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     if (order.distanceKm && order.distanceKm > 0) {
       text += `📏 *المسافة:* ${order.distanceKm} كم\n`;
     }
+    if (order.estimatedDeliveryTime) {
+      text += `⏱️ *الوقت المقدر للتوصيل:* ~${order.estimatedDeliveryTime}\n`;
+    }
     if (order.landmark) {
       text += `🏛️ *أقرب نقطة دالة:* ${order.landmark}\n`;
     }

@@ -55,6 +55,9 @@ export function ThermalReceipt({ order, settings, type = "customer" }: ThermalRe
             {order.distanceKm && order.distanceKm > 0 && (
               <p><span className="font-bold">المسافة:</span> {order.distanceKm} كم</p>
             )}
+            {order.estimatedDeliveryTime && (
+              <p><span className="font-bold">الوقت المتوقع:</span> ~{order.estimatedDeliveryTime}</p>
+            )}
             {order.landmark && <p><span className="font-bold">أقرب دالة:</span> {order.landmark}</p>}
             {order.driverNotes && <p><span className="font-bold">ملاحظة التوصيل:</span> {order.driverNotes}</p>}
             {order.cashToPay && order.cashToPay > order.total && (

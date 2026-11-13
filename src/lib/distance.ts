@@ -81,3 +81,38 @@ export function calculateDeliveryFee({
 
   return { fee, isFree: false, rawFee: calculated };
 }
+
+/**
+ * Calculates dynamic estimated delivery time based on travel distance and meal preparation time.
+ */
+export function calculateEstimatedDeliveryTime({
+  distanceKm,
+  prepTimeMinutes = 20,
+}: {
+  distanceKm: number;
+  prepTimeMinutes?: number;
+}): { minMinutes: number; maxMinutes: number; textAr: string } {
+  const safeDistance = Math.max(0, distanceKm || 0);
+  const safePrep = Math.max(10, prepTimeMinutes || 20);
+
+  // Delivery travel rate: ~2.5 mins per km in city + 5 mins buffer
+  const travelMin = Math.round(safeDistance * 2.2);
+  const travelMax = Math.round(safeDistance * 3.2);
+
+  // Min time: prep + travel rounded to nearest 5 mins
+  let min = Math.ceil((safePrep + travelMin) / 5) * 5;
+  // Max time: min + 10 mins (or 15 mins for longer distances)
+  let max = min + (safeDistance > 7 ? 15 : 10);
+
+  if (safeDistance === 0) {
+    min = safePrep;
+    max = safePrep + 10;
+  }
+
+  return {
+    minMinutes: min,
+    maxMinutes: max,
+    textAr: `${min}-${max} دقيقة`,
+  };
+}
+
