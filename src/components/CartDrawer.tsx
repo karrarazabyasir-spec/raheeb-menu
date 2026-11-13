@@ -8,6 +8,7 @@ import { RestaurantSettings } from "@/types";
 import { LottiePreloader } from "@/components/LottiePreloader";
 import { useCustomer } from "@/context/CustomerContext";
 import { calculateDistanceKm, calculateDeliveryFee, calculateEstimatedDeliveryTime } from "@/lib/distance";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 import { MapPin } from "lucide-react";
 
 import {
@@ -359,10 +360,18 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         createdAt: new Date().toISOString(),
       });
 
-      // Success: clear cart and redirect to live tracking page
+      // Clear cart
       clearCart();
       setIsCartOpen(false);
+
+      // Generate WhatsApp link with full order details & open directly
+      const whatsappUrl = getWhatsAppUrl(data, settings);
+
+      // Navigate to order confirmation page in browser
       router.push(`/order/${data.id}`);
+
+      // Open WhatsApp directly for the customer
+      window.location.href = whatsappUrl;
     } catch (err) {
       console.error(err);
       setSubmitError("حدث خطأ في الاتصال، يرجى المحاولة ثانية");
@@ -374,7 +383,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
     <>
       {isSubmitting && (
         <LottiePreloader
-          text="جاري إرسال طلبكم للمطبخ والكاشير..."
+          text="جاري تأكيد طلبك وفتح الواتساب لإرساله للكاشير..."
           size={180}
           fullScreen
         />

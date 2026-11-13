@@ -357,62 +357,28 @@ function OrderTrackingContent() {
 
         {/* Order Status Card */}
         <div className="bg-white rounded-2xl p-5 border border-stone-200 shadow-sm text-center space-y-4">
-          <div className="space-y-1">
-            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
-              حالة الطلب المباشرة
-            </span>
-            <h2 className="text-xl font-black text-[#780000]">
-              {order.status === "received" && "تم استلام طلبك بنجاح وفي انتظار التحضير"}
-              {order.status === "preparing" && "الشيف يحضّر طلبك الآن بكل حب 🔥"}
-              {order.status === "ready" &&
-                (isDelivery
-                  ? "طلبك جاهز بالمطعم وبانتظار السائق 📦"
-                  : "طلبك جاهز ولذيذ! في طريقه إليك 🍽️")}
-              {order.status === "out_for_delivery" && "طلبك خرج للتوصيل مع السائق الآن 🛵💨"}
-              {order.status === "completed" && "تم تسليم الطلب، بالهناء والشفاء ❤️"}
-              {order.status === "cancelled" && "تم إلغاء الطلب"}
-            </h2>
-            {order.cancelReason && (
-              <p className="text-xs text-red-600 font-bold">سبب الإلغاء: {order.cancelReason}</p>
+          {/* Status Header */}
+          <div className="py-2 space-y-2">
+            <div className="w-14 h-14 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <div>
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full inline-block mb-1">
+                ✓ تم تسجيل الطلب وإرساله للكاشير
+              </span>
+              <h2 className="text-lg sm:text-xl font-black text-stone-900 mt-1">
+                طلبك مسجل برقم <span className="text-[#780000]">#{order.orderNumber}</span>
+              </h2>
+              <p className="text-xs text-stone-500 font-bold mt-1">
+                يتم التواصل والمتابعة مباشرة عبر الواتساب مع كاشير المطعم
+              </p>
+            </div>
+            {order.status === "cancelled" && (
+              <p className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded-lg border border-red-200">
+                تم إلغاء الطلب: {order.cancelReason || "ملغي من قبل الإدارة"}
+              </p>
             )}
           </div>
-
-          {/* Stepper */}
-          {order.status !== "cancelled" && (
-            <div className="relative py-4">
-              <div className={`grid ${isDelivery ? "grid-cols-5" : "grid-cols-4"} gap-1.5`}>
-                {steps.map((s) => {
-                  const status = getStepStatus(s.key);
-                  return (
-                    <div key={s.key} className="flex flex-col items-center text-center gap-1.5">
-                      <div
-                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${
-                          status === "completed"
-                            ? "bg-emerald-600 text-white"
-                            : status === "active"
-                            ? "bg-[#780000] text-amber-300 ring-4 ring-red-100 animate-pulse"
-                            : "bg-stone-100 text-stone-400"
-                        }`}
-                      >
-                        {s.icon}
-                      </div>
-                      <span
-                        className={`text-[9px] sm:text-[10px] font-bold leading-tight ${
-                          status === "active"
-                            ? "text-[#780000] font-black"
-                            : status === "completed"
-                            ? "text-emerald-700"
-                            : "text-stone-400"
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Delivery/Table Info Badge */}
           <div className="bg-stone-50 border border-stone-200/80 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-around gap-2 text-xs">
@@ -422,8 +388,8 @@ function OrderTrackingContent() {
                 {isTable
                   ? `طاولة رقم ${order.tableNumber}`
                   : isDelivery
-                  ? `توصيل: ${order.deliveryZoneName || "منازل"} - ${order.address}`
-                  : `استلام مسبق (${order.customerName})`}
+                  ? `توصيل: ${order.deliveryZoneName || "منازل"} - ${order.address || ""}`
+                  : `استلام من الفرع (${order.customerName})`}
               </span>
             </div>
             <div className="hidden sm:block h-4 w-px bg-stone-200" />
@@ -439,19 +405,19 @@ function OrderTrackingContent() {
             </div>
           </div>
 
-          {/* WhatsApp Direct Link (wa.me) as required in specifications */}
+          {/* WhatsApp Direct Link (wa.me) */}
           <div className="pt-2">
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition active:scale-98"
+              className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition active:scale-98"
             >
-              <MessageCircle className="w-4 h-4 fill-white" />
-              <span>إرسال تفاصيل الطلب إلى واتساب المطعم (مجاناً)</span>
+              <MessageCircle className="w-5 h-5 fill-white" />
+              <span>متابعة المحادثة عبر واتساب المطعم والكاشير</span>
             </a>
-            <p className="text-[10px] text-stone-400 mt-1">
-              * الطلب محفوظ في النظام تلقائياً، إرسال واتساب اختياري للتأكيد
+            <p className="text-[10px] text-stone-400 mt-1.5 font-medium">
+              اضغط على الزر الأخضر أعلاه في أي وقت لإعادة فتح محادثة الواتساب مع المطعم
             </p>
           </div>
 

@@ -1495,15 +1495,9 @@ export default function AdminPage() {
               <>
                 <Link
                   href="/cashier"
-                  className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
+                  className="py-1.5 px-2 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
                 >
                   الكاشير
-                </Link>
-                <Link
-                  href="/kitchen"
-                  className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
-                >
-                  المطبخ
                 </Link>
               </>
             )}
@@ -1573,20 +1567,12 @@ export default function AdminPage() {
               <span>معاينة صفحة المينيو</span>
             </Link>
             {currentUser?.role === "owner" && (
-              <>
-                <Link
-                  href="/cashier"
-                  className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
-                >
-                  شاشة الكاشير
-                </Link>
-                <Link
-                  href="/kitchen"
-                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-xl text-xs font-bold transition"
-                >
-                  شاشة المطبخ
-                </Link>
-              </>
+              <Link
+                href="/cashier"
+                className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
+              >
+                شاشة الكاشير
+              </Link>
             )}
           </div>
         </div>
