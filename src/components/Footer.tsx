@@ -13,6 +13,7 @@ export function Footer({ settings }: FooterProps) {
   const { lang, toggleLang, isRtl } = useLanguage();
 
   if (!settings) return null;
+  const brandColor = settings.primaryColor || "#780000";
 
   return (
     <footer className="mt-12 bg-white text-stone-600 border-t border-stone-200 pb-24 sm:pb-12 pt-8">
@@ -40,22 +41,22 @@ export function Footer({ settings }: FooterProps) {
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-stone-500">
           {settings.openingHours && (
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#780000] shrink-0" />
+              <Clock style={{ color: brandColor }} className="w-3.5 h-3.5 shrink-0" />
               <span>{settings.openingHours}</span>
             </div>
           )}
           {settings.address && (
             <div className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#780000] shrink-0" />
+              <MapPin style={{ color: brandColor }} className="w-3.5 h-3.5 shrink-0" />
               <span>{settings.address}</span>
             </div>
           )}
           {settings.phone && (
             <a
               href={`tel:${settings.phone}`}
-              className="flex items-center gap-1.5 hover:text-[#780000] transition"
+              className="flex items-center gap-1.5 hover:opacity-80 transition"
             >
-              <Phone className="w-3.5 h-3.5 text-[#780000] shrink-0" />
+              <Phone style={{ color: brandColor }} className="w-3.5 h-3.5 shrink-0" />
               <span dir="ltr">{settings.phone}</span>
             </a>
           )}
@@ -68,7 +69,7 @@ export function Footer({ settings }: FooterProps) {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition text-xs font-bold border border-stone-200 active:scale-95 shadow-xs"
             title="تبديل اللغة / Change Language"
           >
-            <Globe className="w-4 h-4 text-[#780000]" />
+            <Globe style={{ color: brandColor }} className="w-4 h-4" />
             <span>{lang === "ar" ? "English / الإنجليزية" : "العربية / Arabic"}</span>
           </button>
         </div>

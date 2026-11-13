@@ -25,6 +25,7 @@ import {
 import { PromoDishBanner } from "@/components/PromoDishBanner";
 import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
 import { StaffManagementTab } from "@/components/admin/StaffManagementTab";
+import { ThemeSync } from "@/components/ThemeSync";
 import {
   BarChart3,
   UtensilsCrossed,
@@ -1297,6 +1298,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col lg:flex-row font-sans antialiased">
+      <ThemeSync primaryColor={settings?.primaryColor} />
       {/* Mobile Top Navbar */}
       <header
         style={{ backgroundColor: brandColor }}

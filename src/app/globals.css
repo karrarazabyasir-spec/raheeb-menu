@@ -6,21 +6,21 @@
   --foreground: #171717;
   --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
   --raheeb-primary: #780000;
-  --raheeb-primary-hover: #5c0000;
-  --raheeb-primary-light: #fdf2f2;
+  --raheeb-primary-hover: color-mix(in srgb, var(--raheeb-primary) 85%, black);
+  --raheeb-primary-light: color-mix(in srgb, var(--raheeb-primary) 10%, white);
   --raheeb-gold: #c68a2c;
   --raheeb-surface: #ffffff;
   --raheeb-bg: #ffffff;
 }
 
 @theme {
-  --color-raheeb-primary: #780000;
-  --color-raheeb-primary-dark: #500000;
-  --color-raheeb-primary-hover: #5c0000;
-  --color-raheeb-primary-light: #fdf2f2;
-  --color-raheeb-gold: #c68a2c;
-  --color-raheeb-surface: #ffffff;
-  --color-raheeb-bg: #ffffff;
+  --color-raheeb-primary: var(--raheeb-primary);
+  --color-raheeb-primary-dark: var(--raheeb-primary-hover);
+  --color-raheeb-primary-hover: var(--raheeb-primary-hover);
+  --color-raheeb-primary-light: var(--raheeb-primary-light);
+  --color-raheeb-gold: var(--raheeb-gold);
+  --color-raheeb-surface: var(--raheeb-surface);
+  --color-raheeb-bg: var(--raheeb-bg);
   --font-sans: var(--font-cairo), system-ui, -apple-system, sans-serif;
 }
 
@@ -93,4 +93,30 @@ dialog {
     size: 80mm auto;
     margin: 0;
   }
+}
+
+/* Dynamic Primary Color Bridge */
+.bg-\[\#780000\],
+.bg-raheeb-primary {
+  background-color: var(--raheeb-primary) !important;
+}
+.hover\:bg-\[\#5c0000\]:hover,
+.hover\:bg-\[\#600000\]:hover,
+.hover\:bg-red-950:hover,
+.hover\:bg-raheeb-primary-hover:hover {
+  background-color: var(--raheeb-primary-hover) !important;
+}
+.text-\[\#780000\],
+.text-raheeb-primary {
+  color: var(--raheeb-primary) !important;
+}
+.border-\[\#780000\],
+.border-raheeb-primary {
+  border-color: var(--raheeb-primary) !important;
+}
+.focus\:ring-\[\#780000\]:focus {
+  --tw-ring-color: var(--raheeb-primary) !important;
+}
+.focus-within\:border-\[\#780000\]:focus-within {
+  border-color: var(--raheeb-primary) !important;
 }

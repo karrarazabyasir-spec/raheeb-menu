@@ -51,7 +51,7 @@ export default function RootLayout({
         <meta name="supported-color-schemes" content="light" />
       </head>
       <body
-        className="min-h-full selection:bg-[#780000] selection:text-white flex flex-col font-sans"
+        className="min-h-full selection:bg-raheeb-primary selection:text-white flex flex-col font-sans"
       >
         {children}
       </body>

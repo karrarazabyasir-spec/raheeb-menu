@@ -128,7 +128,7 @@ export function MenuItemCard({ item, settings, onSelectItem }: MenuItemCardProps
       {/* Content */}
       <div className="px-1 pt-2 pb-0.5 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="font-extrabold text-xs sm:text-sm text-stone-900 group-hover:text-[#780000] transition-colors line-clamp-1 leading-snug">
+          <h3 className="font-extrabold text-xs sm:text-sm text-stone-900 group-hover:text-raheeb-primary transition-colors line-clamp-1 leading-snug">
             {name}
           </h3>
           {description && (

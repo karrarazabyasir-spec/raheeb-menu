@@ -6,6 +6,7 @@ import { Order, OrderStatus, RestaurantSettings, Table, WaiterCall, MenuItem } f
 import { playNotificationChime } from "@/lib/audio";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
 import { subscribeToLiveEvents } from "@/lib/realtime";
+import { ThemeSync } from "@/components/ThemeSync";
 
 import {
   Bell,
@@ -287,6 +288,7 @@ export default function CashierPage() {
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col font-sans">
+      <ThemeSync primaryColor={settings?.primaryColor} />
       {/* Hidden print receipt rendered when window.print() is called */}
       <ThermalReceipt order={selectedPrintOrder} settings={settings} type={printType} />
 

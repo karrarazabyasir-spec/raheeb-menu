@@ -9,6 +9,7 @@ import { getWhatsAppUrl } from "@/lib/whatsapp";
 import { calculateEstimatedDeliveryTime } from "@/lib/distance";
 import { subscribeToLiveEvents } from "@/lib/realtime";
 import { LottiePreloader } from "@/components/LottiePreloader";
+import { ThemeSync } from "@/components/ThemeSync";
 
 
 import {
@@ -297,6 +298,7 @@ function OrderTrackingContent() {
 
 
   const currency = isRtl ? settings.currency : settings.currencyEn;
+  const brandColor = settings?.primaryColor || "#780000";
   const isTable = order.type === "table";
   const isDelivery = order.type === "delivery";
 
@@ -329,8 +331,9 @@ function OrderTrackingContent() {
 
   return (
     <div className="min-h-screen bg-[#fdfbf9] text-stone-900 flex flex-col">
+      <ThemeSync primaryColor={settings?.primaryColor} />
       {/* Top Header */}
-      <header className="bg-[#780000] text-white p-4 shadow-md">
+      <header style={{ backgroundColor: brandColor }} className="text-white p-4 shadow-md">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link
             href="/"
@@ -367,7 +370,7 @@ function OrderTrackingContent() {
                 ✓ تم تسجيل الطلب وإرساله للكاشير
               </span>
               <h2 className="text-lg sm:text-xl font-black text-stone-900 mt-1">
-                طلبك مسجل برقم <span className="text-[#780000]">#{order.orderNumber}</span>
+                طلبك مسجل برقم <span style={{ color: brandColor }}>#{order.orderNumber}</span>
               </h2>
               <p className="text-xs text-stone-500 font-bold mt-1">
                 يتم التواصل والمتابعة مباشرة عبر الواتساب مع كاشير المطعم
@@ -383,7 +386,7 @@ function OrderTrackingContent() {
           {/* Delivery/Table Info Badge */}
           <div className="bg-stone-50 border border-stone-200/80 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-around gap-2 text-xs">
             <div className="flex items-center gap-1.5 text-stone-700 font-bold text-center">
-              <MapPin className="w-4 h-4 text-[#780000] shrink-0" />
+              <MapPin style={{ color: brandColor }} className="w-4 h-4 shrink-0" />
               <span>
                 {isTable
                   ? `طاولة رقم ${order.tableNumber}`
@@ -453,7 +456,7 @@ function OrderTrackingContent() {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-stone-900">{item.nameAr}</span>
-                    <span className="text-[#780000] font-bold">× {item.quantity}</span>
+                    <span style={{ color: brandColor }} className="font-bold">× {item.quantity}</span>
                   </div>
                   {item.variantName && (
                     <span className="text-[11px] text-stone-500 block">
@@ -510,7 +513,7 @@ function OrderTrackingContent() {
             )}
             <div className="pt-2 border-t border-stone-200 flex justify-between items-baseline font-black text-sm">
               <span>المجموع النهائي (نقداً)</span>
-              <span className="text-lg text-[#780000]">{order.total} {currency}</span>
+              <span style={{ color: brandColor }} className="text-lg">{order.total} {currency}</span>
             </div>
           </div>
         </div>
@@ -591,9 +594,13 @@ function OrderTrackingContent() {
                             key={tag}
                             type="button"
                             onClick={() => toggleOpinionTag(tag)}
+                            style={{
+                              backgroundColor: isSelected ? brandColor : undefined,
+                              borderColor: isSelected ? brandColor : undefined,
+                            }}
                             className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all text-right ${
                               isSelected
-                                ? "bg-[#780000] text-white border-[#780000] shadow-sm scale-[1.02]"
+                                ? "text-white shadow-sm scale-[1.02]"
                                 : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100 hover:border-stone-300"
                             }`}
                           >
@@ -615,7 +622,7 @@ function OrderTrackingContent() {
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     placeholder="اكتب ملاحظتك أو رأيك هنا لمساعدتنا على التطور..."
-                    className="w-full text-xs p-3 rounded-xl border border-stone-200 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] transition"
+                    className="w-full text-xs p-3 rounded-xl border border-stone-200 bg-stone-50/50 focus:bg-white focus:outline-none transition"
                   />
                 </div>
 
@@ -623,7 +630,8 @@ function OrderTrackingContent() {
                 <button
                   type="submit"
                   disabled={isSubmittingReview}
-                  className="w-full py-3 px-4 rounded-xl bg-[#780000] hover:bg-[#5c0000] active:scale-[0.99] text-white text-xs font-black flex items-center justify-center gap-2 shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: brandColor }}
+                  className="w-full py-3 px-4 rounded-xl active:scale-[0.99] text-white text-xs font-black flex items-center justify-center gap-2 shadow-md transition disabled:opacity-60 hover:brightness-105"
                 >
                   {isSubmittingReview ? (
                     <>

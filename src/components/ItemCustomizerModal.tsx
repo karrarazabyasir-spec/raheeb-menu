@@ -19,6 +19,7 @@ export function ItemCustomizerModal({
 }: ItemCustomizerModalProps) {
   const { isRtl, t } = useLanguage();
   const { addToCart, setIsCartOpen } = useCart();
+  const brandColor = settings?.primaryColor || "#780000";
 
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<ItemVariant | undefined>(undefined);
@@ -311,9 +312,14 @@ export function ItemCustomizerModal({
                         key={v.id}
                         type="button"
                         onClick={() => setSelectedVariant(v)}
+                        style={{
+                          borderColor: isSelected ? brandColor : undefined,
+                          color: isSelected ? brandColor : undefined,
+                          backgroundColor: isSelected ? `color-mix(in srgb, ${brandColor} 8%, white)` : undefined,
+                        }}
                         className={`p-3 rounded-xl border text-start flex flex-col justify-between transition ${
                           isSelected
-                            ? "border-[#780000] bg-red-50/50 text-[#780000] font-bold shadow-sm"
+                            ? "font-bold shadow-sm"
                             : "border-stone-200 bg-white hover:bg-stone-50 text-stone-700"
                         }`}
                       >
@@ -337,10 +343,16 @@ export function ItemCustomizerModal({
                       {isRtl ? group.nameAr : group.nameEn}
                     </span>
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      style={
                         group.required
-                          ? "bg-red-100 text-[#780000]"
-                          : "bg-stone-100 text-stone-600"
+                          ? {
+                              color: brandColor,
+                              backgroundColor: `color-mix(in srgb, ${brandColor} 12%, white)`,
+                            }
+                          : undefined
+                      }
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        group.required ? "" : "bg-stone-100 text-stone-600"
                       }`}
                     >
                       {group.required ? t("required") : t("optional")}
@@ -363,18 +375,24 @@ export function ItemCustomizerModal({
                               group.required
                             )
                           }
+                          style={{
+                            borderColor: isSelected ? brandColor : undefined,
+                            backgroundColor: isSelected
+                              ? `color-mix(in srgb, ${brandColor} 6%, white)`
+                              : undefined,
+                          }}
                           className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${
-                            isSelected
-                              ? "border-[#780000] bg-red-50/50"
-                              : "border-stone-200 hover:bg-stone-50"
+                            isSelected ? "" : "border-stone-200 hover:bg-stone-50"
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
                             <div
+                              style={{
+                                backgroundColor: isSelected ? brandColor : undefined,
+                                borderColor: isSelected ? brandColor : undefined,
+                              }}
                               className={`w-5 h-5 rounded-full flex items-center justify-center border transition ${
-                                isSelected
-                                  ? "bg-[#780000] border-[#780000] text-white"
-                                  : "border-stone-300 bg-white"
+                                isSelected ? "text-white" : "border-stone-300 bg-white"
                               }`}
                             >
                               {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -384,7 +402,7 @@ export function ItemCustomizerModal({
                             </span>
                           </div>
                           {opt.price > 0 && (
-                            <span className="text-xs font-bold text-[#780000]">
+                            <span style={{ color: brandColor }} className="text-xs font-bold">
                               +{opt.price} {currency}
                             </span>
                           )}
@@ -443,7 +461,8 @@ export function ItemCustomizerModal({
           {/* Submit button */}
           <button
             onClick={handleConfirm}
-            className="flex-1 py-3 px-4 rounded-xl bg-[#780000] hover:bg-[#5c0000] text-white font-bold text-xs sm:text-sm flex items-center justify-between shadow-lg shadow-red-900/20 active:scale-98 transition"
+            style={{ backgroundColor: brandColor }}
+            className="flex-1 py-3 px-4 rounded-xl text-white font-bold text-xs sm:text-sm flex items-center justify-between shadow-lg active:scale-98 transition hover:brightness-105"
           >
             <span>{t("addToCart")}</span>
             <span className="bg-white/20 px-2 py-0.5 rounded-md text-xs font-black">

@@ -17,6 +17,7 @@ import { Footer } from "@/components/Footer";
 import { subscribeToLiveEvents } from "@/lib/realtime";
 import { LottiePreloader } from "@/components/LottiePreloader";
 import { PromoDishBanner } from "@/components/PromoDishBanner";
+import { ThemeSync } from "@/components/ThemeSync";
 
 
 import {
@@ -115,6 +116,9 @@ function MenuContent() {
 
 
   // Filter items by category, tag, and search query
+  const brandColor = settings?.primaryColor || "#780000";
+
+  // Filter items by category, tag, and search query
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
       // Category filter
@@ -153,6 +157,7 @@ function MenuContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col pb-24" style={{ backgroundColor: "#ffffff" }}>
+      <ThemeSync primaryColor={settings?.primaryColor} />
       {/* Header */}
       <Header settings={settings} />
 
@@ -193,9 +198,13 @@ function MenuContent() {
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           <button
             onClick={() => setActiveTag("all")}
+            style={{
+              backgroundColor: activeTag === "all" ? brandColor : undefined,
+              borderColor: activeTag === "all" ? brandColor : undefined,
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
               activeTag === "all"
-                ? "bg-[#780000] text-white shadow-xs"
+                ? "text-white shadow-xs"
                 : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
             }`}
           >
@@ -231,6 +240,7 @@ function MenuContent() {
         categories={categories}
         selectedCategoryId={selectedCategoryId}
         onSelectCategory={setSelectedCategoryId}
+        brandColor={brandColor}
       />
 
       {/* Menu Grid Content */}
@@ -246,7 +256,8 @@ function MenuContent() {
                 setActiveTag("all");
                 setSearchQuery("");
               }}
-              className="text-xs text-[#780000] font-bold underline"
+              style={{ color: brandColor }}
+              className="text-xs font-bold underline"
             >
               عرض جميع الأصناف
             </button>

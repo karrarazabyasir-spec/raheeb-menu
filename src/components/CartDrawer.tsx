@@ -121,6 +121,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
   if (!isCartOpen) return null;
 
   const currency = isRtl ? settings.currency : settings.currencyEn;
+  const brandColor = settings?.primaryColor || "#780000";
 
   // Coupon apply
   const handleApplyCoupon = async () => {
@@ -412,7 +413,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
-        <div className="p-4 bg-[#780000] text-white flex items-center justify-between shrink-0 shadow-md">
+        <div style={{ backgroundColor: brandColor }} className="p-4 text-white flex items-center justify-between shrink-0 shadow-md">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-amber-300" />
             <h2 className="text-base font-extrabold">{t("cart")}</h2>
@@ -432,14 +433,21 @@ export function CartDrawer({ settings }: CartDrawerProps) {
         {/* Drawer Content */}
         {items.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center text-[#780000] mb-4">
+            <div
+              style={{
+                color: brandColor,
+                backgroundColor: `color-mix(in srgb, ${brandColor} 10%, white)`,
+              }}
+              className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
+            >
               <ShoppingBag className="w-10 h-10 stroke-[1.5]" />
             </div>
             <h3 className="text-base font-bold text-stone-800">{t("emptyCart")}</h3>
             <p className="text-xs text-stone-500 mt-1 max-w-xs">{t("startAdding")}</p>
             <button
               onClick={() => setIsCartOpen(false)}
-              className="mt-6 px-6 py-2.5 rounded-xl bg-[#780000] text-white text-xs font-bold shadow-md hover:bg-[#5c0000] transition"
+              style={{ backgroundColor: brandColor }}
+              className="mt-6 px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:brightness-105 transition"
             >
               تصفح القائمة
             </button>
@@ -476,9 +484,13 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                       <button
                         type="button"
                         onClick={() => setChosenType("delivery")}
+                        style={{
+                          backgroundColor: chosenType === "delivery" ? brandColor : undefined,
+                          borderColor: chosenType === "delivery" ? brandColor : undefined,
+                        }}
                         className={`p-2.5 rounded-xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition ${
                           chosenType === "delivery"
-                            ? "bg-[#780000] text-white border-[#780000] shadow-sm"
+                            ? "text-white shadow-sm"
                             : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
                         }`}
                       >
@@ -489,9 +501,13 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                     <button
                       type="button"
                       onClick={() => setChosenType("takeaway")}
+                      style={{
+                        backgroundColor: chosenType === "takeaway" ? brandColor : undefined,
+                        borderColor: chosenType === "takeaway" ? brandColor : undefined,
+                      }}
                       className={`p-2.5 rounded-xl border text-center font-bold text-xs flex items-center justify-center gap-2 transition ${
                         chosenType === "takeaway"
-                          ? "bg-[#780000] text-white border-[#780000] shadow-sm"
+                          ? "text-white shadow-sm"
                           : "bg-white text-stone-700 border-stone-200 hover:bg-stone-100"
                       } ${!deliveryEnabled ? "col-span-2" : ""}`}
                     >
@@ -540,7 +556,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                     >
                       <div className="flex items-center justify-between text-xs font-bold">
                         <span className="flex items-center gap-1.5">
-                          <Bike className="w-4 h-4 text-[#780000]" />
+                          <Bike style={{ color: brandColor }} className="w-4 h-4" />
                           <span>حساب التوصيل حسب المسافة</span>
                         </span>
                         {distanceKm !== null && dynamicEstimatedTime && (
@@ -563,7 +579,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-stone-700">كلفة التوصيل:</span>
-                            <span className="font-black text-[#780000] text-sm">
+                            <span style={{ color: brandColor }} className="font-black text-sm">
                               {isFreeDelivery ? "مجاني 🎉" : `+${deliveryFee.toLocaleString()} ${currency}`}
                             </span>
                           </div>
@@ -622,7 +638,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                           </>
                         ) : (
                           <>
-                            <Navigation className="w-4 h-4 text-[#780000]" />
+                            <Navigation style={{ color: brandColor }} className="w-4 h-4" />
                             <span>📍 اضغط هنا لتحديد موقعي بالـ GPS (إلزامي)</span>
                           </>
                         )}
@@ -720,7 +736,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
                     </div>
 
                     {item.selectedVariant && (
-                      <span className="text-[11px] text-[#780000] font-semibold block">
+                      <span style={{ color: brandColor }} className="text-[11px] font-semibold block">
                         {isRtl ? item.selectedVariant.nameAr : item.selectedVariant.nameEn}
                       </span>
                     )}
@@ -739,7 +755,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
 
                     <div className="flex items-center justify-between mt-2 pt-1 border-t border-stone-200/60">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-black text-[#780000]">
+                        <span style={{ color: brandColor }} className="text-xs font-black">
                           {item.totalPrice}
                         </span>
                         <span className="text-[10px] text-stone-600">{currency}</span>
@@ -860,7 +876,7 @@ export function CartDrawer({ settings }: CartDrawerProps) {
               <div className="pt-2 border-t border-stone-200 flex justify-between items-baseline text-stone-900">
                 <span className="font-extrabold text-sm">{t("total")}</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-black text-[#780000]">{total}</span>
+                  <span style={{ color: brandColor }} className="text-xl font-black">{total}</span>
                   <span className="text-xs font-bold text-stone-600">{currency}</span>
                 </div>
               </div>
@@ -887,7 +903,8 @@ export function CartDrawer({ settings }: CartDrawerProps) {
             <button
               onClick={handleSubmitOrder}
               disabled={isSubmitting}
-              className="w-full py-3.5 px-4 rounded-xl bg-[#780000] hover:bg-[#5c0000] text-white font-extrabold text-sm flex items-center justify-between shadow-xl shadow-red-900/20 active:scale-98 transition disabled:opacity-50"
+              style={{ backgroundColor: brandColor }}
+              className="w-full py-3.5 px-4 rounded-xl text-white font-extrabold text-sm flex items-center justify-between shadow-xl active:scale-98 transition disabled:opacity-50 hover:brightness-105"
             >
               {isSubmitting ? (
                 <div className="w-full flex items-center justify-center gap-2">
