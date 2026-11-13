@@ -1,5 +1,17 @@
 export type Role = "owner" | "cashier" | "kitchen";
 
+export type AdminRole = "owner" | "editor";
+
+export interface StaffUser {
+  id: string;
+  username: string;
+  name: string;
+  password: string;
+  role: AdminRole;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export type OrderType = "table" | "takeaway" | "delivery";
 
 export type OrderStatus = "received" | "preparing" | "ready" | "out_for_delivery" | "completed" | "cancelled";

@@ -1197,5 +1197,25 @@
       "comment": "",
       "createdAt": "2026-10-31T06:46:49.738Z"
     }
+  ],
+  "staffUsers": [
+    {
+      "id": "user-owner-1",
+      "username": "admin",
+      "name": "صاحب المطعم (المدير)",
+      "password": "admin",
+      "role": "owner",
+      "isActive": true,
+      "createdAt": "2026-11-13T14:16:14.790Z"
+    },
+    {
+      "id": "user-editor-1",
+      "username": "editor",
+      "name": "مدخل البيانات",
+      "password": "123",
+      "role": "editor",
+      "isActive": true,
+      "createdAt": "2026-11-13T14:16:14.791Z"
+    }
   ]
 }

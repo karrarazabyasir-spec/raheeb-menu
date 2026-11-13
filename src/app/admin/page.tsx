@@ -19,8 +19,12 @@ import {
   PromoBanner,
   RestaurantSettings,
   Table,
+  StaffUser,
+  AdminRole,
 } from "@/types";
 import { PromoDishBanner } from "@/components/PromoDishBanner";
+import { AdminLoginForm } from "@/components/admin/AdminLoginForm";
+import { StaffManagementTab } from "@/components/admin/StaffManagementTab";
 import {
   BarChart3,
   UtensilsCrossed,
@@ -74,6 +78,10 @@ import {
   LocateFixed,
   Calculator,
   Compass,
+  Lock,
+  LogOut,
+  Key,
+  Shield,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -89,8 +97,14 @@ export default function AdminPage() {
     | "reviews"
     | "banners"
     | "tags"
+    | "staff"
   >("analytics");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Authentication & Staff User State
+  const [currentUser, setCurrentUser] = useState<StaffUser | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
 
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -378,9 +392,59 @@ export default function AdminPage() {
     }
   };
 
+  // Staff Accounts and Auth helpers
+  const fetchStaffUsers = async () => {
+    try {
+      const res = await fetch("/api/staff");
+      if (res.ok) {
+        const data = await res.json();
+        setStaffUsers(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("Failed to load staff users:", e);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    setCurrentUser(null);
+  };
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      const data = await res.json();
+      if (data?.user) {
+        setCurrentUser(data.user);
+        if (data.user.role === "editor") {
+          setActiveTab("menu");
+        } else {
+          fetchStaffUsers();
+        }
+        await fetchData();
+      } else {
+        setCurrentUser(null);
+        // Preload settings for logo/name on login card
+        try {
+          const sRes = await fetch("/api/settings");
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            setSettings(sData);
+          }
+        } catch {}
+      }
+    } catch {
+      setCurrentUser(null);
+    } finally {
+      setIsAuthChecking(false);
+    }
+  };
+
   useEffect(() => {
     setMountedTime(Date.now());
-    fetchData();
+    checkAuth();
 
     // Supabase Realtime WebSocket subscription (<100ms instant updates)
     const unsubscribe = subscribeToLiveEvents((event, payload) => {
@@ -1045,6 +1109,11 @@ export default function AdminPage() {
       subtitle: "أرقام التواصل، الواتساب، والعملة وساعات العمل",
       icon: <Settings className="w-5 h-5 text-stone-600" />,
     },
+    staff: {
+      title: "إدارة الحسابات والموظفين",
+      subtitle: "إضافة حسابات للمدراء الجدد ومدخلي البيانات وتحديد الصلاحيات",
+      icon: <Users className="w-5 h-5 text-emerald-600" />,
+    },
   };
 
   const navSections = [
@@ -1144,9 +1213,87 @@ export default function AdminPage() {
           badge: null,
           badgeColor: "",
         },
+        {
+          id: "staff" as const,
+          label: "إدارة الحسابات والموظفين",
+          icon: <Users className="w-4 h-4 text-emerald-600" />,
+          badge: staffUsers.length ? `${staffUsers.length} مستخدم` : null,
+          badgeColor: "bg-emerald-100 text-emerald-800",
+        },
       ],
     },
   ];
+
+  // Editor role protection & tab filtering
+  const isEditor = currentUser?.role === "editor";
+  const visibleNavSections = isEditor
+    ? [
+        {
+          title: "إدارة القائمة والوجبات",
+          items: [
+            {
+              id: "menu" as const,
+              label: "الأصناف والأسعار",
+              icon: <UtensilsCrossed className="w-4 h-4 text-emerald-600" />,
+              badge: menuItems.length,
+              badgeColor: "bg-stone-100 text-stone-700",
+            },
+            {
+              id: "categories" as const,
+              label: "الأقسام والتصنيفات",
+              icon: <Layers className="w-4 h-4 text-blue-600" />,
+              badge: categories.length,
+              badgeColor: "bg-stone-100 text-stone-700",
+            },
+            {
+              id: "tags" as const,
+              label: "شارات التمييز",
+              icon: <Tag className="w-4 h-4 text-rose-500" />,
+              badge: settings?.customTags?.length || 4,
+              badgeColor: "bg-rose-100 text-rose-800",
+            },
+          ],
+        },
+      ]
+    : navSections;
+
+  useEffect(() => {
+    if (currentUser?.role === "editor") {
+      const allowedEditorTabs = ["menu", "categories", "tags"];
+      if (!allowedEditorTabs.includes(activeTab)) {
+        setActiveTab("menu");
+      }
+    }
+  }, [currentUser, activeTab]);
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-4 text-white font-sans">
+        <Loader2 className="w-9 h-9 animate-spin text-amber-400" />
+        <p className="text-xs font-bold text-stone-300 mt-3 animate-pulse">
+          جاري التحقق من الصلاحيات وتجهيز لوحة التحكم...
+        </p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <AdminLoginForm
+        settings={settings}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          if (user.role === "editor") {
+            setActiveTab("menu");
+          } else {
+            setActiveTab("analytics");
+            fetchStaffUsers();
+          }
+          fetchData();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col lg:flex-row font-sans antialiased">
@@ -1175,27 +1322,17 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs font-bold">
-          <Link
-            href="/"
-            target="_blank"
-            className="px-2.5 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1 transition"
+        <div className="flex items-center gap-2 text-xs font-bold">
+          <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-lg">
+            {currentUser?.role === "owner" ? "👑 مدير" : "✍️ مدخل بيانات"}
+          </span>
+          <button
+            onClick={handleLogout}
+            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white transition cursor-pointer"
+            title="تسجيل الخروج"
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">معاينة</span>
-          </Link>
-          <Link
-            href="/cashier"
-            className="px-2.5 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg transition"
-          >
-            الكاشير
-          </Link>
-          <Link
-            href="/kitchen"
-            className="px-2.5 py-1.5 bg-black/20 hover:bg-black/30 rounded-lg transition"
-          >
-            المطبخ
-          </Link>
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 
@@ -1251,7 +1388,7 @@ export default function AdminPage() {
 
         {/* Sidebar Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-4 text-xs font-bold">
-          {navSections.map((sec, secIdx) => (
+          {visibleNavSections.map((sec, secIdx) => (
             <div key={secIdx} className="space-y-1">
               <span className="text-[10px] uppercase tracking-wider font-extrabold text-stone-400 px-3 block">
                 {sec.title}
@@ -1297,17 +1434,54 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        {/* Sidebar Footer */}
+        {/* Sidebar Footer User Card */}
         <div className="p-3 border-t border-stone-200/80 bg-stone-50/70 space-y-2 shrink-0">
-          <button
-            onClick={handleExportCSV}
-            className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>تصدير المبيعات CSV</span>
-          </button>
+          <div className="p-2.5 bg-white rounded-xl border border-stone-200 flex items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                  currentUser?.role === "owner"
+                    ? "bg-amber-100 text-amber-900 border border-amber-300"
+                    : "bg-blue-100 text-blue-900 border border-blue-300"
+                }`}
+              >
+                {currentUser?.role === "owner" ? "👑" : "✍️"}
+              </span>
+              <div className="min-w-0 text-right">
+                <p className="text-xs font-black text-stone-900 truncate">{currentUser?.name}</p>
+                <p
+                  className={`text-[10px] font-bold truncate ${
+                    currentUser?.role === "owner" ? "text-amber-800" : "text-blue-700"
+                  }`}
+                >
+                  {currentUser?.role === "owner" ? "صاحب المطعم (مدير)" : "مدخل بيانات المينيو"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0 cursor-pointer"
+              title="تسجيل الخروج"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
 
-          <div className="grid grid-cols-3 gap-1 pt-1 text-[11px] font-bold text-center">
+          {currentUser?.role === "owner" && (
+            <button
+              onClick={handleExportCSV}
+              className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>تصدير المبيعات CSV</span>
+            </button>
+          )}
+
+          <div
+            className={`grid ${
+              currentUser?.role === "owner" ? "grid-cols-3" : "grid-cols-1"
+            } gap-1 pt-1 text-[11px] font-bold text-center`}
+          >
             <Link
               href="/"
               target="_blank"
@@ -1317,18 +1491,22 @@ export default function AdminPage() {
               <Eye className="w-3 h-3 text-stone-500" />
               <span>المينيو</span>
             </Link>
-            <Link
-              href="/cashier"
-              className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
-            >
-              الكاشير
-            </Link>
-            <Link
-              href="/kitchen"
-              className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
-            >
-              المطبخ
-            </Link>
+            {currentUser?.role === "owner" && (
+              <>
+                <Link
+                  href="/cashier"
+                  className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
+                >
+                  الكاشير
+                </Link>
+                <Link
+                  href="/kitchen"
+                  className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
+                >
+                  المطبخ
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </aside>
@@ -1351,7 +1529,41 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* User Profile Badge */}
+            <div className="flex items-center gap-2 pl-3 border-l border-stone-200">
+              <span
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                  currentUser?.role === "owner"
+                    ? "bg-amber-100 text-amber-900 border border-amber-300"
+                    : "bg-blue-100 text-blue-900 border border-blue-300"
+                }`}
+              >
+                {currentUser?.role === "owner" ? "👑" : "✍️"}
+              </span>
+              <div className="text-right">
+                <span className="text-xs font-black text-stone-900 block leading-tight">
+                  {currentUser?.name}
+                </span>
+                <span
+                  className={`text-[10px] font-bold block ${
+                    currentUser?.role === "owner" ? "text-amber-800" : "text-blue-700"
+                  }`}
+                >
+                  {currentUser?.role === "owner" ? "صاحب المطعم (مدير)" : "مدخل بيانات المينيو"}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              title="تسجيل الخروج من لوحة التحكم"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>تسجيل الخروج</span>
+            </button>
+
             <Link
               href="/"
               target="_blank"
@@ -1360,18 +1572,22 @@ export default function AdminPage() {
               <Eye className="w-3.5 h-3.5 text-stone-500" />
               <span>معاينة صفحة المينيو</span>
             </Link>
-            <Link
-              href="/cashier"
-              className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
-            >
-              شاشة الكاشير
-            </Link>
-            <Link
-              href="/kitchen"
-              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-xl text-xs font-bold transition"
-            >
-              شاشة المطبخ
-            </Link>
+            {currentUser?.role === "owner" && (
+              <>
+                <Link
+                  href="/cashier"
+                  className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
+                >
+                  شاشة الكاشير
+                </Link>
+                <Link
+                  href="/kitchen"
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-xl text-xs font-bold transition"
+                >
+                  شاشة المطبخ
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -4627,6 +4843,16 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB: STAFF & USERS MANAGEMENT (إدارة الحسابات والموظفين) */}
+        {activeTab === "staff" && currentUser?.role === "owner" && (
+          <StaffManagementTab
+            currentUser={currentUser}
+            staffUsers={staffUsers}
+            onRefreshStaff={fetchStaffUsers}
+            brandColor={brandColor}
+          />
         )}
       </main>
     </div>

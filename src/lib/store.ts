@@ -11,8 +11,9 @@ import {
   RestaurantSettings,
   Table,
   WaiterCall,
+  StaffUser,
 } from "@/types";
-import { initialCategories, initialMenuItems, initialSettings, initialTables } from "./initialData";
+import { initialCategories, initialMenuItems, initialSettings, initialTables, initialStaffUsers } from "./initialData";
 import { supabaseAdmin } from "./supabase";
 
 export interface DatabaseSchema {
@@ -24,6 +25,7 @@ export interface DatabaseSchema {
   coupons: Coupon[];
   waiterCalls: WaiterCall[];
   reviews?: CustomerReview[];
+  staffUsers?: StaffUser[];
   nextOrderNumber: number;
 }
 
@@ -86,6 +88,7 @@ async function readDataAsync(): Promise<DatabaseSchema> {
       if (parsed && parsed.settings) {
         parsed.settings = ensureSettingsDefaults(parsed.settings);
         parsed.reviews = Array.isArray(parsed.reviews) ? parsed.reviews : [];
+        parsed.staffUsers = Array.isArray(parsed.staffUsers) && parsed.staffUsers.length > 0 ? parsed.staffUsers : initialStaffUsers;
         memoryCache = parsed;
         lastCloudFetchTime = Date.now();
         return memoryCache;
@@ -118,6 +121,7 @@ function syncCloudDataInBackground() {
         if (parsed && parsed.settings) {
           parsed.settings = ensureSettingsDefaults(parsed.settings);
           parsed.reviews = Array.isArray(parsed.reviews) ? parsed.reviews : [];
+          parsed.staffUsers = Array.isArray(parsed.staffUsers) && parsed.staffUsers.length > 0 ? parsed.staffUsers : initialStaffUsers;
           memoryCache = parsed;
         }
       }
@@ -135,6 +139,9 @@ function readData(): DatabaseSchema {
     if (!Array.isArray(memoryCache.reviews)) {
       memoryCache.reviews = [];
     }
+    if (!Array.isArray(memoryCache.staffUsers) || memoryCache.staffUsers.length === 0) {
+      memoryCache.staffUsers = initialStaffUsers;
+    }
     return memoryCache;
   }
 
@@ -147,6 +154,9 @@ function readData(): DatabaseSchema {
       }
       if (memoryCache && !Array.isArray(memoryCache.reviews)) {
         memoryCache.reviews = [];
+      }
+      if (memoryCache && (!Array.isArray(memoryCache.staffUsers) || memoryCache.staffUsers.length === 0)) {
+        memoryCache.staffUsers = initialStaffUsers;
       }
       return memoryCache;
     }
@@ -166,6 +176,7 @@ function readData(): DatabaseSchema {
     ],
     waiterCalls: [],
     reviews: [],
+    staffUsers: initialStaffUsers,
     nextOrderNumber: 101,
   };
   return memoryCache;
@@ -646,5 +657,45 @@ export const db = {
     data.reviews.unshift(reviewData);
     await writeData(data);
     return reviewData;
+  },
+
+  // Staff Users
+  async getStaffUsersAsync(): Promise<StaffUser[]> {
+    const data = await readDataAsync();
+    if (!Array.isArray(data.staffUsers) || data.staffUsers.length === 0) {
+      data.staffUsers = [...initialStaffUsers];
+      await writeData(data);
+    }
+    return data.staffUsers;
+  },
+
+  async addStaffUser(user: StaffUser): Promise<StaffUser> {
+    const data = await readDataAsync();
+    if (!Array.isArray(data.staffUsers)) {
+      data.staffUsers = [...initialStaffUsers];
+    }
+    data.staffUsers.push(user);
+    await writeData(data);
+    return user;
+  },
+
+  async updateStaffUser(id: string, partial: Partial<StaffUser>): Promise<StaffUser | null> {
+    const data = await readDataAsync();
+    if (!Array.isArray(data.staffUsers)) {
+      data.staffUsers = [...initialStaffUsers];
+    }
+    const idx = data.staffUsers.findIndex((u) => u.id === id);
+    if (idx === -1) return null;
+    data.staffUsers[idx] = { ...data.staffUsers[idx], ...partial };
+    await writeData(data);
+    return data.staffUsers[idx];
+  },
+
+  async deleteStaffUser(id: string): Promise<boolean> {
+    const data = await readDataAsync();
+    if (!Array.isArray(data.staffUsers)) return false;
+    data.staffUsers = data.staffUsers.filter((u) => u.id !== id);
+    await writeData(data);
+    return true;
   },
 };

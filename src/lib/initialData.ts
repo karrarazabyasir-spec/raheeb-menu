@@ -1,4 +1,4 @@
-import { Category, MenuItem, RestaurantSettings, Table } from "@/types";
+import { Category, MenuItem, RestaurantSettings, Table, StaffUser } from "@/types";
 
 export const initialSettings: RestaurantSettings = {
   name: "مطعم رهيب",
@@ -262,4 +262,25 @@ export const initialTables: Table[] = [
   { id: "tbl-8", number: 8, label: "طاولة 8", section: "تراس", status: "empty", qrToken: "tbl-token-8" },
   { id: "tbl-9", number: 9, label: "طاولة 9", section: "تراس", status: "empty", qrToken: "tbl-token-9" },
   { id: "tbl-10", number: 10, label: "طاولة 10", section: "تراس", status: "empty", qrToken: "tbl-token-10" },
+];
+
+export const initialStaffUsers: StaffUser[] = [
+  {
+    id: "user-owner-1",
+    username: "admin",
+    name: "صاحب المطعم (المدير)",
+    password: "admin",
+    role: "owner",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "user-editor-1",
+    username: "editor",
+    name: "مدخل البيانات",
+    password: "123",
+    role: "editor",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
 ];
