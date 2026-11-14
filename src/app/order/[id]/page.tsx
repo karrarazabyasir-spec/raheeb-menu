@@ -493,10 +493,16 @@ function OrderTrackingContent() {
                 <span>-{order.discount} {currency}</span>
               </div>
             )}
-            {order.deliveryFee && order.deliveryFee > 0 && (
-              <div className="flex justify-between text-stone-700 font-bold">
+            {order.type === "delivery" && (
+              <div className="flex justify-between items-center text-stone-700 font-bold">
                 <span>أجرة التوصيل ({order.deliveryZoneName || "توصيل"})</span>
-                <span>+{order.deliveryFee} {currency}</span>
+                {order.deliveryFee && order.deliveryFee > 0 ? (
+                  <span>+{order.deliveryFee} {currency}</span>
+                ) : (
+                  <span className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md font-bold">
+                    يحددها المطعم
+                  </span>
+                )}
               </div>
             )}
             {order.serviceFee > 0 && (
@@ -512,9 +518,18 @@ function OrderTrackingContent() {
               </div>
             )}
             <div className="pt-2 border-t border-stone-200 flex justify-between items-baseline font-black text-sm">
-              <span>المجموع النهائي (نقداً)</span>
+              <span>
+                {order.type === "delivery" && (!order.deliveryFee || order.deliveryFee === 0)
+                  ? "مجموع الوجبات (نقداً)"
+                  : "المجموع النهائي (نقداً)"}
+              </span>
               <span style={{ color: brandColor }} className="text-lg">{order.total} {currency}</span>
             </div>
+            {order.type === "delivery" && (!order.deliveryFee || order.deliveryFee === 0) && (
+              <p className="text-[11px] text-stone-500 font-medium">
+                🛵 أجرة التوصيل غير مشمولة في المجموع أعلاه، ويحددها المطعم عبر الواتساب.
+              </p>
+            )}
           </div>
         </div>
 

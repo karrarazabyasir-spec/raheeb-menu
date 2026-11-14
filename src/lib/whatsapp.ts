@@ -19,7 +19,7 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     text += `🛵 *نوع الطلب:* توصيل للمنازل (Delivery)\n`;
     text += `👤 *الاسم:* ${order.customerName || "غير محدد"}\n`;
     text += `📱 *الهاتف:* ${order.customerPhone || "غير محدد"}\n`;
-    text += `📍 *المنطقة:* ${order.deliveryZoneName || "غير معروف"}\n`;
+    text += `📍 *المنطقة:* ${order.deliveryZoneName || "غير محدد"}\n`;
     if (order.landmark) {
       text += `🏛️ *أقرب دالة:* ${order.landmark}\n`;
     }
@@ -29,7 +29,7 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     const deliveryFeeFormatted =
       order.deliveryFee && order.deliveryFee > 0
         ? `${order.deliveryFee.toLocaleString()} ${settings.currency}`
-        : "مجاناً 🎉";
+        : "يحددها المطعم بعد استلام الطلب 🛵";
     text += `🛵 *أجرة التوصيل:* ${deliveryFeeFormatted}\n`;
     if (order.estimatedDeliveryTime) {
       text += `⏱️ *الوقت المتوقع:* ~${order.estimatedDeliveryTime}\n`;
@@ -42,7 +42,7 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     }
     if (order.lat && order.lng) {
       text += `━━━━━━━━━━━━━━━\n`;
-      text += `🧭 *موقع العميل على الخريطة:*\n`;
+      text += `🧭 *موقع العميل على الخريطة (اختياري):*\n`;
       text += `🗺️ *Google Maps:* https://maps.google.com/?q=${order.lat},${order.lng}\n`;
       text += `🚗 *Waze:* https://waze.com/ul?ll=${order.lat},${order.lng}&navigate=yes\n`;
     }
@@ -78,11 +78,11 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     text += `🏷️ *الخصم:* -${order.discount.toLocaleString()} ${settings.currency}\n`;
   }
   if (isDelivery) {
-    const feeText =
-      order.deliveryFee && order.deliveryFee > 0
-        ? `+${order.deliveryFee.toLocaleString()} ${settings.currency}`
-        : "مجاناً";
-    text += `🛵 *أجرة التوصيل:* ${feeText}\n`;
+    if (order.deliveryFee && order.deliveryFee > 0) {
+      text += `🛵 *أجرة التوصيل:* +${order.deliveryFee.toLocaleString()} ${settings.currency}\n`;
+    } else {
+      text += `🛵 *أجرة التوصيل:* يحددها المطعم وتُضاف للمجموع\n`;
+    }
   }
   if (order.serviceFee > 0) {
     text += `🛎️ *رسوم الخدمة:* +${order.serviceFee.toLocaleString()} ${settings.currency}\n`;
@@ -91,10 +91,17 @@ export function generateWhatsAppMessage(order: Order, settings: RestaurantSettin
     text += `🏛️ *الضريبة:* +${order.tax.toLocaleString()} ${settings.currency}\n`;
   }
 
-  text += `💵 *المجموع الكلي المطلوب:* *${order.total.toLocaleString()} ${settings.currency}*\n`;
-  text += `(الدفع نقداً عند الاستلام 💵)\n`;
-  text += `━━━━━━━━━━━━━━━\n`;
-  text += `شكراً لكم! 🙏`;
+  if (isDelivery && (!order.deliveryFee || order.deliveryFee === 0)) {
+    text += `💵 *مجموع الوجبات:* *${order.total.toLocaleString()} ${settings.currency}* (غير شامل التوصيل)\n`;
+    text += `(الدفع نقداً عند الاستلام 💵)\n`;
+    text += `━━━━━━━━━━━━━━━\n`;
+    text += `⏳ *ملاحظة:* سيقوم المطعم بتحديد أجرة التوصيل وإبلاغكم بالمجموع النهائي عبر الواتساب. شكراً لكم! 🙏`;
+  } else {
+    text += `💵 *المجموع الكلي المطلوب:* *${order.total.toLocaleString()} ${settings.currency}*\n`;
+    text += `(الدفع نقداً عند الاستلام 💵)\n`;
+    text += `━━━━━━━━━━━━━━━\n`;
+    text += `شكراً لكم! 🙏`;
+  }
 
   return text;
 }
@@ -126,7 +133,7 @@ export function generateDriverWhatsAppMessage(order: Order, settings: Restaurant
   const feeText =
     order.deliveryFee && order.deliveryFee > 0
       ? `${order.deliveryFee.toLocaleString()} ${settings.currency}`
-      : "مجاناً";
+      : "يحددها المطعم";
   text += `🛵 *أجرة التوصيل:* ${feeText}\n`;
   if (order.landmark) {
     text += `🏛️ *أقرب دالة:* ${order.landmark}\n`;

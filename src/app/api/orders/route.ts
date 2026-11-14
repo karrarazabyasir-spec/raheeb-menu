@@ -132,9 +132,9 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if (!address && !landmark) {
+      if (!address && !landmark && !body.deliveryZoneName) {
         return NextResponse.json(
-          { error: "يرجى كتابة أقرب نقطة دالة للتوصيل" },
+          { error: "يرجى كتابة اسم المنطقة أو أقرب نقطة دالة للتوصيل" },
           { status: 400 }
         );
       }
@@ -229,111 +229,38 @@ export async function POST(request: Request) {
         ? Math.round((((afterDiscount + serviceFee) * settings.taxPercent) / 100) * 100) / 100
         : 0;
 
-    // Delivery Fee calculation (SERVER-SIDE ONLY)
+    // Delivery Fee calculation (Restaurant determines delivery fee directly with customer)
     let deliveryFee = 0;
     let selectedZoneName: string | undefined = undefined;
     let orderDistanceKm: number | undefined = undefined;
 
     if (type === "delivery") {
-      const mode = settings.deliveryPricingMode || "distance";
+      const hasRestaurantCoords =
+        typeof settings.restaurantLat === "number" &&
+        typeof settings.restaurantLng === "number" &&
+        !isNaN(settings.restaurantLat) &&
+        !isNaN(settings.restaurantLng);
 
-      if (mode === "distance") {
-        const hasRestaurantCoords =
-          typeof settings.restaurantLat === "number" &&
-          typeof settings.restaurantLng === "number" &&
-          !isNaN(settings.restaurantLat) &&
-          !isNaN(settings.restaurantLng);
+      const hasCustomerCoords =
+        typeof lat === "number" &&
+        typeof lng === "number" &&
+        !isNaN(lat) &&
+        !isNaN(lng);
 
-        const hasCustomerCoords =
-          typeof lat === "number" &&
-          typeof lng === "number" &&
-          !isNaN(lat) &&
-          !isNaN(lng);
-
-        if (hasRestaurantCoords && hasCustomerCoords) {
-          const dist = calculateDistanceKm(
-            settings.restaurantLat!,
-            settings.restaurantLng!,
-            lat!,
-            lng!
-          );
-          orderDistanceKm = dist;
-
-          // Check maximum delivery distance
-          if (
-            settings.deliveryMaxDistanceKm &&
-            settings.deliveryMaxDistanceKm > 0 &&
-            dist > settings.deliveryMaxDistanceKm
-          ) {
-            return NextResponse.json(
-              {
-                error: `عذراً، موقعك يبعد (${dist} كم) وهو خارج نطاق التوصيل الأقصى للمطعم (${settings.deliveryMaxDistanceKm} كم)`,
-              },
-              { status: 400 }
-            );
-          }
-
-          const feeCalc = calculateDeliveryFee({
-            distanceKm: dist,
-            costPerKm: settings.deliveryCostPerKm ?? 1000,
-            minFee: settings.deliveryMinFee ?? 2000,
-            baseFee: settings.deliveryBaseFee ?? 0,
-            freeDeliveryThreshold: settings.freeDeliveryThreshold,
-            subtotal: calculatedSubtotal,
-          });
-
-          deliveryFee = feeCalc.fee;
-          const customAreaName = body.deliveryZoneName?.trim();
-          selectedZoneName = customAreaName || `توصيل بالمسافة (${dist} كم)`;
-        } else {
-          // If customer coordinates were not provided, use min/base delivery fee as fallback
-          const feeCalc = calculateDeliveryFee({
-            distanceKm: 0,
-            costPerKm: settings.deliveryCostPerKm ?? 1000,
-            minFee: settings.deliveryMinFee ?? 2000,
-            baseFee: settings.deliveryBaseFee ?? 0,
-            freeDeliveryThreshold: settings.freeDeliveryThreshold,
-            subtotal: calculatedSubtotal,
-          });
-          deliveryFee = feeCalc.fee;
-          const customAreaName = body.deliveryZoneName?.trim();
-          selectedZoneName = customAreaName || "توصيل بالمسافة (موقع يدوي)";
-        }
-      } else {
-        // "fixed" zone mode (kept intact for seamless return)
-        const zones = settings.deliveryZones || [];
-        const matchedZone = zones.find((z) => z.id === deliveryZoneId && z.isActive);
-
-        if (matchedZone) {
-          selectedZoneName = matchedZone.nameAr;
-          // Check zone min order
-          if (matchedZone.minOrder && calculatedSubtotal < matchedZone.minOrder) {
-            const diff = matchedZone.minOrder - calculatedSubtotal;
-            return NextResponse.json(
-              {
-                error: `الحد الأدنى لطلب التوصيل لمنطقة (${matchedZone.nameAr}) هو ${matchedZone.minOrder} ${settings.currency}. يرجى إضافة أصناف بقيمة ${diff} ${settings.currency} إضافية.`,
-              },
-              { status: 400 }
-            );
-          }
-          deliveryFee = matchedZone.fee;
-        } else if (zones.length > 0) {
-          // Zone not found or inactive
-          return NextResponse.json(
-            { error: "يرجى اختيار منطقة توصيل صحيحة ومتاحة من القائمة" },
-            { status: 400 }
-          );
-        }
-
-        // Check Free Delivery Threshold
-        if (
-          settings.freeDeliveryThreshold &&
-          settings.freeDeliveryThreshold > 0 &&
-          calculatedSubtotal >= settings.freeDeliveryThreshold
-        ) {
-          deliveryFee = 0;
-        }
+      if (hasRestaurantCoords && hasCustomerCoords) {
+        orderDistanceKm = calculateDistanceKm(
+          settings.restaurantLat!,
+          settings.restaurantLng!,
+          lat!,
+          lng!
+        );
       }
+
+      selectedZoneName =
+        body.deliveryZoneName?.trim() ||
+        (landmark ? `قرب ${landmark.trim()}` : "توصيل للمنازل");
+      // Delivery fee is left at 0 for customer order; restaurant contacts customer with the exact fee
+      deliveryFee = 0;
     }
 
     const total = Math.round((afterDiscount + serviceFee + tax + deliveryFee) * 100) / 100;
