@@ -1534,39 +1534,6 @@ export default function AdminPage() {
                 <span>شاشة الكاشير</span>
               </Link>
             )}
-
-            {/* User Profile Badge */}
-            <div className="flex items-center gap-2.5 pr-3 border-r border-stone-200">
-              <span
-                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
-                  currentUser?.role === "owner"
-                    ? "bg-amber-100 text-amber-900 border border-amber-300"
-                    : "bg-blue-100 text-blue-900 border border-blue-300"
-                }`}
-              >
-                {currentUser?.role === "owner" ? "👑" : "✍️"}
-              </span>
-              <div className="text-right">
-                <span className="text-xs font-black text-stone-900 block leading-tight">
-                  {currentUser?.name}
-                </span>
-                <span
-                  className={`text-[10px] font-bold block ${
-                    currentUser?.role === "owner" ? "text-amber-800" : "text-blue-700"
-                  }`}
-                >
-                  {currentUser?.role === "owner" ? "مدير المطعم" : "مدخل بيانات"}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-              title="تسجيل الخروج"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
