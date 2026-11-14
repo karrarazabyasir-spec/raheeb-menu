@@ -83,6 +83,8 @@ import {
   LogOut,
   Key,
   Shield,
+  ExternalLink,
+  Monitor,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -1119,7 +1121,7 @@ export default function AdminPage() {
 
   const navSections = [
     {
-      title: "الرئيسية والعمليات",
+      title: "العمليات والمبيعات",
       items: [
         {
           id: "analytics" as const,
@@ -1132,13 +1134,13 @@ export default function AdminPage() {
           id: "reviews" as const,
           label: "التقييمات والآراء",
           icon: <Star className="w-4 h-4 text-amber-400 fill-amber-400" />,
-          badge: reviews.length,
+          badge: reviews.length || null,
           badgeColor: "bg-amber-100 text-amber-800",
         },
       ],
     },
     {
-      title: "إدارة القائمة والخدمات",
+      title: "قائمة الطعام",
       items: [
         {
           id: "menu" as const,
@@ -1161,20 +1163,34 @@ export default function AdminPage() {
           badge: settings?.customTags?.length || 4,
           badgeColor: "bg-rose-100 text-rose-800",
         },
-        {
-          id: "banners" as const,
-          label: "بنرات الإعلانات",
-          icon: <Megaphone className="w-4 h-4 text-amber-500" />,
-          badge: settings?.promoBanner?.isActive ? "نشط" : "معطل",
-          badgeColor: settings?.promoBanner?.isActive ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-stone-600",
-        },
+      ],
+    },
+    {
+      title: "التسويق والعروض",
+      items: [
         {
           id: "offers" as const,
-          label: "العروض والخصومات 🏷️",
+          label: "العروض والكوبونات",
           icon: <Percent className="w-4 h-4 text-amber-600" />,
-          badge: coupons.filter((c) => c.isActive).length ? `${coupons.filter((c) => c.isActive).length} كوبون` : null,
+          badge: coupons.filter((c) => c.isActive).length
+            ? `${coupons.filter((c) => c.isActive).length} كوبون`
+            : null,
           badgeColor: "bg-amber-100 text-amber-800",
         },
+        {
+          id: "banners" as const,
+          label: "البنرات الترويجية",
+          icon: <Megaphone className="w-4 h-4 text-amber-500" />,
+          badge: settings?.promoBanner?.isActive ? "نشط" : "معطل",
+          badgeColor: settings?.promoBanner?.isActive
+            ? "bg-emerald-100 text-emerald-800"
+            : "bg-stone-100 text-stone-600",
+        },
+      ],
+    },
+    {
+      title: "قنوات الخدمة والطلب",
+      items: [
         {
           id: "delivery" as const,
           label: "خدمة ورسوم التوصيل",
@@ -1198,7 +1214,7 @@ export default function AdminPage() {
       ],
     },
     {
-      title: "النظام والتخصيص",
+      title: "إعدادات النظام",
       items: [
         {
           id: "branding" as const,
@@ -1230,7 +1246,7 @@ export default function AdminPage() {
   const visibleNavSections = isEditor
     ? [
         {
-          title: "إدارة القائمة والوجبات",
+          title: "قائمة الطعام",
           items: [
             {
               id: "menu" as const,
@@ -1300,37 +1316,42 @@ export default function AdminPage() {
     <div className="min-h-screen bg-stone-100 text-stone-900 flex flex-col lg:flex-row font-sans antialiased">
       <ThemeSync primaryColor={settings?.primaryColor} />
       {/* Mobile Top Navbar */}
-      <header
-        style={{ backgroundColor: brandColor }}
-        className="lg:hidden text-white p-3.5 shadow-md flex items-center justify-between sticky top-0 z-40 shrink-0"
-      >
-        <div className="flex items-center gap-2.5">
+      <header className="lg:hidden bg-white text-stone-900 px-4 py-3 border-b border-stone-200/80 shadow-2xs flex items-center justify-between sticky top-0 z-40 shrink-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white transition active:scale-95"
+            className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition active:scale-95 cursor-pointer"
             aria-label="القائمة الجانبية"
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-amber-400 text-stone-950 font-black flex items-center justify-center text-xs overflow-hidden">
+            <div
+              style={{ backgroundColor: brandColor }}
+              className="w-8 h-8 rounded-lg text-white font-black flex items-center justify-center text-xs overflow-hidden shadow-2xs shrink-0"
+            >
               {settings?.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
               ) : (
                 settings?.name.charAt(0) || "ر"
               )}
-            </span>
-            <span className="font-extrabold text-sm truncate max-w-[130px]">{settings?.name}</span>
+            </div>
+            <span className="font-black text-sm truncate max-w-[130px]">{settings?.name}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold">
-          <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-lg">
-            {currentUser?.role === "owner" ? "👑 مدير" : "✍️ مدخل بيانات"}
-          </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            target="_blank"
+            className="p-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition"
+            title="معاينة المينيو"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </Link>
           <button
             onClick={handleLogout}
-            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white transition cursor-pointer"
+            className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition cursor-pointer"
             title="تسجيل الخروج"
           >
             <LogOut className="w-4 h-4" />
@@ -1356,33 +1377,32 @@ export default function AdminPage() {
         `}
       >
         {/* Sidebar Header */}
-        <div
-          style={{ backgroundColor: brandColor }}
-          className="p-4 text-white flex items-center justify-between shrink-0"
-        >
+        <div className="p-4 border-b border-stone-200/80 bg-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <Link
-              href="/"
-              className="w-10 h-10 rounded-xl bg-amber-400 text-stone-950 font-black flex items-center justify-center text-sm shadow hover:scale-105 transition overflow-hidden shrink-0"
-              title="معاينة المينيو"
+            <div
+              style={{ backgroundColor: brandColor }}
+              className="w-10 h-10 rounded-xl text-white font-black flex items-center justify-center text-sm shadow-sm overflow-hidden shrink-0"
             >
               {settings?.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
               ) : (
                 settings?.name.charAt(0) || "ر"
               )}
-            </Link>
+            </div>
             <div className="min-w-0">
-              <h1 className="text-sm font-extrabold truncate flex items-center gap-1.5">
-                <span>{settings?.name || "مطعم رهيب"}</span>
+              <h1 className="text-sm font-black text-stone-900 truncate">
+                {settings?.name || "مطعم رهيب"}
               </h1>
-              <p className="text-[10px] text-white/80 font-medium truncate">لوحة التحكم الشاملة</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="text-[10px] text-stone-500 font-bold">لوحة التحكم</p>
+              </div>
             </div>
           </div>
 
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white shrink-0"
+            className="lg:hidden p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 transition shrink-0 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -1392,7 +1412,7 @@ export default function AdminPage() {
         <nav className="flex-1 overflow-y-auto p-3 space-y-4 text-xs font-bold">
           {visibleNavSections.map((sec, secIdx) => (
             <div key={secIdx} className="space-y-1">
-              <span className="text-[10px] uppercase tracking-wider font-extrabold text-stone-400 px-3 block">
+              <span className="text-[10px] uppercase tracking-wider font-black text-stone-400 px-3 block">
                 {sec.title}
               </span>
               <div className="space-y-0.5">
@@ -1405,9 +1425,12 @@ export default function AdminPage() {
                         setActiveTab(item.id);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      style={{
+                        backgroundColor: isActive ? brandColor : undefined,
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isActive
-                          ? "bg-[#780000] text-white shadow-xs font-black scale-[1.01]"
+                          ? "text-white shadow-xs font-black scale-[1.01]"
                           : "text-stone-600 hover:text-stone-950 hover:bg-stone-100"
                       }`}
                     >
@@ -1436,12 +1459,12 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        {/* Sidebar Footer User Card */}
-        <div className="p-3 border-t border-stone-200/80 bg-stone-50/70 space-y-2 shrink-0">
+        {/* Sidebar Footer: Compact User Profile & Logout */}
+        <div className="p-3 border-t border-stone-200/80 bg-stone-50/70 shrink-0">
           <div className="p-2.5 bg-white rounded-xl border border-stone-200 flex items-center justify-between gap-2 shadow-2xs">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
               <span
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   currentUser?.role === "owner"
                     ? "bg-amber-100 text-amber-900 border border-amber-300"
                     : "bg-blue-100 text-blue-900 border border-blue-300"
@@ -1456,53 +1479,19 @@ export default function AdminPage() {
                     currentUser?.role === "owner" ? "text-amber-800" : "text-blue-700"
                   }`}
                 >
-                  {currentUser?.role === "owner" ? "صاحب المطعم (مدير)" : "مدخل بيانات المينيو"}
+                  {currentUser?.role === "owner" ? "مدير المطعم" : "مدخل بيانات"}
                 </p>
               </div>
             </div>
+
             <button
               onClick={handleLogout}
-              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0 cursor-pointer"
+              className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0 cursor-pointer"
               title="تسجيل الخروج"
+              aria-label="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />
             </button>
-          </div>
-
-          {currentUser?.role === "owner" && (
-            <button
-              onClick={handleExportCSV}
-              className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>تصدير المبيعات CSV</span>
-            </button>
-          )}
-
-          <div
-            className={`grid ${
-              currentUser?.role === "owner" ? "grid-cols-3" : "grid-cols-1"
-            } gap-1 pt-1 text-[11px] font-bold text-center`}
-          >
-            <Link
-              href="/"
-              target="_blank"
-              className="py-1.5 px-1 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition flex items-center justify-center gap-1"
-              title="معاينة المينيو"
-            >
-              <Eye className="w-3 h-3 text-stone-500" />
-              <span>المينيو</span>
-            </Link>
-            {currentUser?.role === "owner" && (
-              <>
-                <Link
-                  href="/cashier"
-                  className="py-1.5 px-2 bg-white hover:bg-stone-100 text-stone-700 rounded-lg border border-stone-200/80 transition"
-                >
-                  الكاشير
-                </Link>
-              </>
-            )}
           </div>
         </div>
       </aside>
@@ -1526,10 +1515,30 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              target="_blank"
+              className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-stone-200/80 shadow-2xs"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-stone-500" />
+              <span>معاينة المينيو</span>
+            </Link>
+
+            {currentUser?.role === "owner" && (
+              <Link
+                href="/cashier"
+                target="_blank"
+                className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+              >
+                <Monitor className="w-3.5 h-3.5 text-amber-400" />
+                <span>شاشة الكاشير</span>
+              </Link>
+            )}
+
             {/* User Profile Badge */}
-            <div className="flex items-center gap-2 pl-3 border-l border-stone-200">
+            <div className="flex items-center gap-2.5 pr-3 border-r border-stone-200">
               <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                   currentUser?.role === "owner"
                     ? "bg-amber-100 text-amber-900 border border-amber-300"
                     : "bg-blue-100 text-blue-900 border border-blue-300"
@@ -1546,36 +1555,18 @@ export default function AdminPage() {
                     currentUser?.role === "owner" ? "text-amber-800" : "text-blue-700"
                   }`}
                 >
-                  {currentUser?.role === "owner" ? "صاحب المطعم (مدير)" : "مدخل بيانات المينيو"}
+                  {currentUser?.role === "owner" ? "مدير المطعم" : "مدخل بيانات"}
                 </span>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-              title="تسجيل الخروج من لوحة التحكم"
+              className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+              title="تسجيل الخروج"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>تسجيل الخروج</span>
+              <LogOut className="w-4 h-4" />
             </button>
-
-            <Link
-              href="/"
-              target="_blank"
-              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
-            >
-              <Eye className="w-3.5 h-3.5 text-stone-500" />
-              <span>معاينة صفحة المينيو</span>
-            </Link>
-            {currentUser?.role === "owner" && (
-              <Link
-                href="/cashier"
-                className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
-              >
-                شاشة الكاشير
-              </Link>
-            )}
           </div>
         </div>
 

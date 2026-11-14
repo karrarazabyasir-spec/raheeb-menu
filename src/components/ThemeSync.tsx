@@ -57,3 +57,4 @@ export function ThemeSync({ primaryColor }: ThemeSyncProps) {
     `}</style>
   );
 }
+
