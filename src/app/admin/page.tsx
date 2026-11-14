@@ -1195,14 +1195,8 @@ export default function AdminPage() {
           id: "delivery" as const,
           label: "خدمة ورسوم التوصيل",
           icon: <Bike className="w-4 h-4 text-purple-600" />,
-          badge:
-            (settings?.deliveryPricingMode || "distance") === "distance"
-              ? "حسب المسافة 📍"
-              : `${settings?.deliveryZones?.length || 0} مناطق`,
-          badgeColor:
-            (settings?.deliveryPricingMode || "distance") === "distance"
-              ? "bg-emerald-100 text-emerald-800"
-              : "bg-purple-100 text-purple-800",
+          badge: null,
+          badgeColor: "",
         },
         {
           id: "tables" as const,
@@ -1428,21 +1422,21 @@ export default function AdminPage() {
                       style={{
                         backgroundColor: isActive ? brandColor : undefined,
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-right ${
                         isActive
                           ? "text-white shadow-xs font-black scale-[1.01]"
                           : "text-stone-600 hover:text-stone-950 hover:bg-stone-100"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className={isActive ? "text-white" : ""}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className={`shrink-0 ${isActive ? "text-white" : ""}`}>
                           {item.icon}
                         </span>
-                        <span>{item.label}</span>
+                        <span className="truncate text-right">{item.label}</span>
                       </div>
                       {item.badge !== null && item.badge !== undefined && (
                         <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded-full transition-colors ${
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full transition-colors shrink-0 ${
                             isActive
                               ? "bg-white/20 text-white"
                               : item.badgeColor || "bg-stone-100 text-stone-700"
