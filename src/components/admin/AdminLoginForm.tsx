@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { RestaurantSettings, StaffUser } from "@/types";
-import { Lock, User, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, ChefHat } from "lucide-react";
+import { Lock, User, Eye, EyeOff, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 
 interface AdminLoginFormProps {
   settings: RestaurantSettings | null;
@@ -68,12 +68,6 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
     }
   };
 
-  const handleQuickFill = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-    setErrorMsg(null);
-  };
-
   return (
     <div className="min-h-screen bg-linear-to-br from-stone-900 via-stone-950 to-black text-stone-100 flex items-center justify-center p-4 font-sans antialiased">
       <div className="w-full max-w-md space-y-6">
@@ -123,7 +117,7 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
                   dir="ltr"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin أو editor"
+                  placeholder="أدخل اسم المستخدم"
                   className="w-full pl-3 pr-10 py-3 bg-stone-950/80 border border-stone-800 rounded-xl text-stone-100 placeholder-stone-600 text-xs font-bold font-mono focus:outline-hidden focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                   required
                 />
@@ -181,47 +175,6 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
               )}
             </button>
           </form>
-
-          {/* Quick Helper for Default Credentials */}
-          <div className="pt-4 border-t border-stone-800/80 space-y-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-stone-500 block text-center">
-              الحسابات الافتراضية للنظام (اضغط للتعبئة التلقائية)
-            </span>
-
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <button
-                type="button"
-                onClick={() => handleQuickFill("admin", "admin")}
-                className="p-2.5 rounded-xl bg-stone-950/90 border border-stone-800 hover:border-amber-500/50 text-right transition flex flex-col gap-0.5 group cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-400 group-hover:underline">
-                    👑 حساب المدير
-                  </span>
-                  <span className="text-[9px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded">
-                    كامل
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-stone-400">admin / admin</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill("editor", "123")}
-                className="p-2.5 rounded-xl bg-stone-950/90 border border-stone-800 hover:border-blue-500/50 text-right transition flex flex-col gap-0.5 group cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-blue-400 group-hover:underline">
-                    ✍️ مدخل البيانات
-                  </span>
-                  <span className="text-[9px] text-blue-400 bg-blue-950/60 px-1.5 py-0.2 rounded">
-                    مينيو فقط
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-stone-400">editor / 123</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
