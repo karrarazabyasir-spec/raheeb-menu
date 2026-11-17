@@ -31,6 +31,7 @@ export const initialSettings: RestaurantSettings = {
   deliveryMaxDistanceKm: 25,
   freeDeliveryThreshold: 0,
   defaultDeliveryTime: "30-45 دقيقة",
+  masterRecoveryPin: "998877",
   deliveryZones: [],
   promoBanner: {
     id: "promo-dish-1",

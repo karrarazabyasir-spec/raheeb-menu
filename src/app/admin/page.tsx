@@ -4792,6 +4792,15 @@ export default function AdminPage() {
             staffUsers={staffUsers}
             onRefreshStaff={fetchStaffUsers}
             brandColor={brandColor}
+            masterRecoveryPin={settings?.masterRecoveryPin || "998877"}
+            onSaveMasterPin={async (pin) => {
+              if (settings) {
+                await handleSaveSettings(undefined, {
+                  ...settings,
+                  masterRecoveryPin: pin,
+                });
+              }
+            }}
           />
         )}
       </main>

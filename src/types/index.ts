@@ -65,6 +65,7 @@ export interface RestaurantSettings {
   deliveryZones?: DeliveryZone[]; // Preserved fixed zones
   freeDeliveryThreshold?: number; // e.g. 50000 -> 0 fee
   defaultDeliveryTime?: string; // e.g. "35-50 دقيقة"
+  masterRecoveryPin?: string; // Emergency Master PIN to recover owner password (default 998877)
 }
 
 export interface CustomTag {

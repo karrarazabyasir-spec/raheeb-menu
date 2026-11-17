@@ -25,6 +25,8 @@ interface StaffManagementTabProps {
   staffUsers: StaffUser[];
   onRefreshStaff: () => Promise<void>;
   brandColor?: string;
+  masterRecoveryPin?: string;
+  onSaveMasterPin?: (pin: string) => Promise<void>;
 }
 
 export function StaffManagementTab({
@@ -32,9 +34,32 @@ export function StaffManagementTab({
   staffUsers,
   onRefreshStaff,
   brandColor = "#780000",
+  masterRecoveryPin = "998877",
+  onSaveMasterPin,
 }: StaffManagementTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<StaffUser | null>(null);
+
+  // Master Recovery PIN State
+  const [pinValue, setPinValue] = useState(masterRecoveryPin || "998877");
+  const [isSavingPin, setIsSavingPin] = useState(false);
+  const [pinSavedMsg, setPinSavedMsg] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+
+  const handleSavePin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pinValue.trim()) return;
+    setIsSavingPin(true);
+    try {
+      if (onSaveMasterPin) {
+        await onSaveMasterPin(pinValue.trim());
+        setPinSavedMsg(true);
+        setTimeout(() => setPinSavedMsg(false), 3000);
+      }
+    } finally {
+      setIsSavingPin(false);
+    }
+  };
 
   // Form State
   const [formName, setFormName] = useState("");
@@ -86,7 +111,10 @@ export function StaffManagementTab({
         // Edit existing
         const res = await fetch("/api/staff", {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-staff-user-id": currentUser.id,
+          },
           body: JSON.stringify({
             id: editingUser.id,
             name: formName.trim(),
@@ -106,7 +134,10 @@ export function StaffManagementTab({
         // Create new
         const res = await fetch("/api/staff", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-staff-user-id": currentUser.id,
+          },
           body: JSON.stringify({
             name: formName.trim(),
             username: formUsername.trim(),
@@ -149,6 +180,9 @@ export function StaffManagementTab({
     try {
       const res = await fetch(`/api/staff?id=${user.id}`, {
         method: "DELETE",
+        headers: {
+          "x-staff-user-id": currentUser.id,
+        },
       });
 
       const data = await res.json();
@@ -247,6 +281,73 @@ export function StaffManagementTab({
           </ul>
         </div>
       </div>
+
+      {/* Master Recovery PIN Emergency Card */}
+      {currentUser.role === "owner" && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/70 border border-amber-300/80 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-amber-500 text-stone-950 font-black flex items-center justify-center text-sm shadow-xs">
+                🔑
+              </span>
+              <div>
+                <h3 className="text-xs font-black text-amber-950">رمز أمان استرداد الطوارئ (Master Recovery PIN)</h3>
+                <p className="text-[11px] text-amber-900/80 font-medium">
+                  استخدم هذا الرمز السري من شاشة تسجيل الدخول لاستعادة حساب الآدمن وتعيين كلمة مرور جديدة في حال نسيانها.
+                </p>
+              </div>
+            </div>
+
+            {pinSavedMsg && (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">
+                تم حفظ رمز الطوارئ الجديد بنجاح! ✓
+              </span>
+            )}
+          </div>
+
+          <form onSubmit={handleSavePin} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+            <div className="relative flex-1 max-w-xs">
+              <Key className="w-4 h-4 text-stone-400 absolute top-3 right-3" />
+              <input
+                type={showPin ? "text" : "password"}
+                dir="ltr"
+                value={pinValue}
+                onChange={(e) => setPinValue(e.target.value)}
+                placeholder="مثال: 998877"
+                className="w-full pl-10 pr-9 py-2 bg-white border border-stone-300 rounded-xl text-xs font-mono font-bold focus:outline-hidden focus:border-amber-600 focus:ring-1 focus:ring-amber-500"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                className="absolute top-2.5 left-3 text-stone-400 hover:text-stone-700 cursor-pointer"
+                title={showPin ? "إخفاء" : "إظهار"}
+              >
+                {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSavingPin || !pinValue.trim()}
+              className="py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              {isSavingPin ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>جاري الحفظ...</span>
+                </>
+              ) : (
+                <span>حفظ رمز الطوارئ</span>
+              )}
+            </button>
+
+            <span className="text-[10px] text-amber-800 font-bold self-center">
+              (الافتراضي: 998877 - احفظه في مكان آمن)
+            </span>
+          </form>
+        </div>
+      )}
 
       {/* Users List Cards */}
       <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">

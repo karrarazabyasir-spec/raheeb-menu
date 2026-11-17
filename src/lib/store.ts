@@ -59,6 +59,7 @@ function ensureSettingsDefaults(settings: RestaurantSettings): RestaurantSetting
     deliveryEnabled: settings.deliveryEnabled ?? initialSettings.deliveryEnabled,
     freeDeliveryThreshold: settings.freeDeliveryThreshold ?? initialSettings.freeDeliveryThreshold,
     defaultDeliveryTime: settings.defaultDeliveryTime || initialSettings.defaultDeliveryTime,
+    masterRecoveryPin: settings.masterRecoveryPin || initialSettings.masterRecoveryPin || "998877",
     customTags: Array.isArray(settings.customTags) && settings.customTags.length > 0
       ? settings.customTags
       : initialSettings.customTags,
@@ -204,6 +205,7 @@ async function writeData(data: DatabaseSchema): Promise<void> {
       .upload("config/store.json", JSON.stringify(data, null, 2), {
         upsert: true,
         contentType: "application/json",
+        cacheControl: "0",
       });
     if (error) {
       console.error("Cloud storage sync error:", error);

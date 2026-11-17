@@ -19,17 +19,29 @@ function normalizeDigits(str: string): string {
     .trim();
 }
 
-async function getCallerRole(): Promise<"owner" | "editor" | null> {
+async function getCallerRole(request?: Request): Promise<"owner" | "editor" | null> {
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("raheeb_staff_session")?.value;
-    if (!sessionCookie) return null;
-    const decoded = Buffer.from(sessionCookie, "base64").toString("utf-8");
-    const payload = JSON.parse(decoded);
-    return payload?.role || null;
-  } catch {
-    return null;
+    if (sessionCookie) {
+      const decoded = Buffer.from(sessionCookie, "base64").toString("utf-8");
+      const payload = JSON.parse(decoded);
+      if (payload?.role) return payload.role;
+    }
+  } catch {}
+
+  if (request) {
+    try {
+      const authHeader = request.headers.get("x-staff-user-id");
+      if (authHeader) {
+        const staff = await db.getStaffUsersAsync();
+        const found = staff.find((u) => u.id === authHeader && u.isActive !== false);
+        if (found) return found.role;
+      }
+    } catch {}
   }
+
+  return null;
 }
 
 export async function GET() {
@@ -53,7 +65,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const callerRole = await getCallerRole();
+    const callerRole = await getCallerRole(request);
     if (callerRole !== "owner") {
       return NextResponse.json(
         { error: "غير مصرح، إضافة الحسابات متاحة للمدير فقط" },
@@ -102,7 +114,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const callerRole = await getCallerRole();
+    const callerRole = await getCallerRole(request);
     if (callerRole !== "owner") {
       return NextResponse.json(
         { error: "غير مصرح، تعديل الحسابات متاح للمدير فقط" },
@@ -136,7 +148,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const callerRole = await getCallerRole();
+    const callerRole = await getCallerRole(request);
     if (callerRole !== "owner") {
       return NextResponse.json(
         { error: "غير مصرح، حذف الحسابات متاح للمدير فقط" },
