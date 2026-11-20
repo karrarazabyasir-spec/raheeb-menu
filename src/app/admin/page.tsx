@@ -782,9 +782,13 @@ export default function AdminPage() {
         });
         setEditingItem(null);
         flashMessage("تم حفظ وتحديث الصنف بالكامل بنجاح ✓");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "حدث خطأ أثناء حفظ الصنف، يرجى المحاولة ثانية");
       }
     } catch (e) {
       console.error(e);
+      alert("تعذر الاتصال بالخادم لحفظ الصنف");
     }
   };
 
@@ -847,9 +851,13 @@ export default function AdminPage() {
         setCategories(updatedCats);
         setEditingCategory(null);
         flashMessage("تم حفظ بيانات القسم بنجاح ✓");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || "حدث خطأ أثناء حفظ القسم");
       }
     } catch (e) {
       console.error(e);
+      alert("تعذر الاتصال بالخادم لحفظ القسم");
     }
   };
 

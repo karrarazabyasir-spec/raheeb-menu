@@ -9,14 +9,16 @@ const initialOrderMap = new Map<string, number>();
 initialMenuItems.forEach((item, index) => initialOrderMap.set(item.id, index));
 
 export async function GET() {
-  // 1. Query Supabase Database table 'menu_items' first (Single Source of Truth across all Vercel instances)
+  const localItems = await db.getMenuItemsAsync();
+
+  // 1. Query Supabase Database table 'menu_items'
   try {
     const { data, error } = await supabaseAdmin
       .from("menu_items")
       .select("*");
 
     if (data && !error && data.length > 0) {
-      const items: MenuItem[] = data.map((row) => ({
+      const dbItems: MenuItem[] = data.map((row) => ({
         id: row.id,
         categoryId: row.category_id,
         nameAr: row.name_ar,
@@ -31,25 +33,31 @@ export async function GET() {
         optionGroups: row.option_groups || [],
       }));
 
+      // Merge items from Supabase table and local store to ensure NO dishes are ever lost
+      const itemMap = new Map<string, MenuItem>();
+      localItems.forEach((item) => itemMap.set(item.id, item));
+      dbItems.forEach((item) => itemMap.set(item.id, item));
+
+      const merged = Array.from(itemMap.values());
+
       // Preserve canonical menu order
-      items.sort((a, b) => {
+      merged.sort((a, b) => {
         const orderA = initialOrderMap.has(a.id) ? initialOrderMap.get(a.id)! : 999;
         const orderB = initialOrderMap.has(b.id) ? initialOrderMap.get(b.id)! : 999;
         return orderA - orderB;
       });
 
       // Update in-memory cache
-      db.setMenuItemsCache(items);
+      db.setMenuItemsCache(merged);
 
-      return NextResponse.json(items);
+      return NextResponse.json(merged);
     }
   } catch (err) {
     console.error("Supabase menu fetch error, falling back to local db:", err);
   }
 
   // 2. Fallback to local store
-  const items = db.getMenuItems();
-  return NextResponse.json(items);
+  return NextResponse.json(localItems);
 }
 
 export async function POST(request: Request) {
@@ -76,11 +84,31 @@ export async function POST(request: Request) {
     if (!item.id) {
       item.id = `item-${Date.now()}`;
     }
-    const saved = db.saveMenuItem(item);
+    const saved = await db.saveMenuItem(item);
+
+    // Ensure item's category exists in Supabase 'categories' table first to prevent Foreign Key errors
+    if (saved.categoryId) {
+      try {
+        const allCats = db.getCategories();
+        const category = allCats.find((c) => c.id === saved.categoryId);
+        if (category) {
+          await supabaseAdmin.from("categories").upsert({
+            id: category.id,
+            name_ar: category.nameAr,
+            name_en: category.nameEn || category.nameAr,
+            icon_name: category.iconName || "Utensils",
+            sort_order: category.sortOrder || 1,
+            is_active: category.isActive !== false,
+          });
+        }
+      } catch (catErr) {
+        console.error("Category auto-sync error:", catErr);
+      }
+    }
 
     // Sync to Supabase menu_items
     try {
-      await supabaseAdmin.from("menu_items").upsert({
+      const { error: upsertErr } = await supabaseAdmin.from("menu_items").upsert({
         id: saved.id,
         category_id: saved.categoryId,
         name_ar: saved.nameAr,
@@ -94,6 +122,9 @@ export async function POST(request: Request) {
         variants: saved.variants || [],
         option_groups: saved.optionGroups || [],
       });
+      if (upsertErr) {
+        console.error("Supabase menu item upsert error:", upsertErr);
+      }
       await db.syncToCloud();
     } catch (e) {
       console.error("Supabase menu item insert error:", e);

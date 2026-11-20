@@ -72,10 +72,25 @@ export async function PATCH(
     }
 
     const updatedData: MenuItem = { ...existing, ...body, id };
-    const updated = db.saveMenuItem(updatedData);
+    const updated = await db.saveMenuItem(updatedData);
 
     // Also persist to Supabase menu_items table
     try {
+      if (updated.categoryId) {
+        const allCats = db.getCategories();
+        const category = allCats.find((c) => c.id === updated.categoryId);
+        if (category) {
+          await supabaseAdmin.from("categories").upsert({
+            id: category.id,
+            name_ar: category.nameAr,
+            name_en: category.nameEn || category.nameAr,
+            icon_name: category.iconName || "Utensils",
+            sort_order: category.sortOrder || 1,
+            is_active: category.isActive !== false,
+          });
+        }
+      }
+
       await supabaseAdmin.from("menu_items").upsert({
         id: updated.id,
         category_id: updated.categoryId,
@@ -125,7 +140,7 @@ export async function DELETE(
       await deleteStorageImage(imageToDelete);
     }
 
-    db.deleteMenuItem(id);
+    await db.deleteMenuItem(id);
     try {
       await supabaseAdmin.from("menu_items").delete().eq("id", id);
       await db.syncToCloud();

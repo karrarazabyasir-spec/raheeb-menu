@@ -244,10 +244,15 @@ export const db = {
     return data.categories.sort((a, b) => a.sortOrder - b.sortOrder);
   },
 
-  saveCategories(categories: Category[]): Category[] {
-    const data = readData();
+  async getCategoriesAsync(): Promise<Category[]> {
+    const data = await readDataAsync();
+    return data.categories.sort((a, b) => a.sortOrder - b.sortOrder);
+  },
+
+  async saveCategories(categories: Category[]): Promise<Category[]> {
+    const data = await readDataAsync();
     data.categories = categories;
-    writeData(data);
+    await writeData(data);
     eventBus.emit("menu_updated");
     return data.categories;
   },
@@ -258,28 +263,33 @@ export const db = {
     return data.menuItems;
   },
 
+  async getMenuItemsAsync(): Promise<MenuItem[]> {
+    const data = await readDataAsync();
+    return data.menuItems;
+  },
+
   getMenuItemById(id: string): MenuItem | undefined {
     const data = readData();
     return data.menuItems.find((item) => item.id === id);
   },
 
-  saveMenuItem(item: MenuItem): MenuItem {
-    const data = readData();
+  async saveMenuItem(item: MenuItem): Promise<MenuItem> {
+    const data = await readDataAsync();
     const index = data.menuItems.findIndex((i) => i.id === item.id);
     if (index >= 0) {
       data.menuItems[index] = item;
     } else {
       data.menuItems.push(item);
     }
-    writeData(data);
+    await writeData(data);
     eventBus.emit("menu_updated");
     return item;
   },
 
-  deleteMenuItem(id: string): boolean {
-    const data = readData();
+  async deleteMenuItem(id: string): Promise<boolean> {
+    const data = await readDataAsync();
     data.menuItems = data.menuItems.filter((i) => i.id !== id);
-    writeData(data);
+    await writeData(data);
     eventBus.emit("menu_updated");
     return true;
   },
@@ -291,13 +301,14 @@ export const db = {
   },
 
   async syncToCloud(): Promise<void> {
-    const data = readData();
+    const data = await readDataAsync();
     try {
       await supabaseAdmin.storage
         .from("menu-images")
         .upload("config/store.json", JSON.stringify(data, null, 2), {
           upsert: true,
           contentType: "application/json",
+          cacheControl: "0",
         });
     } catch (cloudErr) {
       console.error("Cloud storage sync error:", cloudErr);
