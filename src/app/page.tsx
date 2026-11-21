@@ -43,7 +43,7 @@ function MenuContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
-  const [activeTag, setActiveTag] = useState<string>("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -118,15 +118,15 @@ function MenuContent() {
   // Filter items by category, tag, and search query
   const brandColor = settings?.primaryColor || "#780000";
 
-  // Filter items by category, tag, and search query
+  // Filter items by category, subcategory, and search query
   const filteredItems = useMemo(() => {
     const list = menuItems.filter((item) => {
       // Category filter
       if (selectedCategoryId !== "all" && item.categoryId !== selectedCategoryId) {
         return false;
       }
-      // Tag filter
-      if (activeTag !== "all" && !item.tags.includes(activeTag as MenuItem["tags"][number])) {
+      // Subcategory filter
+      if (selectedSubcategory !== "all" && item.subcategory !== selectedSubcategory) {
         return false;
       }
       // Search filter
@@ -144,7 +144,7 @@ function MenuContent() {
     });
 
     return [...list].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
-  }, [menuItems, selectedCategoryId, activeTag, searchQuery]);
+  }, [menuItems, selectedCategoryId, selectedSubcategory, searchQuery]);
 
   if (isLoading || !settings) {
     return (
@@ -174,9 +174,8 @@ function MenuContent() {
         onSelectDish={setActiveItem}
       />
 
-      {/* Search & Tag Filter Bar */}
-      <div className="max-w-6xl mx-auto w-full px-4 pt-4 pb-2 space-y-3">
-        {/* Search Input */}
+      {/* Search Bar */}
+      <div className="max-w-6xl mx-auto w-full px-4 pt-4 pb-2">
         <div className="relative">
           <Search className="w-4 h-4 text-stone-400 absolute top-3.5 right-3.5" />
           <input
@@ -195,53 +194,18 @@ function MenuContent() {
             </button>
           )}
         </div>
-
-        {/* Quick Tags Filter */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <button
-            onClick={() => setActiveTag("all")}
-            style={{
-              backgroundColor: activeTag === "all" ? brandColor : undefined,
-              borderColor: activeTag === "all" ? brandColor : undefined,
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
-              activeTag === "all"
-                ? "text-white shadow-xs"
-                : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-            }`}
-          >
-            الكل
-          </button>
-          {(settings.customTags && settings.customTags.length > 0
-            ? settings.customTags
-            : [
-                { id: "popular", label: "الأكثر طلباً", emoji: "🔥" },
-                { id: "spicy", label: "حار", emoji: "🌶️" },
-                { id: "vegetarian", label: "نباتي", emoji: "🥗" },
-                { id: "new", label: "جديد", emoji: "✨" },
-              ]
-          ).map((tag) => (
-            <button
-              key={tag.id}
-              onClick={() => setActiveTag(tag.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1 ${
-                activeTag === tag.id
-                  ? "bg-stone-900 text-white shadow-xs"
-                  : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-              }`}
-            >
-              <span>{tag.emoji}</span>
-              <span>{tag.label}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Sticky Categories Bar */}
+      {/* Sticky Hierarchical Categories Bar (Main & Subcategories) */}
       <CategoryBar
         categories={categories}
         selectedCategoryId={selectedCategoryId}
-        onSelectCategory={setSelectedCategoryId}
+        onSelectCategory={(catId) => {
+          setSelectedCategoryId(catId);
+          setSelectedSubcategory("all");
+        }}
+        selectedSubcategory={selectedSubcategory}
+        onSelectSubcategory={setSelectedSubcategory}
         brandColor={brandColor}
       />
 
@@ -255,7 +219,7 @@ function MenuContent() {
             <button
               onClick={() => {
                 setSelectedCategoryId("all");
-                setActiveTag("all");
+                setSelectedSubcategory("all");
                 setSearchQuery("");
               }}
               style={{ color: brandColor }}

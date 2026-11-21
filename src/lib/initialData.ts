@@ -52,12 +52,60 @@ export const initialSettings: RestaurantSettings = {
 };
 
 export const initialCategories: Category[] = [
-  { id: "cat-mashawi", nameAr: "مشويات رهيب", nameEn: "Grills", iconName: "Flame", sortOrder: 1, isActive: true },
-  { id: "cat-shawarma", nameAr: "الشاورما والساندوتشات", nameEn: "Shawarma & Sandwiches", iconName: "Utensils", sortOrder: 2, isActive: true },
-  { id: "cat-appetizers", nameAr: "مقبلات وسلطات", nameEn: "Appetizers & Salads", iconName: "Salad", sortOrder: 3, isActive: true },
-  { id: "cat-combos", nameAr: "وجبات الكومبو والعائلية", nameEn: "Combo & Family Meals", iconName: "Crown", sortOrder: 4, isActive: true },
-  { id: "cat-beverages", nameAr: "المشروبات والعصائر", nameEn: "Beverages", iconName: "GlassWater", sortOrder: 5, isActive: true },
-  { id: "cat-desserts", nameAr: "الحلويات", nameEn: "Desserts", iconName: "IceCream", sortOrder: 6, isActive: true },
+  {
+    id: "cat-mashawi",
+    nameAr: "مشويات رهيب",
+    nameEn: "Grills",
+    iconName: "Flame",
+    sortOrder: 1,
+    isActive: true,
+    subcategories: ["مشكل مشويات", "كباب", "تكة لحم", "شيش طاووق"],
+  },
+  {
+    id: "cat-shawarma",
+    nameAr: "الشاورما والساندوتشات",
+    nameEn: "Shawarma & Sandwiches",
+    iconName: "Utensils",
+    sortOrder: 2,
+    isActive: true,
+    subcategories: ["شاورما لحم", "شاورما دجاج", "صاجات رهيب", "وجبات عربي"],
+  },
+  {
+    id: "cat-appetizers",
+    nameAr: "مقبلات وسلطات",
+    nameEn: "Appetizers & Salads",
+    iconName: "Salad",
+    sortOrder: 3,
+    isActive: true,
+    subcategories: ["مقبلات باردة", "مقبلات ساخنة", "سلطات طازجة"],
+  },
+  {
+    id: "cat-combos",
+    nameAr: "وجبات الكومبو والعائلية",
+    nameEn: "Combo & Family Meals",
+    iconName: "Crown",
+    sortOrder: 4,
+    isActive: true,
+    subcategories: ["وجبات فردية", "صواني عائلية", "بوكس التوفير"],
+  },
+  {
+    id: "cat-beverages",
+    nameAr: "المشروبات والعصائر",
+    nameEn: "Beverages",
+    iconName: "GlassWater",
+    sortOrder: 5,
+    isActive: true,
+    subcategories: ["عصائر طبيعية", "مشروبات غازية", "مياه معدنية"],
+  },
+  {
+    id: "cat-desserts",
+    nameAr: "الحلويات",
+    nameEn: "Desserts",
+    iconName: "IceCream",
+    sortOrder: 6,
+    isActive: true,
+    subcategories: ["حلويات شرقية", "كنافة وبقلاوة", "مثلجات"],
+  },
 ];
 
 export const initialMenuItems: MenuItem[] = [
@@ -72,6 +120,7 @@ export const initialMenuItems: MenuItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&auto=format&fit=crop&q=80",
     tags: ["popular"],
     isAvailable: true,
+    subcategory: "مشكل مشويات",
     variants: [
       { id: "var-1-half", nameAr: "نصف كيلو (شخصين)", nameEn: "Half Kilo", price: 58 },
       { id: "var-1-kilo", nameAr: "كيلو كامل (4-5 أشخاص)", nameEn: "1 Kilo", price: 110 },
@@ -127,6 +176,7 @@ export const initialMenuItems: MenuItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1561651823-34feb02250e4?w=600&auto=format&fit=crop&q=80",
     tags: ["popular"],
     isAvailable: true,
+    subcategory: "مشكل مشويات",
     optionGroups: [
       {
         id: "opt-spice",
@@ -161,6 +211,7 @@ export const initialMenuItems: MenuItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&auto=format&fit=crop&q=80",
     tags: ["popular"],
     isAvailable: true,
+    subcategory: "مشكل مشويات",
     variants: [
       { id: "var-4-reg", nameAr: "حجم عادي", nameEn: "Regular", price: 18 },
       { id: "var-4-large", nameAr: "حجم صاروخ كبير", nameEn: "Rocket Large", price: 24 },
@@ -177,6 +228,7 @@ export const initialMenuItems: MenuItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=600&auto=format&fit=crop&q=80",
     tags: ["popular"],
     isAvailable: true,
+    subcategory: "مشكل مشويات",
   },
   {
     id: "item-6",
@@ -225,6 +277,7 @@ export const initialMenuItems: MenuItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop&q=80",
     tags: ["popular"],
     isAvailable: true,
+    subcategory: "مشكل مشويات",
   },
   {
     id: "item-10",
@@ -249,6 +302,7 @@ export const initialMenuItems: MenuItem[] = [
     imageUrl: "https://images.unsplash.com/photo-1579954115545-a95591f28bfc?w=600&auto=format&fit=crop&q=80",
     tags: ["popular"],
     isAvailable: true,
+    subcategory: "مشكل مشويات",
   },
 ];
 

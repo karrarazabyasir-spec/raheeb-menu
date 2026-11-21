@@ -220,6 +220,7 @@ export default function AdminPage() {
 
   // Menu Items Reordering & Category Filter State
   const [selectedMenuCategory, setSelectedMenuCategory] = useState<string>("all");
+  const [selectedMenuSubcategory, setSelectedMenuSubcategory] = useState<string>("all");
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState<boolean>(false);
@@ -228,6 +229,7 @@ export default function AdminPage() {
   // Category Edit / Add Modal
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isNewCategory, setIsNewCategory] = useState(false);
+  const [newSubcategoryInput, setNewSubcategoryInput] = useState<string>("");
 
   // Category Reordering Drag & Drop State
   const [draggedCatId, setDraggedCatId] = useState<string | null>(null);
@@ -867,9 +869,11 @@ export default function AdminPage() {
   };
 
   const handleMoveItem = async (itemId: string, direction: "up" | "down") => {
-    const visibleList = selectedMenuCategory === "all"
-      ? menuItems
-      : menuItems.filter((i) => i.categoryId === selectedMenuCategory);
+    const visibleList = menuItems.filter((i) => {
+      if (selectedMenuCategory !== "all" && i.categoryId !== selectedMenuCategory) return false;
+      if (selectedMenuSubcategory !== "all" && i.subcategory !== selectedMenuSubcategory) return false;
+      return true;
+    });
 
     const currentIndex = visibleList.findIndex((i) => i.id === itemId);
     if (currentIndex === -1) return;
@@ -1875,7 +1879,10 @@ export default function AdminPage() {
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               <button
                 type="button"
-                onClick={() => setSelectedMenuCategory("all")}
+                onClick={() => {
+                  setSelectedMenuCategory("all");
+                  setSelectedMenuSubcategory("all");
+                }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
                   selectedMenuCategory === "all"
                     ? "bg-stone-900 text-white shadow-xs"
@@ -1901,7 +1908,10 @@ export default function AdminPage() {
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => setSelectedMenuCategory(c.id)}
+                    onClick={() => {
+                      setSelectedMenuCategory(c.id);
+                      setSelectedMenuSubcategory("all");
+                    }}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
                       isSelected
                         ? "bg-stone-900 text-white shadow-xs"
@@ -1922,6 +1932,56 @@ export default function AdminPage() {
                 );
               })}
             </div>
+
+            {/* Subcategory Filter Pills (Dynamic for selected category) */}
+            {(() => {
+              const activeCat = categories.find((c) => c.id === selectedMenuCategory);
+              if (!activeCat || !activeCat.subcategories || activeCat.subcategories.length === 0) return null;
+
+              return (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none animate-in fade-in duration-150">
+                  <span className="text-[11px] font-bold text-stone-400 shrink-0">التصنيف الفرعي:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMenuSubcategory("all")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                      selectedMenuSubcategory === "all"
+                        ? "bg-stone-800 text-white shadow-2xs"
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                    }`}
+                  >
+                    <span>الكل</span>
+                  </button>
+                  {activeCat.subcategories.map((sub) => {
+                    const subCount = menuItems.filter(
+                      (i) => i.categoryId === activeCat.id && i.subcategory === sub
+                    ).length;
+                    const isSubSelected = selectedMenuSubcategory === sub;
+                    return (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setSelectedMenuSubcategory(sub)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                          isSubSelected
+                            ? "bg-[#780000] text-white shadow-2xs"
+                            : "bg-white text-stone-700 hover:bg-stone-100 border border-stone-200"
+                        }`}
+                      >
+                        <span>{sub}</span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                            isSubSelected ? "bg-white/20 text-white" : "bg-stone-100 text-stone-500"
+                          }`}
+                        >
+                          {subCount}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* Drag & Drop Instructions & Status Bar */}
             <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 bg-gradient-to-r from-amber-50/80 via-stone-50 to-stone-50 border border-amber-200/70 rounded-2xl text-xs shadow-2xs">
@@ -1950,10 +2010,11 @@ export default function AdminPage() {
 
             {/* Menu Items Grid */}
             {(() => {
-              const visibleList =
-                selectedMenuCategory === "all"
-                  ? menuItems
-                  : menuItems.filter((i) => i.categoryId === selectedMenuCategory);
+              const visibleList = menuItems.filter((i) => {
+                if (selectedMenuCategory !== "all" && i.categoryId !== selectedMenuCategory) return false;
+                if (selectedMenuSubcategory !== "all" && i.subcategory !== selectedMenuSubcategory) return false;
+                return true;
+              });
 
               if (visibleList.length === 0) {
                 return (
@@ -2058,8 +2119,13 @@ export default function AdminPage() {
                               className="w-16 h-16 rounded-xl object-cover bg-stone-100 shrink-0 pointer-events-none"
                             />
                             <div className="flex-1 min-w-0">
-                              <span className="text-[10px] font-bold text-stone-400 block">
+                              <span className="text-[10px] font-bold text-stone-400 block truncate">
                                 {category?.nameAr || "عام"}
+                                {item.subcategory && (
+                                  <span className="text-[#780000] font-black mr-1">
+                                    › {item.subcategory}
+                                  </span>
+                                )}
                               </span>
                               <h3 className="text-sm font-black text-stone-900 truncate">
                                 {item.nameAr}
@@ -2278,6 +2344,25 @@ export default function AdminPage() {
                           {itemCount} صنف
                         </span>
                       </div>
+
+                      {/* Subcategories preview */}
+                      {cat.subcategories && cat.subcategories.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-stone-100/80">
+                          <span className="text-[10px] font-bold text-stone-400 block mb-1">
+                            التصنيفات الفرعية ({cat.subcategories.length}):
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {cat.subcategories.map((sub) => (
+                              <span
+                                key={sub}
+                                className="text-[10px] bg-amber-50 text-amber-900 border border-amber-200/50 font-semibold px-2 py-0.5 rounded-md"
+                              >
+                                {sub}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2">
@@ -5287,13 +5372,21 @@ export default function AdminPage() {
                   />
                 </div>
 
-                {/* Category, Sort Order & Availability */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Category, Subcategory, Sort Order & Availability */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="font-bold text-stone-800 block mb-1.5">قسم الطبق في المنيو:</label>
                     <select
                       value={editingItem.categoryId}
-                      onChange={(e) => setEditingItem({ ...editingItem, categoryId: e.target.value })}
+                      onChange={(e) => {
+                        const newCatId = e.target.value;
+                        const newCat = categories.find((c) => c.id === newCatId);
+                        setEditingItem({
+                          ...editingItem,
+                          categoryId: newCatId,
+                          subcategory: newCat?.subcategories && newCat.subcategories.length > 0 ? editingItem.subcategory : undefined,
+                        });
+                      }}
                       className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] shadow-2xs transition"
                     >
                       {categories.map((c) => (
@@ -5302,6 +5395,42 @@ export default function AdminPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1.5">
+                      التصنيف الفرعي للطبق:
+                    </label>
+                    {(() => {
+                      const curCat = categories.find((c) => c.id === editingItem.categoryId);
+                      const hasSubs = curCat?.subcategories && curCat.subcategories.length > 0;
+                      if (!hasSubs) {
+                        return (
+                          <div className="px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-stone-400 font-bold text-xs">
+                            عام (لا توجد فئات فرعية)
+                          </div>
+                        );
+                      }
+                      return (
+                        <select
+                          value={editingItem.subcategory || ""}
+                          onChange={(e) =>
+                            setEditingItem({
+                              ...editingItem,
+                              subcategory: e.target.value || undefined,
+                            })
+                          }
+                          className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] shadow-2xs transition"
+                        >
+                          <option value="">عام (بدون تصنيف فرعي)</option>
+                          {curCat.subcategories!.map((sub) => (
+                            <option key={sub} value={sub}>
+                              {sub}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </div>
 
                   <div>
@@ -5911,6 +6040,94 @@ export default function AdminPage() {
                   }
                   className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
                 />
+              </div>
+
+              {/* Subcategories Management */}
+              <div className="pt-2 border-t border-stone-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-stone-800 block">
+                    التصنيفات الفرعية لهذا القسم:
+                  </label>
+                  <span className="text-[10px] text-stone-400">
+                    {(editingCategory.subcategories || []).length} تصنيفات
+                  </span>
+                </div>
+
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    value={newSubcategoryInput}
+                    onChange={(e) => setNewSubcategoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const val = newSubcategoryInput.trim();
+                        if (val) {
+                          const current = editingCategory.subcategories || [];
+                          if (!current.includes(val)) {
+                            setEditingCategory({
+                              ...editingCategory,
+                              subcategories: [...current, val],
+                            });
+                          }
+                          setNewSubcategoryInput("");
+                        }
+                      }
+                    }}
+                    placeholder="اكتب تصنيفاً فرعياً (مثال: شاورما لحم)"
+                    className="flex-1 px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:bg-white focus:border-[#780000]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = newSubcategoryInput.trim();
+                      if (val) {
+                        const current = editingCategory.subcategories || [];
+                        if (!current.includes(val)) {
+                          setEditingCategory({
+                            ...editingCategory,
+                            subcategories: [...current, val],
+                          });
+                        }
+                        setNewSubcategoryInput("");
+                      }
+                    }}
+                    className="px-3 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة</span>
+                  </button>
+                </div>
+
+                {/* Subcategories List Chips */}
+                {editingCategory.subcategories && editingCategory.subcategories.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {editingCategory.subcategories.map((sub, sIdx) => (
+                      <span
+                        key={sub}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200/60 rounded-lg text-xs font-bold"
+                      >
+                        <span>{sub}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCategory({
+                              ...editingCategory,
+                              subcategories: editingCategory.subcategories!.filter((_, i) => i !== sIdx),
+                            });
+                          }}
+                          className="w-4 h-4 rounded-full hover:bg-amber-200/70 text-amber-800 flex items-center justify-center text-[10px]"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-stone-400">
+                    لا توجد تصنيفات فرعية مضافة (اختياري - يمكنك إضافة شاورما دجاج، شاورما لحم.. إلخ).
+                  </p>
+                )}
               </div>
             </div>
 

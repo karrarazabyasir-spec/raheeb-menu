@@ -142,6 +142,7 @@ export interface MenuItem {
     end: string;   // "12:00"
   };
   sortOrder?: number;
+  subcategory?: string; // Subcategory within category (e.g. "شاورما دجاج")
 }
 
 export interface Category {
@@ -151,6 +152,7 @@ export interface Category {
   iconName: string;
   sortOrder: number;
   isActive: boolean;
+  subcategories?: string[]; // Subcategories list (e.g. ["شاورما دجاج", "شاورما لحم", "صاجات"])
 }
 
 export interface SelectedOption {

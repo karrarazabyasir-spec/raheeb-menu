@@ -32,6 +32,7 @@ export async function GET() {
         variants: row.variants || [],
         optionGroups: row.option_groups || [],
         sortOrder: row.sort_order ?? undefined,
+        subcategory: row.subcategory || undefined,
       }));
 
       // Merge items from Supabase table and local store to ensure NO dishes are ever lost
@@ -42,6 +43,7 @@ export async function GET() {
         itemMap.set(item.id, {
           ...item,
           sortOrder: local?.sortOrder ?? item.sortOrder,
+          subcategory: local?.subcategory ?? item.subcategory,
         });
       });
 

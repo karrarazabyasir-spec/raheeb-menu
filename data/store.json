@@ -100,7 +100,13 @@
       "nameEn": "Grills",
       "iconName": "Flame",
       "sortOrder": 1,
-      "isActive": true
+      "isActive": true,
+      "subcategories": [
+        "مشكل مشويات",
+        "كباب",
+        "تكة لحم",
+        "شيش طاووق"
+      ]
     },
     {
       "id": "cat-shawarma",
@@ -108,7 +114,13 @@
       "nameEn": "Shawarma & Sandwiches",
       "iconName": "Utensils",
       "sortOrder": 2,
-      "isActive": true
+      "isActive": true,
+      "subcategories": [
+        "شاورما لحم",
+        "شاورما دجاج",
+        "صاجات رهيب",
+        "وجبات عربي"
+      ]
     },
     {
       "id": "cat-appetizers",
@@ -116,7 +128,12 @@
       "nameEn": "Appetizers & Salads",
       "iconName": "Salad",
       "sortOrder": 3,
-      "isActive": true
+      "isActive": true,
+      "subcategories": [
+        "مقبلات باردة",
+        "مقبلات ساخنة",
+        "سلطات طازجة"
+      ]
     },
     {
       "id": "cat-combos",
@@ -124,7 +141,12 @@
       "nameEn": "Combo & Family Meals",
       "iconName": "Crown",
       "sortOrder": 4,
-      "isActive": true
+      "isActive": true,
+      "subcategories": [
+        "وجبات فردية",
+        "صواني عائلية",
+        "بوكس التوفير"
+      ]
     },
     {
       "id": "cat-beverages",
@@ -132,7 +154,12 @@
       "nameEn": "Beverages",
       "iconName": "GlassWater",
       "sortOrder": 5,
-      "isActive": true
+      "isActive": true,
+      "subcategories": [
+        "عصائر طبيعية",
+        "مشروبات غازية",
+        "مياه معدنية"
+      ]
     },
     {
       "id": "cat-desserts",
@@ -140,7 +167,12 @@
       "nameEn": "Desserts",
       "iconName": "IceCream",
       "sortOrder": 6,
-      "isActive": true
+      "isActive": true,
+      "subcategories": [
+        "حلويات شرقية",
+        "كنافة وبقلاوة",
+        "مثلجات"
+      ]
     }
   ],
   "menuItems": [
@@ -278,7 +310,8 @@
           ],
           "required": false
         }
-      ]
+      ],
+      "subcategory": "مشكل مشويات"
     },
     {
       "id": "item-2",
@@ -308,7 +341,8 @@
           "nameEn": "Double"
         }
       ],
-      "optionGroups": []
+      "optionGroups": [],
+      "subcategory": "تكة لحم"
     },
     {
       "id": "item-3",
@@ -365,7 +399,8 @@
           ],
           "required": false
         }
-      ]
+      ],
+      "subcategory": "شاورما لحم"
     },
     {
       "id": "item-4",
@@ -394,7 +429,8 @@
           "nameEn": "Rocket Large"
         }
       ],
-      "optionGroups": []
+      "optionGroups": [],
+      "subcategory": "شاورما دجاج"
     },
     {
       "id": "item-5",
@@ -410,7 +446,8 @@
       ],
       "isAvailable": false,
       "variants": [],
-      "optionGroups": []
+      "optionGroups": [],
+      "subcategory": "مقبلات باردة"
     },
     {
       "id": "item-6",
@@ -426,7 +463,8 @@
       ],
       "isAvailable": true,
       "variants": [],
-      "optionGroups": []
+      "optionGroups": [],
+      "subcategory": "مقبلات باردة"
     },
     {
       "id": "item-8",
@@ -443,7 +481,8 @@
       ],
       "isAvailable": true,
       "variants": [],
-      "optionGroups": []
+      "optionGroups": [],
+      "subcategory": "بوكس التوفير"
     },
     {
       "id": "item-9",
@@ -459,7 +498,8 @@
       ],
       "isAvailable": true,
       "variants": [],
-      "optionGroups": []
+      "optionGroups": [],
+      "subcategory": "عصائر طبيعية"
     },
     {
       "id": "item-1793432515772",
