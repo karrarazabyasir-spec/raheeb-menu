@@ -917,6 +917,17 @@ export default function AdminPage() {
   const handleSaveCategory = async () => {
     if (!editingCategory) return;
     const catToSave = { ...editingCategory };
+
+    // Auto-include pending subcategory input if user forgot to click "+" button
+    if (newSubcategoryInput.trim()) {
+      const val = newSubcategoryInput.trim();
+      const current = catToSave.subcategories || [];
+      if (!current.includes(val)) {
+        catToSave.subcategories = [...current, val];
+      }
+      setNewSubcategoryInput("");
+    }
+
     catToSave.nameEn = catToSave.nameAr;
     const updatedCats = isNewCategory
       ? [...categories, catToSave]

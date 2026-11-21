@@ -18,22 +18,25 @@ export async function GET() {
       .select("*");
 
     if (data && !error && data.length > 0) {
-      const dbItems: MenuItem[] = data.map((row) => ({
-        id: row.id,
-        categoryId: row.category_id,
-        nameAr: row.name_ar,
-        nameEn: row.name_en,
-        descriptionAr: row.description_ar,
-        descriptionEn: row.description_en,
-        basePrice: row.base_price,
-        imageUrl: row.image_url,
-        tags: row.tags || [],
-        isAvailable: row.is_available,
-        variants: row.variants || [],
-        optionGroups: row.option_groups || [],
-        sortOrder: row.sort_order ?? undefined,
-        subcategory: row.subcategory || undefined,
-      }));
+      const dbItems: MenuItem[] = data.map((row) => {
+        const subcategoryFromTag = (row.tags || []).find((t: string) => typeof t === "string" && t.startsWith("sub:"))?.replace("sub:", "");
+        return {
+          id: row.id,
+          categoryId: row.category_id,
+          nameAr: row.name_ar,
+          nameEn: row.name_en,
+          descriptionAr: row.description_ar,
+          descriptionEn: row.description_en,
+          basePrice: row.base_price,
+          imageUrl: row.image_url,
+          tags: (row.tags || []).filter((t: string) => typeof t === "string" && !t.startsWith("sub:")),
+          isAvailable: row.is_available,
+          variants: row.variants || [],
+          optionGroups: row.option_groups || [],
+          sortOrder: row.sort_order ?? undefined,
+          subcategory: row.subcategory || subcategoryFromTag || undefined,
+        };
+      });
 
       // Merge items from Supabase table and local store to ensure NO dishes are ever lost
       const itemMap = new Map<string, MenuItem>();
@@ -43,7 +46,7 @@ export async function GET() {
         itemMap.set(item.id, {
           ...item,
           sortOrder: local?.sortOrder ?? item.sortOrder,
-          subcategory: local?.subcategory ?? item.subcategory,
+          subcategory: local?.subcategory || item.subcategory,
         });
       });
 
@@ -80,7 +83,7 @@ export async function POST(request: Request) {
 
     // Auto-cleanup: If updating an existing item with a new image, delete the old image from storage
     if (item.id) {
-      const existing = db.getMenuItemById(item.id);
+      const existing = await db.getMenuItemByIdAsync(item.id);
       let oldImage = existing?.imageUrl;
       if (!oldImage) {
         const { data } = await supabaseAdmin
@@ -107,13 +110,15 @@ export async function POST(request: Request) {
     // Ensure item's category exists in Supabase 'categories' table first to prevent Foreign Key errors
     if (saved.categoryId) {
       try {
-        const allCats = db.getCategories();
+        const allCats = await db.getCategoriesAsync();
         const category = allCats.find((c) => c.id === saved.categoryId);
         if (category) {
           await supabaseAdmin.from("categories").upsert({
             id: category.id,
             name_ar: category.nameAr,
-            name_en: category.nameEn || category.nameAr,
+            name_en: category.subcategories && category.subcategories.length > 0
+              ? JSON.stringify({ en: category.nameEn || category.nameAr, subs: category.subcategories })
+              : (category.nameEn || category.nameAr),
             icon_name: category.iconName || "Utensils",
             sort_order: category.sortOrder || 1,
             is_active: category.isActive !== false,
@@ -126,6 +131,9 @@ export async function POST(request: Request) {
 
     // Sync to Supabase menu_items
     try {
+      const cleanTags = (saved.tags || []).filter((t: string) => typeof t === "string" && !t.startsWith("sub:"));
+      const finalTags = saved.subcategory ? [...cleanTags, `sub:${saved.subcategory}`] : cleanTags;
+
       const { error: upsertErr } = await supabaseAdmin.from("menu_items").upsert({
         id: saved.id,
         category_id: saved.categoryId,
@@ -135,7 +143,7 @@ export async function POST(request: Request) {
         description_en: saved.descriptionEn,
         base_price: saved.basePrice,
         image_url: saved.imageUrl,
-        tags: saved.tags || [],
+        tags: finalTags,
         is_available: saved.isAvailable,
         variants: saved.variants || [],
         option_groups: saved.optionGroups || [],

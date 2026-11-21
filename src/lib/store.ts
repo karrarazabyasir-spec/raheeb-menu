@@ -273,6 +273,11 @@ export const db = {
     return data.menuItems.find((item) => item.id === id);
   },
 
+  async getMenuItemByIdAsync(id: string): Promise<MenuItem | undefined> {
+    const data = await readDataAsync();
+    return data.menuItems.find((item) => item.id === id);
+  },
+
   async saveMenuItem(item: MenuItem): Promise<MenuItem> {
     const data = await readDataAsync();
     const index = data.menuItems.findIndex((i) => i.id === item.id);

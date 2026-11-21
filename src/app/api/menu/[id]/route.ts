@@ -61,7 +61,7 @@ export async function PATCH(
       return NextResponse.json(finalItem);
     }
 
-    const existing = db.getMenuItemById(id);
+    const existing = await db.getMenuItemByIdAsync(id);
     if (!existing) {
       return NextResponse.json({ error: "الصنف غير موجود" }, { status: 404 });
     }
@@ -77,19 +77,24 @@ export async function PATCH(
     // Also persist to Supabase menu_items table
     try {
       if (updated.categoryId) {
-        const allCats = db.getCategories();
+        const allCats = await db.getCategoriesAsync();
         const category = allCats.find((c) => c.id === updated.categoryId);
         if (category) {
           await supabaseAdmin.from("categories").upsert({
             id: category.id,
             name_ar: category.nameAr,
-            name_en: category.nameEn || category.nameAr,
+            name_en: category.subcategories && category.subcategories.length > 0
+              ? JSON.stringify({ en: category.nameEn || category.nameAr, subs: category.subcategories })
+              : (category.nameEn || category.nameAr),
             icon_name: category.iconName || "Utensils",
             sort_order: category.sortOrder || 1,
             is_active: category.isActive !== false,
           });
         }
       }
+
+      const cleanTags = (updated.tags || []).filter((t: string) => typeof t === "string" && !t.startsWith("sub:"));
+      const finalTags = updated.subcategory ? [...cleanTags, `sub:${updated.subcategory}`] : cleanTags;
 
       await supabaseAdmin.from("menu_items").upsert({
         id: updated.id,
@@ -100,7 +105,7 @@ export async function PATCH(
         description_en: updated.descriptionEn,
         base_price: updated.basePrice,
         image_url: updated.imageUrl,
-        tags: updated.tags || [],
+        tags: finalTags,
         is_available: updated.isAvailable,
         variants: updated.variants || [],
         option_groups: updated.optionGroups || [],
