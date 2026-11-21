@@ -135,8 +135,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json(
         {
-          error:
-            "اسم المستخدم أو كلمة المرور غير صحيحة. تلميح: حساب المدير (admin / admin أو ادمن) وحساب المحرر (editor / 123 أو محرر).",
+          error: "اسم المستخدم أو كلمة المرور غير صحيحة",
         },
         { status: 401 }
       );

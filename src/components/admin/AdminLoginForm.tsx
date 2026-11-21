@@ -177,7 +177,7 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
                   dir="auto"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin أو editor (أو بالعربي: ادمن / محرر)"
+                  placeholder="أدخل اسم المستخدم"
                   className="w-full pl-3 pr-10 py-3 bg-stone-950/80 border border-stone-800 rounded-xl text-stone-100 placeholder-stone-600 text-xs font-bold focus:outline-hidden focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                   required
                 />
@@ -196,7 +196,7 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
                   dir="auto"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="كلمة المرور"
+                  placeholder="••••••••"
                   className="w-full pl-10 pr-10 py-3 bg-stone-950/80 border border-stone-800 rounded-xl text-stone-100 placeholder-stone-600 text-xs font-bold focus:outline-hidden focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                   required
                 />
@@ -212,22 +212,6 @@ export function AdminLoginForm({ settings, onLoginSuccess }: AdminLoginFormProps
                     <Eye className="w-4 h-4" />
                   )}
                 </button>
-              </div>
-            </div>
-
-            {/* Helper Credential Info Box */}
-            <div className="bg-stone-950/60 border border-stone-800/80 rounded-2xl p-3 text-[11px] text-stone-400 space-y-1.5">
-              <div className="flex items-center justify-between text-stone-300 font-bold border-b border-stone-800/80 pb-1">
-                <span>💡 بيانات تسجيل الدخول الافتراضية:</span>
-                <span className="text-amber-400 text-[10px] font-sans">يقبل العربي والإنجليزية</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-stone-300 font-bold">حساب المدير:</span>
-                <span className="text-amber-300 font-mono">admin <span className="text-stone-600">/</span> admin <span className="text-stone-500 text-[10px] font-sans">(أو: ادمن)</span></span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-stone-300 font-bold">حساب المحرر:</span>
-                <span className="text-amber-300 font-mono">editor <span className="text-stone-600">/</span> 123 <span className="text-stone-500 text-[10px] font-sans">(أو: محرر)</span></span>
               </div>
             </div>
 
