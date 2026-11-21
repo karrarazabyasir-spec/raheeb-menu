@@ -229,6 +229,12 @@ export default function AdminPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isNewCategory, setIsNewCategory] = useState(false);
 
+  // Category Reordering Drag & Drop State
+  const [draggedCatId, setDraggedCatId] = useState<string | null>(null);
+  const [dragOverCatId, setDragOverCatId] = useState<string | null>(null);
+  const [isSavingCatOrder, setIsSavingCatOrder] = useState<boolean>(false);
+  const [catOrderSaveSuccess, setCatOrderSaveSuccess] = useState<boolean>(false);
+
   // New Table
   const [newTableNumber, setNewTableNumber] = useState("");
   const [newTableSection, setNewTableSection] = useState<Table["section"]>("صالة");
@@ -912,6 +918,8 @@ export default function AdminPage() {
       ? [...categories, catToSave]
       : categories.map((c) => (c.id === catToSave.id ? catToSave : c));
 
+    updatedCats.sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+
     try {
       const res = await fetch("/api/categories", {
         method: "POST",
@@ -949,6 +957,58 @@ export default function AdminPage() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Reorder Categories via Drag & Drop or Shift Buttons
+  const executeCategoryReorder = async (sourceId: string, targetId: string) => {
+    const sourceIdx = categories.findIndex((c) => c.id === sourceId);
+    const targetIdx = categories.findIndex((c) => c.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx) return;
+
+    const copy = [...categories];
+    const [moved] = copy.splice(sourceIdx, 1);
+    copy.splice(targetIdx, 0, moved);
+
+    const reordered = copy.map((cat, index) => ({
+      ...cat,
+      sortOrder: index + 1,
+    }));
+
+    setCategories(reordered);
+    setIsSavingCatOrder(true);
+    setCatOrderSaveSuccess(false);
+
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reordered),
+      });
+
+      if (res.ok) {
+        setIsSavingCatOrder(false);
+        setCatOrderSaveSuccess(true);
+        setTimeout(() => setCatOrderSaveSuccess(false), 2500);
+      } else {
+        setIsSavingCatOrder(false);
+        flashMessage("حدث خطأ أثناء حفظ ترتيب الأقسام ⚠️");
+      }
+    } catch (err) {
+      console.error("Reorder categories error:", err);
+      setIsSavingCatOrder(false);
+      flashMessage("فشل الاتصال لحفظ ترتيب الأقسام ⚠️");
+    }
+  };
+
+  const handleMoveCategory = async (catId: string, direction: "up" | "down") => {
+    const currentIndex = categories.findIndex((c) => c.id === catId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= categories.length) return;
+
+    const targetCat = categories[targetIndex];
+    await executeCategoryReorder(catId, targetCat.id);
   };
 
   // Export CSV
@@ -2067,13 +2127,17 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 3: CATEGORIES MANAGEMENT */}
+        {/* TAB 3: CATEGORIES MANAGEMENT (Full Control & Drag & Drop) */}
         {activeTab === "categories" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-black text-stone-900">إدارة أقسام المينيو</h2>
-                <p className="text-xs text-stone-500">إضافة أقسام، تعديل الأسماء، وترتيب الظهور</p>
+                <h2 className="text-sm font-black text-stone-900">
+                  إدارة وترتيب أقسام وتصنيفات المنيو
+                </h2>
+                <p className="text-xs text-stone-500">
+                  إضافة وتعديل الأقسام، وترتيب ظهورها بالسحب والإفلات أو الأرقام
+                </p>
               </div>
 
               <button
@@ -2088,46 +2152,158 @@ export default function AdminPage() {
                     isActive: true,
                   });
                 }}
-                className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+                className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
                 <span>إضافة قسم جديد</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="bg-white rounded-2xl p-4 border border-stone-200 shadow-xs flex items-center justify-between"
-                >
-                  <div>
-                    <h3 className="text-sm font-black text-stone-900">{cat.nameAr}</h3>
-                    <p className="text-[11px] text-stone-400">{cat.nameEn}</p>
-                    <span className="text-[10px] text-stone-400 font-bold mt-1 block">
-                      الترتيب: {cat.sortOrder}
-                    </span>
-                  </div>
+            {/* Drag & Drop Instructions & Status Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 bg-gradient-to-r from-amber-50/80 via-stone-50 to-stone-50 border border-amber-200/70 rounded-2xl text-xs shadow-2xs">
+              <div className="flex items-center gap-2 text-stone-700">
+                <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
+                  <ArrowUpDown className="w-4 h-4" />
+                </span>
+                <span className="leading-relaxed">
+                  <strong>الترتيب التفاعلي للأقسام:</strong> يمكنك ترتيب تسلسل ظهور الأقسام بالمنيو عبر <strong>السحب والإفلات (Drag & Drop)</strong> من المقبض (⠿)، أو عبر أسهم <strong>⬆️ ⬇️</strong>، أو إدخال <strong>رقم الترتيب</strong> في نافذة تعديل القسم.
+                </span>
+              </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => {
-                        setIsNewCategory(false);
-                        setEditingCategory(cat);
-                      }}
-                      className="p-2 rounded-lg text-stone-600 hover:bg-stone-100"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCategory(cat.id)}
-                      className="p-2 rounded-lg text-red-500 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              {isSavingCatOrder && (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white text-[11px] font-bold rounded-lg animate-pulse shadow-2xs">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>جاري حفظ ترتيب الأقسام...</span>
                 </div>
-              ))}
+              )}
+              {catOrderSaveSuccess && (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-lg shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>تم حفظ ترتيب الأقسام ✓</span>
+                </div>
+              )}
+            </div>
+
+            {/* Categories Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {categories.map((cat, index) => {
+                const isDragging = draggedCatId === cat.id;
+                const isDragOver = dragOverCatId === cat.id && !isDragging;
+                const itemCount = menuItems.filter((i) => i.categoryId === cat.id).length;
+
+                return (
+                  <div
+                    key={cat.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", cat.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      setDraggedCatId(cat.id);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      if (dragOverCatId !== cat.id) {
+                        setDragOverCatId(cat.id);
+                      }
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverCatId === cat.id) {
+                        setDragOverCatId(null);
+                      }
+                    }}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      const sourceId = draggedCatId || e.dataTransfer.getData("text/plain");
+                      setDraggedCatId(null);
+                      setDragOverCatId(null);
+                      if (!sourceId || sourceId === cat.id) return;
+                      await executeCategoryReorder(sourceId, cat.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedCatId(null);
+                      setDragOverCatId(null);
+                    }}
+                    className={`bg-white rounded-2xl p-4 border transition-all duration-200 flex flex-col justify-between gap-3 shadow-xs select-none ${
+                      isDragging
+                        ? "opacity-40 scale-95 border-dashed border-[#780000] ring-4 ring-[#780000]/10"
+                        : isDragOver
+                        ? "border-[#780000] ring-2 ring-[#780000] bg-amber-50/50 scale-[1.01]"
+                        : "border-stone-200 hover:border-stone-300"
+                    }`}
+                  >
+                    <div>
+                      {/* Top Bar with Drag Handle, Order Badge and Shift Buttons */}
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-stone-100">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="p-1 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-700 cursor-grab active:cursor-grabbing transition"
+                            title="اسحب لإعادة الترتيب (Drag & Drop)"
+                          >
+                            <GripVertical className="w-4 h-4" />
+                          </span>
+                          <span className="text-[11px] font-black px-2 py-0.5 rounded-lg bg-stone-900 text-white shadow-2xs">
+                            الترتيب #{cat.sortOrder ?? (index + 1)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMoveCategory(cat.id, "up")}
+                            className="p-1 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 disabled:opacity-20 disabled:hover:bg-transparent transition"
+                            title="تحريك للأعلى خطوة واحدة"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === categories.length - 1}
+                            onClick={() => handleMoveCategory(cat.id, "down")}
+                            className="p-1 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 disabled:opacity-20 disabled:hover:bg-transparent transition"
+                            title="تحريك للأسفل خطوة واحدة"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-sm font-black text-stone-900">{cat.nameAr}</h3>
+                          <p className="text-[11px] text-stone-400">{cat.nameEn}</p>
+                        </div>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600">
+                          {itemCount} صنف
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsNewCategory(false);
+                          setEditingCategory(cat);
+                        }}
+                        className="flex-1 py-1.5 px-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>تعديل</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="p-1.5 text-stone-400 hover:text-red-600 rounded-xl border hover:bg-red-50 transition"
+                        title="حذف القسم"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

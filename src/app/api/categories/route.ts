@@ -2,15 +2,23 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/store";
 import { Category } from "@/types";
 import { supabaseAdmin } from "@/lib/supabase";
+import { broadcastLiveEvent } from "@/lib/realtime";
 
 export async function GET() {
   const categories = await db.getCategoriesAsync();
-  return NextResponse.json(categories);
+  const sorted = [...categories].sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+  return NextResponse.json(sorted);
 }
 
 export async function POST(request: Request) {
   try {
     const categories: Category[] = await request.json();
+    categories.forEach((c, idx) => {
+      if (typeof c.sortOrder !== "number") {
+        c.sortOrder = idx + 1;
+      }
+    });
+    categories.sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
     const saved = await db.saveCategories(categories);
 
     // Sync categories to Supabase 'categories' PostgreSQL table
@@ -30,6 +38,7 @@ export async function POST(request: Request) {
       console.error("Categories table sync error:", catErr);
     }
 
+    await broadcastLiveEvent("categories_updated", saved);
     return NextResponse.json(saved);
   } catch (error) {
     return NextResponse.json({ error: "فشل حفظ الأقسام" }, { status: 400 });
