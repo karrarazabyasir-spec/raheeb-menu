@@ -31,19 +31,26 @@ export async function GET() {
         isAvailable: row.is_available,
         variants: row.variants || [],
         optionGroups: row.option_groups || [],
+        sortOrder: row.sort_order ?? undefined,
       }));
 
       // Merge items from Supabase table and local store to ensure NO dishes are ever lost
       const itemMap = new Map<string, MenuItem>();
       localItems.forEach((item) => itemMap.set(item.id, item));
-      dbItems.forEach((item) => itemMap.set(item.id, item));
+      dbItems.forEach((item) => {
+        const local = itemMap.get(item.id);
+        itemMap.set(item.id, {
+          ...item,
+          sortOrder: local?.sortOrder ?? item.sortOrder,
+        });
+      });
 
       const merged = Array.from(itemMap.values());
 
-      // Preserve canonical menu order
+      // Preserve canonical menu order by sortOrder
       merged.sort((a, b) => {
-        const orderA = initialOrderMap.has(a.id) ? initialOrderMap.get(a.id)! : 999;
-        const orderB = initialOrderMap.has(b.id) ? initialOrderMap.get(b.id)! : 999;
+        const orderA = typeof a.sortOrder === "number" ? a.sortOrder : (initialOrderMap.has(a.id) ? initialOrderMap.get(a.id)! + 1 : 999);
+        const orderB = typeof b.sortOrder === "number" ? b.sortOrder : (initialOrderMap.has(b.id) ? initialOrderMap.get(b.id)! + 1 : 999);
         return orderA - orderB;
       });
 
@@ -56,8 +63,13 @@ export async function GET() {
     console.error("Supabase menu fetch error, falling back to local db:", err);
   }
 
-  // 2. Fallback to local store
-  return NextResponse.json(localItems);
+  // 2. Fallback to local store (sorted by sortOrder)
+  const sortedLocal = [...localItems].sort((a, b) => {
+    const orderA = typeof a.sortOrder === "number" ? a.sortOrder : (initialOrderMap.has(a.id) ? initialOrderMap.get(a.id)! + 1 : 999);
+    const orderB = typeof b.sortOrder === "number" ? b.sortOrder : (initialOrderMap.has(b.id) ? initialOrderMap.get(b.id)! + 1 : 999);
+    return orderA - orderB;
+  });
+  return NextResponse.json(sortedLocal);
 }
 
 export async function POST(request: Request) {
@@ -83,6 +95,10 @@ export async function POST(request: Request) {
 
     if (!item.id) {
       item.id = `item-${Date.now()}`;
+    }
+    if (typeof item.sortOrder !== "number") {
+      const currentList = await db.getMenuItemsAsync();
+      item.sortOrder = currentList.length + 1;
     }
     const saved = await db.saveMenuItem(item);
 

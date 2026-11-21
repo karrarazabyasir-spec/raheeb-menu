@@ -85,6 +85,10 @@ import {
   Shield,
   ExternalLink,
   Monitor,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -213,6 +217,13 @@ export default function AdminPage() {
   // Edit / Add Item Comprehensive Modal
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isNewItem, setIsNewItem] = useState(false);
+
+  // Menu Items Reordering & Category Filter State
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState<string>("all");
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState<boolean>(false);
+  const [orderSaveSuccess, setOrderSaveSuccess] = useState<boolean>(false);
 
   // Category Edit / Add Modal
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -773,12 +784,14 @@ export default function AdminPage() {
         const saved = await res.json();
         setMenuItems((prev) => {
           const idx = prev.findIndex((i) => i.id === saved.id);
+          let copy: MenuItem[];
           if (idx >= 0) {
-            const copy = [...prev];
+            copy = [...prev];
             copy[idx] = saved;
-            return copy;
+          } else {
+            copy = [...prev, saved];
           }
-          return [...prev, saved];
+          return copy.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
         });
         setEditingItem(null);
         flashMessage("تم حفظ وتحديث الصنف بالكامل بنجاح ✓");
@@ -802,6 +815,64 @@ export default function AdminPage() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // Reorder Menu Items via Drag & Drop or Shift Buttons
+  const executeReorder = async (sourceId: string, targetId: string) => {
+    const sourceIdx = menuItems.findIndex((i) => i.id === sourceId);
+    const targetIdx = menuItems.findIndex((i) => i.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx) return;
+
+    const copy = [...menuItems];
+    const [moved] = copy.splice(sourceIdx, 1);
+    copy.splice(targetIdx, 0, moved);
+
+    const reordered = copy.map((item, index) => ({
+      ...item,
+      sortOrder: index + 1,
+    }));
+
+    setMenuItems(reordered);
+    setIsSavingOrder(true);
+    setOrderSaveSuccess(false);
+
+    try {
+      const res = await fetch("/api/menu/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: reordered.map((i) => ({ id: i.id, sortOrder: i.sortOrder })),
+        }),
+      });
+
+      if (res.ok) {
+        setIsSavingOrder(false);
+        setOrderSaveSuccess(true);
+        setTimeout(() => setOrderSaveSuccess(false), 2500);
+      } else {
+        setIsSavingOrder(false);
+        flashMessage("حدث خطأ أثناء حفظ الترتيب ⚠️");
+      }
+    } catch (err) {
+      console.error("Reorder save error:", err);
+      setIsSavingOrder(false);
+      flashMessage("فشل الاتصال لحفظ الترتيب ⚠️");
+    }
+  };
+
+  const handleMoveItem = async (itemId: string, direction: "up" | "down") => {
+    const visibleList = selectedMenuCategory === "all"
+      ? menuItems
+      : menuItems.filter((i) => i.categoryId === selectedMenuCategory);
+
+    const currentIndex = visibleList.findIndex((i) => i.id === itemId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= visibleList.length) return;
+
+    const targetItem = visibleList[targetIndex];
+    await executeReorder(itemId, targetItem.id);
   };
 
   // Save / Update Custom Tag
@@ -1701,16 +1772,16 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB 2: MENU ITEMS MANAGEMENT (Full Control) */}
+        {/* TAB 2: MENU ITEMS MANAGEMENT (Full Control & Drag & Drop) */}
         {activeTab === "menu" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-black text-stone-900">
-                  إدارة الأصناف، الأسعار، الأحجام، والإضافات
+                  إدارة وترتيب الأصناف، الأسعار، والإضافات
                 </h2>
                 <p className="text-xs text-stone-500">
-                  تحكم كامل في كل تفاصيل الطبق، الأحجام المتعددة، ومجموعات الخيارات
+                  تحكم كامل في كل تفاصيل الطبق، ترتيب الظهور بالسحب والإفلات أو الأرقام، والأحجام
                 </p>
               </div>
 
@@ -1730,6 +1801,7 @@ export default function AdminPage() {
                     isAvailable: true,
                     variants: [],
                     optionGroups: [],
+                    sortOrder: menuItems.length + 1,
                   });
                 }}
                 className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
@@ -1739,86 +1811,259 @@ export default function AdminPage() {
               </button>
             </div>
 
-            {/* Menu Items Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {menuItems.map((item) => {
-                const category = categories.find((c) => c.id === item.categoryId);
+            {/* Category Filter Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setSelectedMenuCategory("all")}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                  selectedMenuCategory === "all"
+                    ? "bg-stone-900 text-white shadow-xs"
+                    : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
+                }`}
+              >
+                <span>جميع الأقسام</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                    selectedMenuCategory === "all"
+                      ? "bg-white/20 text-white"
+                      : "bg-stone-100 text-stone-600"
+                  }`}
+                >
+                  {menuItems.length}
+                </span>
+              </button>
+
+              {categories.map((c) => {
+                const count = menuItems.filter((i) => i.categoryId === c.id).length;
+                const isSelected = selectedMenuCategory === c.id;
                 return (
-                  <div
-                    key={item.id}
-                    className="bg-white rounded-2xl p-4 border border-stone-200 shadow-xs flex flex-col justify-between gap-3"
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedMenuCategory(c.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                      isSelected
+                        ? "bg-stone-900 text-white shadow-xs"
+                        : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
+                    }`}
                   >
-                    <div>
-                      <div className="flex gap-3">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.nameAr}
-                          className="w-16 h-16 rounded-xl object-cover bg-stone-100 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold text-stone-400 block">
-                            {category?.nameAr || "عام"}
-                          </span>
-                          <h3 className="text-sm font-black text-stone-900 truncate">
-                            {item.nameAr}
-                          </h3>
-                          <div className="flex items-baseline gap-1 mt-1">
-                            <span className="text-base font-black text-stone-900">
-                              {item.variants && item.variants.length > 0 ? item.variants[0].price : item.basePrice}
-                            </span>
-                            <span className="text-xs text-stone-500">{settings?.currency}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-stone-500 line-clamp-2 mt-2">
-                        {item.descriptionAr}
-                      </p>
-
-                      {/* Info Badges */}
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${item.isAvailable ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
-                            }`}
-                        >
-                          {item.isAvailable ? "متوفر" : "نفد"}
-                        </span>
-                        {item.variants && item.variants.length > 0 && (
-                          <span className="text-[10px] bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded-md">
-                            {item.variants.length} أحجام
-                          </span>
-                        )}
-                        {item.optionGroups && item.optionGroups.length > 0 && (
-                          <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-md">
-                            {item.optionGroups.length} مجموعات إضافات
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-stone-100 flex gap-2">
-                      <button
-                        onClick={() => {
-                          setIsNewItem(false);
-                          setEditingItem(JSON.parse(JSON.stringify(item)));
-                        }}
-                        className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>تعديل الصنف والإضافات</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMenuItem(item.id)}
-                        className="p-2 text-stone-400 hover:text-red-600 rounded-xl border hover:bg-red-50 transition"
-                        title="حذف"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                    <span>{c.nameAr}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                        isSelected
+                          ? "bg-white/20 text-white"
+                          : "bg-stone-100 text-stone-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
                 );
               })}
             </div>
+
+            {/* Drag & Drop Instructions & Status Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 bg-gradient-to-r from-amber-50/80 via-stone-50 to-stone-50 border border-amber-200/70 rounded-2xl text-xs shadow-2xs">
+              <div className="flex items-center gap-2 text-stone-700">
+                <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
+                  <ArrowUpDown className="w-4 h-4" />
+                </span>
+                <span className="leading-relaxed">
+                  <strong>الترتيب التفاعلي:</strong> يمكنك ترتيب ظهور الأطباق بالمنيو عبر <strong>السحب والإفلات (Drag & Drop)</strong> من المقبض (⠿)، أو عبر أسهم <strong>⬆️ ⬇️</strong>، أو كتابة <strong>رقم الترتيب</strong> في نافذة تعديل الطبق.
+                </span>
+              </div>
+
+              {isSavingOrder && (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-500 text-white text-[11px] font-bold rounded-lg animate-pulse shadow-2xs">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>جاري حفظ الترتيب...</span>
+                </div>
+              )}
+              {orderSaveSuccess && (
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-lg shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>تم حفظ الترتيب ✓</span>
+                </div>
+              )}
+            </div>
+
+            {/* Menu Items Grid */}
+            {(() => {
+              const visibleList =
+                selectedMenuCategory === "all"
+                  ? menuItems
+                  : menuItems.filter((i) => i.categoryId === selectedMenuCategory);
+
+              if (visibleList.length === 0) {
+                return (
+                  <div className="bg-white rounded-2xl p-10 border border-stone-200 text-center space-y-2">
+                    <p className="text-sm font-bold text-stone-600">لا توجد أصناف في هذا القسم حالياً</p>
+                    <p className="text-xs text-stone-400">اضغط على زر &quot;إضافة طبق / صنف جديد&quot; للبدء بإضافة الأصناف</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {visibleList.map((item, index) => {
+                    const category = categories.find((c) => c.id === item.categoryId);
+                    const isDragging = draggedItemId === item.id;
+                    const isDragOver = dragOverItemId === item.id && !isDragging;
+                    const itemOrder = item.sortOrder ?? (index + 1);
+
+                    return (
+                      <div
+                        key={item.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", item.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          setDraggedItemId(item.id);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          if (dragOverItemId !== item.id) {
+                            setDragOverItemId(item.id);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverItemId === item.id) {
+                            setDragOverItemId(null);
+                          }
+                        }}
+                        onDrop={async (e) => {
+                          e.preventDefault();
+                          const sourceId = draggedItemId || e.dataTransfer.getData("text/plain");
+                          setDraggedItemId(null);
+                          setDragOverItemId(null);
+                          if (!sourceId || sourceId === item.id) return;
+                          await executeReorder(sourceId, item.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedItemId(null);
+                          setDragOverItemId(null);
+                        }}
+                        className={`bg-white rounded-2xl p-4 border transition-all duration-200 flex flex-col justify-between gap-3 shadow-xs select-none ${
+                          isDragging
+                            ? "opacity-40 scale-95 border-dashed border-[#780000] ring-4 ring-[#780000]/10"
+                            : isDragOver
+                            ? "border-[#780000] ring-2 ring-[#780000] bg-amber-50/50 scale-[1.01]"
+                            : "border-stone-200 hover:border-stone-300"
+                        }`}
+                      >
+                        <div>
+                          {/* Top bar with Drag Handle and Order Badge */}
+                          <div className="flex items-center justify-between pb-2 mb-2 border-b border-stone-100">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="p-1 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-700 cursor-grab active:cursor-grabbing transition"
+                                title="اسحب لإعادة الترتيب (Drag & Drop)"
+                              >
+                                <GripVertical className="w-4 h-4" />
+                              </span>
+                              <span className="text-[11px] font-black px-2 py-0.5 rounded-lg bg-stone-900 text-white shadow-2xs">
+                                الترتيب #{itemOrder}
+                              </span>
+                            </div>
+
+                            {/* Up/Down Quick Shift Buttons */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={index === 0}
+                                onClick={() => handleMoveItem(item.id, "up")}
+                                className="p-1 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 disabled:opacity-20 disabled:hover:bg-transparent transition"
+                                title="تحريك للأعلى خطوة واحدة"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={index === visibleList.length - 1}
+                                onClick={() => handleMoveItem(item.id, "down")}
+                                className="p-1 rounded-lg text-stone-400 hover:text-stone-800 hover:bg-stone-100 disabled:opacity-20 disabled:hover:bg-transparent transition"
+                                title="تحريك للأسفل خطوة واحدة"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-3">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.nameAr}
+                              className="w-16 h-16 rounded-xl object-cover bg-stone-100 shrink-0 pointer-events-none"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[10px] font-bold text-stone-400 block">
+                                {category?.nameAr || "عام"}
+                              </span>
+                              <h3 className="text-sm font-black text-stone-900 truncate">
+                                {item.nameAr}
+                              </h3>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-base font-black text-stone-900">
+                                  {item.variants && item.variants.length > 0 ? item.variants[0].price : item.basePrice}
+                                </span>
+                                <span className="text-xs text-stone-500">{settings?.currency}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-stone-500 line-clamp-2 mt-2">
+                            {item.descriptionAr}
+                          </p>
+
+                          {/* Info Badges */}
+                          <div className="flex flex-wrap gap-1.5 mt-3">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                item.isAvailable ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {item.isAvailable ? "متوفر" : "نفد"}
+                            </span>
+                            {item.variants && item.variants.length > 0 && (
+                              <span className="text-[10px] bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded-md">
+                                {item.variants.length} أحجام
+                              </span>
+                            )}
+                            {item.optionGroups && item.optionGroups.length > 0 && (
+                              <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-md">
+                                {item.optionGroups.length} مجموعات إضافات
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-stone-100 flex gap-2">
+                          <button
+                            onClick={() => {
+                              setIsNewItem(false);
+                              setEditingItem(JSON.parse(JSON.stringify(item)));
+                            }}
+                            className="flex-1 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>تعديل الصنف والإضافات</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMenuItem(item.id)}
+                            className="p-2 text-stone-400 hover:text-red-600 rounded-xl border hover:bg-red-50 transition"
+                            title="حذف"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -4866,8 +5111,8 @@ export default function AdminPage() {
                   />
                 </div>
 
-                {/* Category & Availability */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Category, Sort Order & Availability */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="font-bold text-stone-800 block mb-1.5">قسم الطبق في المنيو:</label>
                     <select
@@ -4881,6 +5126,28 @@ export default function AdminPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-stone-800 block mb-1.5">
+                      ترتيب الظهور (الرقم):
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={editingItem.sortOrder ?? 1}
+                      onChange={(e) =>
+                        setEditingItem({
+                          ...editingItem,
+                          sortOrder: Math.max(1, parseInt(e.target.value, 10) || 1),
+                        })
+                      }
+                      placeholder="1"
+                      className="w-full px-3.5 py-2.5 bg-white border border-stone-300 rounded-xl font-bold text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#780000]/20 focus:border-[#780000] shadow-2xs transition"
+                    />
+                    <span className="text-[10px] text-stone-400 mt-1 block">
+                      الرقم 1 يظهر أولاً بالمنيو
+                    </span>
                   </div>
 
                   <div>

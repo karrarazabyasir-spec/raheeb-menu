@@ -120,7 +120,7 @@ function MenuContent() {
 
   // Filter items by category, tag, and search query
   const filteredItems = useMemo(() => {
-    return menuItems.filter((item) => {
+    const list = menuItems.filter((item) => {
       // Category filter
       if (selectedCategoryId !== "all" && item.categoryId !== selectedCategoryId) {
         return false;
@@ -142,6 +142,8 @@ function MenuContent() {
       }
       return true;
     });
+
+    return [...list].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
   }, [menuItems, selectedCategoryId, activeTag, searchQuery]);
 
   if (isLoading || !settings) {

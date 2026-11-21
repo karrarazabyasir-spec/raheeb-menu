@@ -300,6 +300,51 @@ export const db = {
     memoryCache = data;
   },
 
+  async reorderMenuItems(itemsOrIds: Array<{ id: string; sortOrder?: number } | MenuItem> | string[]): Promise<MenuItem[]> {
+    const data = await readDataAsync();
+    const itemMap = new Map<string, MenuItem>();
+    data.menuItems.forEach((item) => itemMap.set(item.id, item));
+
+    const updatedItems: MenuItem[] = [];
+
+    if (itemsOrIds.length > 0 && typeof itemsOrIds[0] === "string") {
+      (itemsOrIds as string[]).forEach((id, index) => {
+        const item = itemMap.get(id);
+        if (item) {
+          item.sortOrder = index + 1;
+          updatedItems.push(item);
+          itemMap.delete(id);
+        }
+      });
+    } else {
+      (itemsOrIds as Array<{ id: string; sortOrder?: number } | MenuItem>).forEach((obj, index) => {
+        const item = itemMap.get(obj.id);
+        if (item) {
+          item.sortOrder = typeof obj.sortOrder === "number" ? obj.sortOrder : index + 1;
+          updatedItems.push(item);
+          itemMap.delete(obj.id);
+        }
+      });
+    }
+
+    let maxOrder = updatedItems.reduce((max, i) => Math.max(max, i.sortOrder || 0), 0);
+    itemMap.forEach((item) => {
+      if (!item.sortOrder) {
+        maxOrder += 1;
+        item.sortOrder = maxOrder;
+      }
+      updatedItems.push(item);
+    });
+
+    updatedItems.sort((a, b) => (a.sortOrder || 999) - (b.sortOrder || 999));
+
+    data.menuItems = updatedItems;
+    await writeData(data);
+    await this.syncToCloud();
+    eventBus.emit("menu_updated");
+    return updatedItems;
+  },
+
   async syncToCloud(): Promise<void> {
     const data = await readDataAsync();
     try {

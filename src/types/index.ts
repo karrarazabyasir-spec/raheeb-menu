@@ -141,6 +141,7 @@ export interface MenuItem {
     start: string; // "08:00"
     end: string;   // "12:00"
   };
+  sortOrder?: number;
 }
 
 export interface Category {
