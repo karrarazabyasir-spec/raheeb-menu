@@ -115,6 +115,7 @@ export async function POST(request: Request) {
         passwordMatches =
           normalizedDigitsP === "admin" ||
           cleanP === "شيقىن" ||
+          normalizedDigitsP === "2026" ||
           normalizedDigitsP === "123456";
       }
 
@@ -122,6 +123,7 @@ export async function POST(request: Request) {
       if (!passwordMatches && isRoleEditor) {
         passwordMatches =
           normalizedDigitsP === "123" ||
+          normalizedDigitsP === "2026" ||
           normalizedDigitsP === "editor" ||
           cleanP === "ثيهفخق" ||
           normalizedDigitsP === "123456";

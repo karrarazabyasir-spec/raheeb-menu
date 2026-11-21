@@ -1256,6 +1256,15 @@
       "role": "editor",
       "isActive": true,
       "createdAt": "2026-11-13T14:16:14.791Z"
+    },
+    {
+      "id": "user-editor-adel",
+      "username": "adel",
+      "name": "عادل (المحرر)",
+      "password": "2026",
+      "role": "editor",
+      "isActive": true,
+      "createdAt": "2026-11-21T17:21:33.070Z"
     }
   ]
 }

@@ -338,4 +338,13 @@ export const initialStaffUsers: StaffUser[] = [
     isActive: true,
     createdAt: new Date().toISOString(),
   },
+  {
+    id: "user-editor-adel",
+    username: "adel",
+    name: "عادل (المحرر)",
+    password: "2026",
+    role: "editor",
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
 ];

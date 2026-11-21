@@ -19,7 +19,7 @@ export async function PATCH(
           : !(db.getMenuItemById(id)?.isAvailable ?? false);
 
       // 1. Update in local/cache db
-      const localUpdated = db.toggleItemAvailability(id, isAvailable);
+      const localUpdated = await db.toggleItemAvailability(id, isAvailable);
 
       // 2. Persist synchronously to Supabase Database table 'menu_items'
       let cloudItem: MenuItem | null = null;

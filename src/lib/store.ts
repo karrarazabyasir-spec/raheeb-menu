@@ -231,7 +231,7 @@ export const db = {
   },
 
   async updateSettings(partial: Partial<RestaurantSettings>): Promise<RestaurantSettings> {
-    const data = memoryCache || readData();
+    const data = await readDataAsync();
     data.settings = { ...data.settings, ...partial };
     await writeData(data);
     eventBus.emit("settings_updated", data.settings);
@@ -295,9 +295,9 @@ export const db = {
   },
 
   setMenuItemsCache(items: MenuItem[]): void {
-    const data = readData();
-    data.menuItems = items;
-    memoryCache = data;
+    if (memoryCache) {
+      memoryCache.menuItems = items;
+    }
   },
 
   async reorderMenuItems(itemsOrIds: Array<{ id: string; sortOrder?: number } | MenuItem> | string[]): Promise<MenuItem[]> {
@@ -360,12 +360,12 @@ export const db = {
     }
   },
 
-  toggleItemAvailability(id: string, isAvailable?: boolean): MenuItem | null {
-    const data = readData();
+  async toggleItemAvailability(id: string, isAvailable?: boolean): Promise<MenuItem | null> {
+    const data = await readDataAsync();
     const item = data.menuItems.find((i) => i.id === id);
     if (!item) return null;
     item.isAvailable = typeof isAvailable === "boolean" ? isAvailable : !item.isAvailable;
-    writeData(data);
+    await writeData(data);
     eventBus.emit("menu_updated", item);
     return item;
   },
